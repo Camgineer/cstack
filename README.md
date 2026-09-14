@@ -15,8 +15,13 @@ PStack and Matt both ship `tdd` and `teach`. PStack keeps those names. Matt's co
 ## Install
 
 ```sh
-codex plugin marketplace add /Users/cameron/repos/cstack
+codex plugin marketplace add Camgineer/cstack --ref main
 codex plugin add cstack@cstack
 ```
 
-Start a fresh task after install.
+Start a fresh task after install. To refresh later:
+
+```sh
+codex plugin marketplace upgrade cstack
+codex plugin add cstack@cstack
+```

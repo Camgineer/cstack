@@ -5,7 +5,7 @@ description: Design a persistent Codex bot. Missing Bot Factory, design a child 
 
 # Design a bot
 
-Read `references/operating-contract.md` before any write. Grill with `$cstack:grilling`. For a coding bot, also apply `$cstack:poteto-mode`. Read model choices from C-Stack `policy/models.md`.
+Read `references/operating-contract.md` before any write. Grill with `$cstack:grilling`. For a coding bot, also apply `$cstack:poteto-mode`. Read model choices from C-Stack `policy/cstack-models.md`.
 
 ## Find Bot Factory
 

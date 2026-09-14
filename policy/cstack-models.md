@@ -6,7 +6,7 @@ This is instruction policy. It does not change Codex or OpenCodex config by itse
 
 ## Overlay
 
-`policy/models.md` is the shipped default. It is replaced when the plugin updates.
+`policy/cstack-models.md` is the shipped default. It is replaced when the plugin updates.
 
 If `~/.agents/cstack-models.md` exists, named roles in that file replace the matching rows below. Missing roles keep this file. Run `$cstack:setup-pstack` to write or edit the overlay. Do not copy this file into the overlay. Do not edit the plugin cache.
 

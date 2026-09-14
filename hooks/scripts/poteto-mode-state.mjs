@@ -213,7 +213,7 @@ export async function handleHook(input, options = {}) {
     return {
       hookSpecificOutput: {
         hookEventName: "SessionStart",
-        additionalContext: "C-Stack remains active for this resumed or compacted session. Apply $cstack:poteto-mode, $cstack:simple-as-writing, policy/coding-standards.md, and policy/models.md. Named roles in ~/.agents/cstack-models.md win when that file exists. Do not infer authority beyond the user request.",
+        additionalContext: "C-Stack remains active for this resumed or compacted session. Apply $cstack:poteto-mode, $cstack:simple-as-writing, policy/coding-standards.md, and policy/cstack-models.md. Named roles in ~/.agents/cstack-models.md win when that file exists. Do not infer authority beyond the user request.",
       },
     };
   }
@@ -245,7 +245,7 @@ export async function handleHook(input, options = {}) {
     return {
       hookSpecificOutput: {
         hookEventName: "UserPromptSubmit",
-        additionalContext: "C-Stack defaults are active. Apply $cstack:poteto-mode, $cstack:simple-as-writing, policy/coding-standards.md, and policy/models.md. Named roles in ~/.agents/cstack-models.md win when that file exists. Default activation does not expand user authority.",
+        additionalContext: "C-Stack defaults are active. Apply $cstack:poteto-mode, $cstack:simple-as-writing, policy/coding-standards.md, and policy/cstack-models.md. Named roles in ~/.agents/cstack-models.md win when that file exists. Default activation does not expand user authority.",
       },
     };
   }
@@ -260,7 +260,7 @@ export async function handleHook(input, options = {}) {
   return {
     hookSpecificOutput: {
       hookEventName: "UserPromptSubmit",
-      additionalContext: "C-Stack is active for this session. Apply $cstack:poteto-mode, $cstack:simple-as-writing, policy/coding-standards.md, and policy/models.md. Named roles in ~/.agents/cstack-models.md win when that file exists. Do not infer authority beyond the user request.",
+      additionalContext: "C-Stack is active for this session. Apply $cstack:poteto-mode, $cstack:simple-as-writing, policy/coding-standards.md, and policy/cstack-models.md. Named roles in ~/.agents/cstack-models.md win when that file exists. Do not infer authority beyond the user request.",
     },
   };
 }

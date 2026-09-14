@@ -4,6 +4,28 @@ Single source for model choices across PStack skills, playbooks, and modes. C-St
 
 This is instruction policy. It does not change Codex or OpenCodex config by itself.
 
+## Overlay
+
+`policy/models.md` is the shipped default. It is replaced when the plugin updates.
+
+If `~/.agents/cstack-models.md` exists, named roles in that file replace the matching rows below. Missing roles keep this file. Run `$cstack:setup-pstack` to write or edit the overlay. Do not copy this file into the overlay. Do not edit the plugin cache.
+
+Spawn seats remain at most five distinct spawn slugs after overlay. Lead slugs are not spawn seats.
+
+| Overlay key | Policy row |
+| --- | --- |
+| engineering-lead | Fable engineering lead |
+| other-lead | Opus other important lead |
+| reviewer | Everyday Sol review |
+| interrogate | Muse Max adversarial review |
+| implementer | Grok implementation |
+| cheap | Luna bounded implementation |
+| extraction | Luna extraction |
+| comment-audit | Luna comment audit |
+| readiness | Astra readiness |
+| art | Astra art and play |
+
+
 ## Identifiers
 
 Leads are not spawn seats.

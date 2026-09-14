@@ -27,7 +27,7 @@ If the live spawn tool's model list is not these five, stop and report. Do not u
 Create a new lead at Medium. Cameron may change parent effort. This policy does not fight that.
 
 | Lead | When |
-| --- | --- |
+| --- | --- | --- |
 | Fable Medium | Engineering and critical bots |
 | Opus Medium | Other important bots |
 | Sol | Only if the Anthropic lead route is down |
@@ -38,13 +38,14 @@ This policy cannot switch an already-running parent.
 
 ## Workers
 
-Right-size model, effort, and context for every spawn. Effort may be low through max. Muse's panel seat stays Max.
+Right-size model, effort, and context for every spawn. Effort may be low through max. Muse's interrogate seat stays Max.
 
 | Work | Model | Starting effort | Boundary |
 | --- | --- | --- | --- |
-| Default review, code-contract, security diff | Sol | Medium | Fresh worker. The implementer never grades itself. |
+| Everyday review, code-contract, security diff | Sol | Medium | Fresh worker. The implementer never grades itself. |
 | Routine browser or native UI proof | Sol | Medium | Creative visual acceptance stays Astra. |
-| Second reviewer for interrogate, arena, and other panels | Muse | Max | Spawn with Sol. Do not downshift Muse. Default review is still Sol alone. |
+| Interrogate, arena, and adversarial code review | Muse | Max | Do not downshift Muse. Everyday review stays Sol. |
+| Comment audit | Luna | Medium | Keep-list comment hunt. Do not spend Sol on this. |
 | Implementation and CLI/API proof | Grok | High | All non-art product code. Raise or lower with hardness. |
 | Bounded cheap implementation | Luna | High | Clear ticket, contained impact, obvious checks. Unclear or high-risk work is Grok. |
 | Bounded extraction and code exploration | Luna | Medium | Read-only. Synthesis stays with the lead or Sol. |
@@ -57,7 +58,7 @@ Right-size model, effort, and context for every spawn. Effort may be low through
 
 Use `pstack-poteto-agent` for Poteto coding delegates. Still set an explicit worker model from the five. Do not let it inherit the lead.
 
-Use `pstack-comment-sicko` for comment audits. It is pinned to Sol Medium. Do not change that pin.
+Use `pstack-comment-sicko` for comment audits. Pin it to Luna Medium. Sol is wasted on comment hunting.
 
 `ocx-*` profiles pin a model and ignore `model`. Use an `ocx-*` profile only when it is one of Astra, Sol, Grok, Luna, or Muse. Do not use Gemini or Terra profiles.
 
@@ -67,7 +68,7 @@ Pass only the context the worker needs. Do not fork the parent thread by default
 
 ## Independence
 
-Sol reviews Fable-led and Opus-led work. Muse is a second reviewer, not the default. Grok never reviews its own diff. Fable and Opus never spawn. Astra readiness is a fresh agent. It does not rewrite the plan.
+Sol does everyday review of Fable-led and Opus-led work. Muse Max does interrogate and adversarial review. Grok never reviews its own diff. Fable and Opus never spawn. Astra readiness is a fresh agent. It does not rewrite the plan.
 
 ## Implementation path
 
@@ -76,7 +77,7 @@ Sol reviews Fable-led and Opus-led work. Muse is a second reviewer, not the defa
 3. If Luna exceeds its boundary or leaves a real defect, keep valid work and hand it to Grok.
 4. One focused Grok repair is allowed. If it still fails, Sol diagnoses. A fresh Grok worker implements the corrected contract.
 5. A fresh Sol reviewer checks the ticket, the exact changes, defects, and proof.
-6. For interrogate or a required panel, spawn Sol and Muse Max on the same artifact.
+6. For interrogate or adversarial review, spawn Muse Max. Spawn Sol plus Muse Max only when the workflow requires two reviewers.
 7. Return product, design, authority, and acceptance choices to Cameron.
 
 ## Proof
@@ -93,15 +94,16 @@ Roles are not proof. Repository verification skills own commands, tools, and pas
 Vendor skills name Cursor slugs. Resolve them here.
 
 | PStack role | Apply |
-| --- | --- |
+| --- | --- | --- |
 | Planning or Poteto main agent | The running lead. New engineering leads are Fable. New other important leads are Opus. |
 | Planning readiness reviewer | Fresh Astra |
 | Feature, refactor, bug-fix, perf, hill-climb workers | Luna or Grok. Art is Astra. |
 | How explorer, bounded Why collection | Luna |
 | How explainer, Why synthesis, Architect, specs, tickets, diagnosis | The lead, or Sol when spawned |
-| Interrogate and code-review | Sol. Add Muse Max when a panel is required. |
+| Everyday code-review | Sol |
+| Interrogate | Muse Max |
 | Arena runners and Swarm workers | The actual assignment. Use only spawn slugs. Keep required lane count. |
-| Comment Sicko | Sol Medium, `pstack-comment-sicko` |
+| Comment Sicko | Luna Medium, `pstack-comment-sicko` |
 | CLI/API live lane | Grok |
 | Routine UI live lane | Sol |
 | Art or exploratory play | Astra |
@@ -115,7 +117,7 @@ Judgment, tooling, investigator, synthesizer, and fast are labels, not models. R
 2. Luna unavailable or out of bounds: Grok.
 3. Grok unavailable for implementation or CLI: Sol, and say so.
 4. Sol unavailable for review: stop the review gate. Astra does not replace Sol.
-5. Muse unavailable for a panel: Sol alone plus the workflow's reduced-panel rule. Do not substitute Grok.
+5. Muse unavailable for interrogate: Sol, and say so. Do not substitute Grok.
 6. Astra unavailable for readiness or art: stop that gate only.
 7. Fable unavailable as lead: Opus if the bot is not critical, else Sol.
 8. Opus unavailable as lead: Sol.
@@ -124,3 +126,4 @@ Judgment, tooling, investigator, synthesizer, and fast are labels, not models. R
 ## Authority
 
 This policy is global. Repositories own standards, permissions, verification, and evidence. Model choice does not grant merge, deploy, message, or destructive authority.
+

@@ -1,0 +1,36 @@
+{
+  "name": "cstack",
+  "version": "0.1.0",
+  "description": "Personal local leads with PStack, Cursor Team Kit, and Matt Pocock skills.",
+  "author": {
+    "name": "Camgineer",
+    "url": "https://github.com/Camgineer"
+  },
+  "homepage": "https://github.com/Camgineer/cstack",
+  "repository": "https://github.com/Camgineer/cstack",
+  "license": "MIT",
+  "keywords": [
+    "cstack",
+    "pstack",
+    "codex",
+    "poteto-mode",
+    "botkit"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "C-Stack",
+    "shortDescription": "Persistent local leads with PStack, Team Kit, and Matt Pocock skills.",
+    "longDescription": "One local Codex plugin that packages PStack, Cursor Team Kit, and Matt Pocock skills, then adds BotKit for persistent purpose-specific leads.",
+    "developerName": "Camgineer",
+    "websiteURL": "https://github.com/Camgineer/cstack",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Plan engineering work",
+      "Orchestrate bounded agents",
+      "Review and verify changes"
+    ],
+    "defaultPrompt": [
+      "Use $cstack:setup-bot to prepare this conversation as a bot."
+    ]
+  }
+}

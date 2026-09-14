@@ -1,0 +1,8 @@
+interface:
+  display_name: "Bot healthcheck"
+  short_description: "Check the Bot Factory roster and task bindings."
+  default_prompt: "Use $cstack:bot-healthcheck on the Bot Factory."
+policy:
+  products:
+    - CODEX
+  allow_implicit_invocation: false

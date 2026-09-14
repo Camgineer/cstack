@@ -49,6 +49,10 @@ test('pinned original sources remain present', async () => {
   await fs.access(path.join(root, 'vendor/cursor-team-kit/skills/deslop/SKILL.md'));
   await fs.access(path.join(root, 'vendor/mattpocock-skills/skills/productivity/grilling/SKILL.md'));
   await fs.access(path.join(root, 'policy/coding-standards.md'));
-  await fs.access(path.join(root, 'policy/models.md'));
+  await fs.access(path.join(root, 'policy/cstack-models.md'));
   await fs.access(path.join(root, 'policy/defaults.md'));
+  const models = await fs.readFile(path.join(root, 'policy/cstack-models.md'), 'utf8');
+  const setup = await fs.readFile(path.join(root, 'skills/setup-pstack/SKILL.md'), 'utf8');
+  assert.ok(models.includes('~/.agents/cstack-models.md'));
+  assert.ok(setup.includes('~/.agents/cstack-models.md'));
 });

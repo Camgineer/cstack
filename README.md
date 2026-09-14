@@ -25,3 +25,5 @@ Start a fresh task after install. To refresh later:
 codex plugin marketplace upgrade cstack
 codex plugin add cstack@cstack
 ```
+
+To change models without forking the plugin, run `/setup-pstack`. It writes `~/.agents/cstack-models.md`. Plugin updates do not replace that file.

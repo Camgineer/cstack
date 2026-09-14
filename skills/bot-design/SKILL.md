@@ -5,7 +5,7 @@ description: Design a persistent Codex bot. Missing Bot Factory, design a child 
 
 # Design a bot
 
-Read `references/operating-contract.md` before any write. Grill with `$cstack:grilling`. Coding bots also apply `$cstack:poteto-mode`. Model choices come from C-Stack `policy/models.md`.
+Read `references/operating-contract.md` before any write. Grill with `$cstack:grilling`. For a coding bot, also apply `$cstack:poteto-mode`. Read model choices from C-Stack `policy/models.md`.
 
 ## Find Bot Factory
 
@@ -21,12 +21,12 @@ After the user authorizes:
 
 1. Create `~/.agents/bots/bot-factory/` with the five records. Done when those files exist and do not overwrite another identity.
 2. Create a Codex task titled `Bot Factory` and bind the real task id. Done when native task state matches `IDENTITY.json`.
-3. Attach two heartbeats on that task for 8:00 AM America/New_York every day, one for `bot-healthcheck` and one for `bot-transcript-check`. Done when both automations exist on the factory task.
-4. Tell the user to continue in Bot Factory. Done when this turn names that task and does not create a child bot unless a child was already aligned.
+3. Attach two heartbeats on that task for 08:00 America/New_York every day, one for `bot-healthcheck` and one for `bot-transcript-check`. Done when both automations exist on the factory task.
+4. Tell the user to continue in Bot Factory. Done when this turn names that task. Create a child bot in this turn only if the user already aligned one.
 
 ## Design a child bot
 
-Stay on the live Bot Factory task. Grill the frontier until these are settled: one job, one voice, anti-jobs, coding or not, name, bot id, initial queue. Coding bots get the Poteto bar. Other bots still get one job, one voice, and anti-jobs. The bot id is lowercase hyphen-case and unused. Done grilling when the user authorizes that exact proposal.
+Stay on the live Bot Factory task. Grill until these are settled: one job, one voice, anti-jobs, coding or not, name, bot id, and initial queue. Coding bots get the Poteto bar. Other bots still get one job, one voice, and anti-jobs. The bot id is lowercase hyphen-case and unused. Done grilling when the user authorizes that exact proposal.
 
 After authorization:
 

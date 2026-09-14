@@ -1,0 +1,8 @@
+interface:
+  display_name: "Design a bot"
+  short_description: "Create Bot Factory, then design each child bot."
+  default_prompt: "Use $cstack:bot-design to create or design a bot."
+policy:
+  products:
+    - CODEX
+  allow_implicit_invocation: false

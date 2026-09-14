@@ -1,8 +1,0 @@
-interface:
-  display_name: "Set up a bot"
-  short_description: "Create or resume a persistent local lead."
-  default_prompt: "Use $setup-bot for this bot setup."
-policy:
-  products:
-    - CODEX
-  allow_implicit_invocation: false

@@ -1,0 +1,8 @@
+interface:
+  display_name: "Bot transcript check"
+  short_description: "Review bot work records and pending decisions."
+  default_prompt: "Use $cstack:bot-transcript-check on the Bot Factory."
+policy:
+  products:
+    - CODEX
+  allow_implicit_invocation: false

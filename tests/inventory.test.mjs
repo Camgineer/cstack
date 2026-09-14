@@ -28,14 +28,16 @@ test('live skills are unique and include the three original packages plus BotKit
   assert.ok(names.includes('control-ui'));
   assert.ok(names.includes('grilling'));
   assert.ok(names.includes('wayfinder'));
-  assert.ok(names.includes('setup-bot'));
+  assert.ok(names.includes('bot-design'));
+  assert.ok(names.includes('bot-healthcheck'));
+  assert.ok(names.includes('bot-transcript-check'));
   assert.ok(names.includes('retro'));
   assert.ok(names.includes('simple-as-writing'));
   assert.ok(names.includes('tdd'));
   assert.ok(names.includes('matt-tdd'));
   assert.ok(names.includes('teach'));
   assert.ok(names.includes('matt-teach'));
-  assert.equal(names.length, 96);
+  assert.equal(names.length, 98);
 });
 
 test('pinned original sources remain present', async () => {

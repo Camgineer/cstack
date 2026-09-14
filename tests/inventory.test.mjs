@@ -30,11 +30,12 @@ test('live skills are unique and include the three original packages plus BotKit
   assert.ok(names.includes('wayfinder'));
   assert.ok(names.includes('setup-bot'));
   assert.ok(names.includes('retro'));
+  assert.ok(names.includes('simple-as-writing'));
   assert.ok(names.includes('tdd'));
   assert.ok(names.includes('matt-tdd'));
   assert.ok(names.includes('teach'));
   assert.ok(names.includes('matt-teach'));
-  assert.equal(names.length, 95);
+  assert.equal(names.length, 96);
 });
 
 test('pinned original sources remain present', async () => {
@@ -45,4 +46,7 @@ test('pinned original sources remain present', async () => {
   await fs.access(path.join(root, 'vendor/pstack/skills/poteto-mode/SKILL.md'));
   await fs.access(path.join(root, 'vendor/cursor-team-kit/skills/deslop/SKILL.md'));
   await fs.access(path.join(root, 'vendor/mattpocock-skills/skills/productivity/grilling/SKILL.md'));
+  await fs.access(path.join(root, 'policy/coding-standards.md'));
+  await fs.access(path.join(root, 'policy/models.md'));
+  await fs.access(path.join(root, 'policy/defaults.md'));
 });

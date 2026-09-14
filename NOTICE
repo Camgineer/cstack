@@ -2,17 +2,17 @@ C-Stack includes independently licensed original works.
 
 PStack
 Copyright (c) 2026 Lauren Tan
-Source: https://github.com/cursor/plugins/tree/5bf2b1544db739998121a306340631963c2ff3de/pstack
+Source: https://github.com/cursor/plugins/tree/main/pstack
 License: MIT, see vendor/pstack/LICENSE
 
 Cursor Team Kit
 Copyright (c) 2026 Cursor
-Source: https://github.com/cursor/plugins/tree/5bf2b1544db739998121a306340631963c2ff3de/cursor-team-kit
+Source: https://github.com/cursor/plugins/tree/main/cursor-team-kit
 License: MIT, see vendor/cursor-team-kit/LICENSE
 
 Matt Pocock skills
 Copyright (c) 2026 Matt Pocock
-Source: https://github.com/mattpocock/skills/tree/3cca18b368ae95cdbdebbff572ccafa662551015
+Source: https://github.com/mattpocock/skills
 License: MIT, see vendor/mattpocock-skills/LICENSE
 
 C-Stack packaging, BotKit setup, and Codex integration

@@ -38,7 +38,7 @@ test('live skills are unique and include the three original packages plus BotKit
 });
 
 test('pinned original sources remain present', async () => {
-  const lock = JSON.parse(await fs.readFile(path.join(root, 'docs/upstream.lock.json'), 'utf8'));
+  const lock = JSON.parse(await fs.readFile(path.join(root, 'upstream.lock.json'), 'utf8'));
   assert.equal(lock.sources[0].commit, '5bf2b1544db739998121a306340631963c2ff3de');
   assert.equal(lock.sources[1].commit, '5bf2b1544db739998121a306340631963c2ff3de');
   assert.equal(lock.sources[2].commit, '3cca18b368ae95cdbdebbff572ccafa662551015');

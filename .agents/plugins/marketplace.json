@@ -1,7 +1,7 @@
 {
-  "name": "cstack-local",
+  "name": "cstack",
   "interface": {
-    "displayName": "C-Stack (Local)"
+    "displayName": "C-Stack"
   },
   "plugins": [
     {

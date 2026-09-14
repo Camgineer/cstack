@@ -1,38 +1,37 @@
 ---
 name: bot-design
-description: Design a persistent Codex bot. Creates Bot Factory on first use, then interviews, names, and opens each new bot as its own task.
+description: Design a persistent Codex bot. Missing Bot Factory, design a child bot, or invoked away from the factory task.
 ---
 
 # Design a bot
 
-Read `references/operating-contract.md` first. Grill with `$cstack:grilling`. Write with `$cstack:simple-as-writing`. Coding bots also apply `$cstack:poteto-mode`. Read C-Stack `policy/models.md` for model choices.
+Read `references/operating-contract.md` before any write. Grill with `$cstack:grilling`. Coding bots also apply `$cstack:poteto-mode`. Model choices come from C-Stack `policy/models.md`.
 
-## Find or create Bot Factory
+## Find Bot Factory
 
-1. Look for `~/.agents/bots/bot-factory/IDENTITY.json`. If it exists, read the current task binding and verify that task through native task tools. Stale bindings stay unverified.
-2. If Bot Factory is missing, grill only factory purpose and daily-check approval. Recommended purpose: own the roster, create child bots, and run the two healthchecks. After the user authorizes, create `~/.agents/bots/bot-factory/`, write the five records, create a Codex task titled `Bot Factory`, bind the real task id, and attach two heartbeats on that task for 8:00 AM America/New_York every day. The heartbeats invoke `bot-healthcheck` and `bot-transcript-check`. Do not create child bots in the same turn as factory creation unless the user already aligned a child.
-3. If this conversation is not the live Bot Factory task, send the user's request to that task and tell the user to continue there. Then stop.
+1. Read `~/.agents/bots/bot-factory/IDENTITY.json` if it exists. Done when you know whether the factory exists.
+2. If it exists, verify the bound Codex task with native task tools. Done when the binding is live or marked unverified.
+3. If this conversation is not that live factory task, send the user request there and tell the user to continue in Bot Factory. Done when the factory task has the message and this turn stops.
+
+## Create Bot Factory
+
+Use this branch only when the factory is missing. Grill factory purpose and the two daily checks. Recommended purpose: own the roster, create child bots, and run the checks.
+
+After the user authorizes:
+
+1. Create `~/.agents/bots/bot-factory/` with the five records. Done when those files exist and do not overwrite another identity.
+2. Create a Codex task titled `Bot Factory` and bind the real task id. Done when native task state matches `IDENTITY.json`.
+3. Attach two heartbeats on that task for 8:00 AM America/New_York every day, one for `bot-healthcheck` and one for `bot-transcript-check`. Done when both automations exist on the factory task.
+4. Tell the user to continue in Bot Factory. Done when this turn names that task and does not create a child bot unless a child was already aligned.
 
 ## Design a child bot
 
-Work the design tree in grilling rounds. Ask the whole frontier, recommend an answer, and wait.
-
-Settle:
-
-- one job
-- one voice
-- anti-jobs
-- coding or not. Coding bots get the Poteto bar. Other bots still get one job, one voice, and anti-jobs
-- name and stable bot id. The id is lowercase hyphen-case. Do not reuse an existing id
-- initial queue
-
-Do not create files, tasks, or automations until the user authorizes the proposal.
+Stay on the live Bot Factory task. Grill the frontier until these are settled: one job, one voice, anti-jobs, coding or not, name, bot id, initial queue. Coding bots get the Poteto bar. Other bots still get one job, one voice, and anti-jobs. The bot id is lowercase hyphen-case and unused. Done grilling when the user authorizes that exact proposal.
 
 After authorization:
 
-1. Create `~/.agents/bots/<bot-id>/` without overwriting another identity.
-2. Write `IDENTITY.json`, `SOUL.md`, `WORK.md`, `DECISIONS.md`, and `CONTEXT.md`.
-3. Create a new Codex task with the agreed name. Bind the real task id after native verification. Unknown identity stays unverified.
-4. Send the new task its soul, initial queue, and C-Stack defaults. Tell the user where to continue.
+1. Create `~/.agents/bots/<bot-id>/` with the five records. Done when the files match the proposal and do not overwrite another identity.
+2. Create a Codex task with the agreed name and bind the verified task id. Done when native task state matches `IDENTITY.json`, or the binding is left unverified.
+3. Send that task its soul, queue, and C-Stack defaults, then tell the user where to continue. Done when the child task has that message.
 
-Creating records is not proof the bot is operational. Report exactly which binding was verified. Leave fleet broadcasts and extra schedules off unless the user asked for them.
+Report the verified binding. File creation is not operational proof.

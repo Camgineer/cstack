@@ -1,14 +1,14 @@
 ---
 name: bot-healthcheck
-description: "Daily Bot Factory roster check."
+description: Daily Bot Factory roster check.
 disable-model-invocation: true
 ---
 
 # Bot healthcheck
 
-Run from the Bot Factory task, or after `bot-design` has sent you there.
+Run on the live Bot Factory task.
 
-1. List `~/.agents/bots/*/IDENTITY.json`. Skip directories without that file.
-2. For each bot, read the current binding and verify the native task. Mark live, stale, missing, or unverified.
-3. Read `WORK.md` when present. Note stalled Working items, unanswered Needs you items, and missing checkpoints.
-4. Reply with the roster table and the next factory action. Do not create bots, edit souls, or expand authority.
+1. List every `~/.agents/bots/*/IDENTITY.json`. Done when the roster of bot ids is complete.
+2. Verify each binding against native task state. Done when every bot is live, stale, missing, or unverified.
+3. Read each `WORK.md` that exists. Done when stalled Working items, unanswered Needs you items, and missing checkpoints are listed.
+4. Reply with that roster and the next factory action. Done when the reply names every bot and proposes at most one next action. Do not create bots or edit souls.

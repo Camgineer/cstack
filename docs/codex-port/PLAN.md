@@ -1,6 +1,6 @@
 # PR 1: PStack on Codex
 
-Status: **design draft; not installable or ready to merge**. This PR will contain the Codex port after the compatibility choices below are reviewed and implemented. No runtime adaptation has been made yet. README and public branding belong to the next stacked PR.
+Status: **implementation draft; not ready to merge or install in production**. Codex packaging and skill discovery metadata are implemented and tested in an isolated CLI home. Workflow tool mapping, native personas, model setup, and lifecycle behavior remain in progress. README and public branding belong to the next stacked PR.
 
 ## Starting point
 
@@ -41,19 +41,19 @@ First test native behavior without a hook. If explicit invocation and supported 
 
 If these conditions cannot be met on either target surface, keep the PR in draft, explain the specific gap, and review a solution before claiming complete support. No claim of identical runtime behavior is justified merely by file parity.
 
-## Scope and remaining design choices
+## Implementation defaults and review boundaries
 
 1. **Support scope (confirmed):** full local CLI and ChatGPT/Codex Desktop support only. No cloud Work fallback and no other-harness port.
-2. **Agent profiles:** recommend portable persona prompts by default, with optional project-scoped native profiles installed by explicit setup. Personal/global profiles should require a separate scope choice.
-3. **Unavailable upstream capabilities:** recommend explicit capability gaps and a documented, reviewed fallback for each workflow. Keep Benny dormant and do not convert event automation to polling as part of an assumed port.
+2. **Agent profiles (implementation default):** portable persona prompts with optional project-scoped native profiles installed by explicit setup. This reversible engineering choice does not block work. Personal/global scope is chosen only during setup when actually requested.
+3. **Unavailable upstream capabilities:** keep workflow steps and report concrete limits. No user decision is currently required. If testing proves a semantic gap (for example persistent mode cannot safely remain active until opt-out, or independent model review cannot be provided), describe that exact gap and proposed behavior before accepting a reduced contract. Keep Benny dormant; converting event automation to polling would be a separate semantic decision.
 
 The desired outcome is a faithful workflow port with stated host differences. New model strategies, fewer review lanes, personal advisors, and broader fallback policy are later proposals.
 
 ## File accountability
 
-[inventory.json](./inventory.json) records every upstream path, mode, and blob identity, plus the subsystem that must review it. All 158 upstream files are unchanged in this design checkpoint. There are no omitted files. Added files are this plan, the inventory, and the audit script.
+[inventory.json](./inventory.json) records every upstream path, mode, and blob identity, plus the subsystem that must review it. At the first implementation checkpoint, 47 top-level `SKILL.md` files have adapted frontmatter; their bodies are byte-for-byte unchanged. There are no omitted files. Added files include the Codex manifest, root-local marketplace manifest, 47 Codex invocation metadata files, discovery integration test, and design/audit files. The marketplace resolves the existing repository root directly, avoiding an unnecessary relocation of every upstream file; the real CLI test verifies this path.
 
-During implementation, update this inventory with each final path, disposition (`unchanged`, `adapted`, `relocated`, or `omitted`), and a concrete reason. Every changed or omitted source file and every new executable needs review. Keep prose/reference paths intact where possible. Do not perform a global PStack-to-CStack replacement: upstream credit, skill identifiers, API names, model integration names, and source links have different meanings. The follow-on branding PR owns the README and guide entry page.
+During implementation, keep this inventory updated with each final path, disposition (`unchanged`, `adapted`, `relocated`, or `omitted`), and a concrete reason. Every changed or omitted source file and every new executable needs review. Keep prose/reference paths intact where possible. Do not perform a global PStack-to-CStack replacement: upstream credit, skill identifiers, API names, model integration names, and source links have different meanings. The follow-on branding PR owns the README and guide entry page.
 
 ## Validation gates
 
@@ -69,7 +69,7 @@ During implementation, update this inventory with each final path, disposition (
 | Install lifecycle | On a disposable Codex home: install, discover, update, disable, re-enable, uninstall; verify plugin data and owned profile handling. Run the complete applicable behavior matrix on local CLI and ChatGPT/Codex Desktop; neither surface is considered covered by the other's unit tests. |
 | Release | Distinguish measured support from design intent. Publish exact versions, passed tests, skipped checks, and limits. User merges; production install follows only after that merge. |
 
-Completed so far: exact source import and tree equality, source/metadata inventory, upstream/reference inspection, and local runtime capability inspection. **The Codex port and the gates above are not complete.** Tests of any earlier customized implementation do not count as tests of this PR.
+Completed so far: exact source import and tree equality; source/metadata inventory; upstream/reference inspection; official plugin validation; all 47 skills passing the skill validator; and an isolated Codex CLI 0.156.0 marketplace/add plus actual app-server discovery with 47 enabled skills and zero errors. Reproduce with `python3 tests/discovery.py --codex /path/to/codex`. The test uses a disposable home without credentials or trusted hooks and never installs into production. **The remaining workflow port and lifecycle/Desktop gates are not complete.** Tests of any earlier customized implementation do not count as tests of this PR.
 
 ## Sources and implementation constraints
 

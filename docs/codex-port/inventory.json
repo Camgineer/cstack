@@ -10,7 +10,9 @@
       "type": "blob",
       "blob": "6ebc34b96f65088d695e3c3038eb412d750c8bdb",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host packaging; retain upstream metadata as reference"
+      "review_area": "host packaging; retain upstream metadata as reference",
+      "final_path": ".cursor-plugin/plugin.json",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": ".gitignore",
@@ -18,7 +20,9 @@
       "type": "blob",
       "blob": "aafcb345668bd80cbb256b066898d4df8988da0e",
       "checkpoint_disposition": "unchanged",
-      "review_area": "retain unless documented compatibility requirement"
+      "review_area": "retain unless documented compatibility requirement",
+      "final_path": ".gitignore",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "LICENSE",
@@ -26,7 +30,9 @@
       "type": "blob",
       "blob": "6b5400237fdf6545be0b8fae370d6f2fcff8fb25",
       "checkpoint_disposition": "unchanged",
-      "review_area": "license: retain unchanged"
+      "review_area": "license: retain unchanged",
+      "final_path": "LICENSE",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "README.md",
@@ -34,7 +40,9 @@
       "type": "blob",
       "blob": "b7cdef8aeb15da88a8f9cdd82904d884552395b7",
       "checkpoint_disposition": "unchanged",
-      "review_area": "PR2 public branding; retain original attribution"
+      "review_area": "PR2 public branding; retain original attribution",
+      "final_path": "README.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "agents/comment-sicko.md",
@@ -42,7 +50,9 @@
       "type": "blob",
       "blob": "9a688b8c5b5734ee80f782d4616a78c4c59b0946",
       "checkpoint_disposition": "unchanged",
-      "review_area": "native persona compatibility"
+      "review_area": "native persona compatibility",
+      "final_path": "agents/comment-sicko.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "agents/poteto-agent.md",
@@ -50,7 +60,9 @@
       "type": "blob",
       "blob": "91d53b85918f842c703758e66352b956ee80feb7",
       "checkpoint_disposition": "unchanged",
-      "review_area": "native persona compatibility"
+      "review_area": "native persona compatibility",
+      "final_path": "agents/poteto-agent.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "assets/logo.png",
@@ -58,7 +70,9 @@
       "type": "blob",
       "blob": "3754e87cb0e1362f17428bc84c661166ee145156",
       "checkpoint_disposition": "unchanged",
-      "review_area": "retain unless documented compatibility requirement"
+      "review_area": "retain unless documented compatibility requirement",
+      "final_path": "assets/logo.png",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/FOR_AGENTS.md",
@@ -66,7 +80,9 @@
       "type": "blob",
       "blob": "e732156e9b88b463e4a40c0f51596bca4aedcdb4",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/FOR_AGENTS.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/README.md",
@@ -74,7 +90,9 @@
       "type": "blob",
       "blob": "76804c8c566aae1a70734725416ae2f251a7ae30",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/README.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/skills/reproduce-and-fix-issues/SKILL.md",
@@ -82,7 +100,9 @@
       "type": "blob",
       "blob": "effa5f0a38d2cfe7d948a71ff51827e2e2017257",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/skills/reproduce-and-fix-issues/SKILL.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/skills/reproduce-and-fix-issues/references/control-adapter.md",
@@ -90,7 +110,9 @@
       "type": "blob",
       "blob": "3399491eddbc458f3a7ceb6fd62b8f89266b07ef",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/skills/reproduce-and-fix-issues/references/control-adapter.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/skills/reproduce-and-fix-issues/references/feature-map.example.md",
@@ -98,7 +120,9 @@
       "type": "blob",
       "blob": "620ddedba3c13d603974b1d78754e36946dacf81",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/skills/reproduce-and-fix-issues/references/feature-map.example.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/skills/reproduce-and-fix-issues/references/verify-existing-fix.md",
@@ -106,7 +130,9 @@
       "type": "blob",
       "blob": "e3cda3c06a48432fd932b32318ade4e6178ef4ed",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/skills/reproduce-and-fix-issues/references/verify-existing-fix.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/skills/setup-benny/SKILL.md",
@@ -114,7 +140,9 @@
       "type": "blob",
       "blob": "b05c26f4d4a39c16559f5ef2bbdd380adc923fda",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/skills/setup-benny/SKILL.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/skills/triage-issue-reports/SKILL.md",
@@ -122,7 +150,9 @@
       "type": "blob",
       "blob": "d691672d00fb8f8f07fc17290d00ae49d1fd119b",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/skills/triage-issue-reports/SKILL.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/skills/triage-issue-reports/references/routing.example.md",
@@ -130,7 +160,9 @@
       "type": "blob",
       "blob": "d71aea768c7d9452270ca4f11091a47e5750038c",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/skills/triage-issue-reports/references/routing.example.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/templates/configuration.example.yaml",
@@ -138,7 +170,9 @@
       "type": "blob",
       "blob": "8616f5fcced0ac57964467dd537a6ba80560a271",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/templates/configuration.example.yaml",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/templates/reproduce-automation-prompt.md",
@@ -146,7 +180,9 @@
       "type": "blob",
       "blob": "5c66c922d69f7323d0c78461480baaf45d7b1284",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/templates/reproduce-automation-prompt.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "automations/benny/templates/triage-automation-prompt.md",
@@ -154,7 +190,9 @@
       "type": "blob",
       "blob": "939e5e15c09f57d17cee00c9ed58b3679a268e0f",
       "checkpoint_disposition": "unchanged",
-      "review_area": "optional dormant automation; explicit capability review"
+      "review_area": "optional dormant automation; explicit capability review",
+      "final_path": "automations/benny/templates/triage-automation-prompt.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/01-setup.md",
@@ -162,7 +200,9 @@
       "type": "blob",
       "blob": "1e602f61c81eb1902150b849682b92b8e583fa7c",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/01-setup.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/02-poteto-mode.md",
@@ -170,7 +210,9 @@
       "type": "blob",
       "blob": "403cbe8cc9dbc5204c6f9399abcced228f8e76f7",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/02-poteto-mode.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/03-understand.md",
@@ -178,7 +220,9 @@
       "type": "blob",
       "blob": "af985988c2ac9babbabf6e9b4447c2f22a346ee7",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/03-understand.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/04-design.md",
@@ -186,7 +230,9 @@
       "type": "blob",
       "blob": "681d39cff22438b4feb3d40a8d97017af026bc3d",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/04-design.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/05-build-and-clean.md",
@@ -194,7 +240,9 @@
       "type": "blob",
       "blob": "c38bc44a39fe5e6ace2cd228f631c7eb57ecccf3",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/05-build-and-clean.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/06-verify-and-ship.md",
@@ -202,7 +250,9 @@
       "type": "blob",
       "blob": "d96c76612c647bfd33270d510440991946c508ed",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/06-verify-and-ship.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/07-overnight.md",
@@ -210,7 +260,9 @@
       "type": "blob",
       "blob": "9ff66b7706041179ff3661213939a961eb196212",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/07-overnight.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/08-principles.md",
@@ -218,7 +270,9 @@
       "type": "blob",
       "blob": "be1102d678a9748b396f829e29fb3dfdd60ba205",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/08-principles.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/09-make-it-yours.md",
@@ -226,7 +280,9 @@
       "type": "blob",
       "blob": "6723069b5108f586575fe5353272ee6567a49b02",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/09-make-it-yours.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/10-recipes-and-pitfalls.md",
@@ -234,7 +290,9 @@
       "type": "blob",
       "blob": "da0af5e6f7984d24818ef1cd28f518d0014da788",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/10-recipes-and-pitfalls.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/README.md",
@@ -242,7 +300,9 @@
       "type": "blob",
       "blob": "b8b1b079456d6f2b2c536937d21180ba5c21f733",
       "checkpoint_disposition": "unchanged",
-      "review_area": "PR2 public branding; retain original attribution"
+      "review_area": "PR2 public branding; retain original attribution",
+      "final_path": "docs/guide/README.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/images/design.jpg",
@@ -250,7 +310,9 @@
       "type": "blob",
       "blob": "f86909437f8b5a83da3cba7bc35a018c9d4887c8",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/images/design.jpg",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/images/overnight.jpg",
@@ -258,7 +320,9 @@
       "type": "blob",
       "blob": "d64e1c63066c9f088da909160f5e136049e9a512",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/images/overnight.jpg",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/images/recipes.jpg",
@@ -266,7 +330,9 @@
       "type": "blob",
       "blob": "69fe992fdb9fb8e7baacc144ea140f9c93b262fb",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/images/recipes.jpg",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/images/router.jpg",
@@ -274,7 +340,9 @@
       "type": "blob",
       "blob": "c8fba6a266505caf406d5185d7a4cc6e34be98a4",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/images/router.jpg",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/images/understanding.jpg",
@@ -282,7 +350,9 @@
       "type": "blob",
       "blob": "bb1b1ac15dd11da9ad047d203049a1a24abb2b46",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/images/understanding.jpg",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "docs/guide/images/verification.jpg",
@@ -290,15 +360,19 @@
       "type": "blob",
       "blob": "a252ae0b5e14cb6fcef2e3b806bbd66316242446",
       "checkpoint_disposition": "unchanged",
-      "review_area": "host-specific documentation and support claims"
+      "review_area": "host-specific documentation and support claims",
+      "final_path": "docs/guide/images/verification.jpg",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/architect/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "afa6eead878d2a7b8d22b8eb99e6cf0c6ee0ad69",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/architect/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/architect/references/design-red-flags.md",
@@ -306,7 +380,9 @@
       "type": "blob",
       "blob": "32cb24083f308fd67ab4c431b44e1d7d3563435a",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/architect/references/design-red-flags.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/architect/references/rationale-template.md",
@@ -314,7 +390,9 @@
       "type": "blob",
       "blob": "a10f77f59510c532cd909faaf3bfeee5ffbfd588",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/architect/references/rationale-template.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/architect/references/runner-prompt.md",
@@ -322,47 +400,59 @@
       "type": "blob",
       "blob": "580ec47a5df4259a6a9ace5c452e33092053bb90",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/architect/references/runner-prompt.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/arena/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "e50356e2f97608dbb48d9c1cd75af6d70b3f7059",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/arena/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/automate-me/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "cd3636e9a53c7c782cf15254204dccfc854086b5",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/automate-me/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/blast-radius/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "1713b283d477530be64e925ede2bdbe5ce2d6e31",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/blast-radius/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/bro/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "b1701b778639c08bfc306291d70170c525c66a68",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/bro/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/create-verification-skill/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "f869e26122991252373d5b8f6357e5b9ff195a00",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/create-verification-skill/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/create-verification-skill/references/feature-map-example/README.md",
@@ -370,7 +460,9 @@
       "type": "blob",
       "blob": "fb64570cfab3bbe672fe80925651933ebd57aa33",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/create-verification-skill/references/feature-map-example/README.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/create-verification-skill/references/feature-map-example/create-note.md",
@@ -378,7 +470,9 @@
       "type": "blob",
       "blob": "21357566b69223a503d6780a04fb90ce540eae22",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/create-verification-skill/references/feature-map-example/create-note.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/create-verification-skill/references/feature-map-example/search.md",
@@ -386,23 +480,29 @@
       "type": "blob",
       "blob": "1f8e57d3aaf19cf27a9464d55fa72e46bcbc8b0f",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/create-verification-skill/references/feature-map-example/search.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/figure-it-out/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "fbf3fb122cab127d71d3c41e84711e61cc5dec4c",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/figure-it-out/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/how/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "cd22fff659f14822ad2f485f711a355b6da0668d",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/how/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/how/references/explainer-prompt.md",
@@ -410,7 +510,9 @@
       "type": "blob",
       "blob": "3a36fb6736c5b74ac2774350841e332a019dec94",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/how/references/explainer-prompt.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/how/references/explorer-prompt.md",
@@ -418,15 +520,19 @@
       "type": "blob",
       "blob": "9b4b0594bfd779015616e9d280369aba939583b4",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/how/references/explorer-prompt.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/interrogate/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "bd82e5b179f186e1cd7913dd112db9f8b07b4846",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/interrogate/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/interrogate/references/code-quality-review.md",
@@ -434,7 +540,9 @@
       "type": "blob",
       "blob": "16581250d81044c7e80fe234c4970a3f7b7fc98a",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/interrogate/references/code-quality-review.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/interrogate/references/lead-judgment.md",
@@ -442,7 +550,9 @@
       "type": "blob",
       "blob": "5ce526097fdd3dfeaf4cd3b126a3f486c3ee36ae",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/interrogate/references/lead-judgment.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/interrogate/references/reviewer-prompt.md",
@@ -450,7 +560,9 @@
       "type": "blob",
       "blob": "13a252b2c3cd18522d4c8dc39a7030477037b249",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/interrogate/references/reviewer-prompt.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/interrogate/references/rubric.md",
@@ -458,39 +570,49 @@
       "type": "blob",
       "blob": "2d92f1b83e13be03fb10f20cba12639a1406a2da",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/interrogate/references/rubric.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/maintain-verification-skill/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "a2680b91fead45a0b4963d8c367a854956bea59d",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/maintain-verification-skill/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/make-bot-ui/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "285df7569758a70e62e9f3596a1f829a5b6ba80e",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/make-bot-ui/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/no-comments/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "3b3e76295a7ad66806dcc683e4de92fb25690f8b",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/no-comments/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/poteto-mode/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "f8ddcae379007d61aefcae39b18bd836a488ee21",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/poteto-mode/playbooks/authoring-a-skill.md",
@@ -498,7 +620,9 @@
       "type": "blob",
       "blob": "8c5a55a44f5e95bba92f652da0ac87e941c49538",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/authoring-a-skill.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/autonomous-run.md",
@@ -506,7 +630,9 @@
       "type": "blob",
       "blob": "12c3a7d84effcacf3550cb893be67498d7b28a4a",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/autonomous-run.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/autopilot-full.md",
@@ -514,7 +640,9 @@
       "type": "blob",
       "blob": "e92be88a8dfcb0a1f2745e0da7af42d31f1d6606",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/autopilot-full.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/autopilot-stack.md",
@@ -522,7 +650,9 @@
       "type": "blob",
       "blob": "810a70fff72ae49a9387b5ea41dcb13f890c83c0",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/autopilot-stack.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/babysit.md",
@@ -530,7 +660,9 @@
       "type": "blob",
       "blob": "683cf0ba889789cbe2d880fce667c75349f9ed12",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/babysit.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/bug-fix.md",
@@ -538,7 +670,9 @@
       "type": "blob",
       "blob": "eeebc42b7477d435d8ac61d631d84822f908f59c",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/bug-fix.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/eval.md",
@@ -546,7 +680,9 @@
       "type": "blob",
       "blob": "3dae34e2ef0cbdd9bafa5ab372da5ea143d48452",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/eval.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/feature.md",
@@ -554,7 +690,9 @@
       "type": "blob",
       "blob": "79a6bbbe0ce61c3b5ef9af1ee8e3ccdb0557edc6",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/feature.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/hillclimb.md",
@@ -562,7 +700,9 @@
       "type": "blob",
       "blob": "582555e826675068ceaea08e6134a44ba0ea4511",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/hillclimb.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/investigation.md",
@@ -570,7 +710,9 @@
       "type": "blob",
       "blob": "cd119f04f23e0b7acb3f8cc5ba13ce4ab7aa6c7d",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/investigation.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/multi-phase-plan.md",
@@ -578,7 +720,9 @@
       "type": "blob",
       "blob": "fe006110f6005dcdb746d891e7901a1734a75538",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/multi-phase-plan.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/opening-a-pr.md",
@@ -586,7 +730,9 @@
       "type": "blob",
       "blob": "626f376bd64e2e7b04c2575cb8b8f4ba70a6078d",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/opening-a-pr.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/orchestrate.md",
@@ -594,7 +740,9 @@
       "type": "blob",
       "blob": "d5b6d008026ff0177f52e22a6fb4b2edae5c87e2",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/orchestrate.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/pause-safely.md",
@@ -602,7 +750,9 @@
       "type": "blob",
       "blob": "9d1c5f8303976fff40de099f7f28185909430c11",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/pause-safely.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/perf-issue.md",
@@ -610,7 +760,9 @@
       "type": "blob",
       "blob": "688d483d4d4a6c58efa515558c822e11f621540f",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/perf-issue.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/prototype.md",
@@ -618,7 +770,9 @@
       "type": "blob",
       "blob": "18bedc7e9249d180f9198d5b4b13e3817d41d281",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/prototype.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/refactoring.md",
@@ -626,7 +780,9 @@
       "type": "blob",
       "blob": "df2a863b531906c64f92b9f9d8feb62f8c7a8665",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/refactoring.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/runtime-forensics.md",
@@ -634,7 +790,9 @@
       "type": "blob",
       "blob": "ba659bfe1c4c2f956f3285974bfdc941120f9948",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/runtime-forensics.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/session-pickup.md",
@@ -642,7 +800,9 @@
       "type": "blob",
       "blob": "9b2ed06e0ff8b01bf03b7a0d6a4cbb8ba3a46720",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/session-pickup.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/shipping.md",
@@ -650,7 +810,9 @@
       "type": "blob",
       "blob": "0f1d41f189222b991734015926a3b22607e1b92f",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/shipping.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/trace-forensics.md",
@@ -658,7 +820,9 @@
       "type": "blob",
       "blob": "48ed6b2f690215027eda96a1897ed98212bbd07a",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/trace-forensics.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/visual-parity.md",
@@ -666,7 +830,9 @@
       "type": "blob",
       "blob": "248830ec74a593fc22143a842026388f92f1b9f4",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/visual-parity.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/playbooks/worktree-cleanup.md",
@@ -674,7 +840,9 @@
       "type": "blob",
       "blob": "39c9ef9f368ac63b0e4245503302a4c174e846d6",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/playbooks/worktree-cleanup.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/references/bugbot-triage.md",
@@ -682,7 +850,9 @@
       "type": "blob",
       "blob": "b2fc7d35712783707607cf2f39752885c8d5105c",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/poteto-mode/references/bugbot-triage.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/bootstrap.ts",
@@ -690,7 +860,9 @@
       "type": "blob",
       "blob": "d9c63e2007449a80000abe75ecaf7f2a0bd5826b",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/bootstrap.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/bun.lock",
@@ -698,7 +870,9 @@
       "type": "blob",
       "blob": "65f0c662f300a0f72b319ca93ea18f56219c2581",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/bun.lock",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/check-plan.mjs",
@@ -706,7 +880,9 @@
       "type": "blob",
       "blob": "6c07f4e903d10332702a2ac4602ada9273e71609",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/check-plan.mjs",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/orch/orch.test.ts",
@@ -714,7 +890,9 @@
       "type": "blob",
       "blob": "9c234de724991083b4644e906a5f1358f8ef8dcc",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/orch/orch.test.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/orch/orch.ts",
@@ -722,7 +900,9 @@
       "type": "blob",
       "blob": "219ac17bd8805b45140eca7c429834be9ded1b7d",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/orch/orch.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/orch/store.ts",
@@ -730,7 +910,9 @@
       "type": "blob",
       "blob": "5e6c602fb670a6b5598977f5bf85d717cf797ef7",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/orch/store.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/package.json",
@@ -738,7 +920,9 @@
       "type": "blob",
       "blob": "8a3dfe27c2d0221a786e1ce61963d51c55260725",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/package.json",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/cli.test.ts",
@@ -746,7 +930,9 @@
       "type": "blob",
       "blob": "0656b413e6c180858ca42981105944c45caf9dca",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/cli.test.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/cli.ts",
@@ -754,7 +940,9 @@
       "type": "blob",
       "blob": "ec8a2f27c5ac24866b699e6395e7d1f32e595068",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/cli.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/fakes.test-helper.ts",
@@ -762,7 +950,9 @@
       "type": "blob",
       "blob": "2312522cd7399334115a5f39fd6438aab7fc5aa5",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/fakes.test-helper.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/github.test.ts",
@@ -770,7 +960,9 @@
       "type": "blob",
       "blob": "87f4048f08a63a54975c4ef2de8065375e751683",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/github.test.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/github.ts",
@@ -778,7 +970,9 @@
       "type": "blob",
       "blob": "79bc06fb682c5d99de7d48338b0a6ecd27a518da",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/github.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/policy.test.ts",
@@ -786,7 +980,9 @@
       "type": "blob",
       "blob": "0620ddedde46da8e763ab2a55ebceaad2aa6d0a7",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/policy.test.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/policy.ts",
@@ -794,7 +990,9 @@
       "type": "blob",
       "blob": "4665be37e8f9afff1c9e1f5dd60d98e0d70c8c6c",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/policy.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/render.ts",
@@ -802,7 +1000,9 @@
       "type": "blob",
       "blob": "0e935839357335f24ab1bbc193d761495646ea99",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/render.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/tsconfig.json",
@@ -810,7 +1010,9 @@
       "type": "blob",
       "blob": "477af90b05cbd24fcf974fd73cf331d5ac7379cc",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/tsconfig.json",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/types.compile.ts",
@@ -818,7 +1020,9 @@
       "type": "blob",
       "blob": "1b53279c7f3e5da55703ed17d6ad0616254c5751",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/types.compile.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/types.ts",
@@ -826,7 +1030,9 @@
       "type": "blob",
       "blob": "b67144e0d757e0b61ff079f981ced0a98555ea9d",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/types.ts",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/watch-pr/watch-pr",
@@ -834,7 +1040,9 @@
       "type": "blob",
       "blob": "99807d577c3b006cfe6ee9e149cf2914bfd4afd6",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/watch-pr/watch-pr",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/poteto-mode/scripts/worktree-audit.sh",
@@ -842,207 +1050,259 @@
       "type": "blob",
       "blob": "b9af08160032aeb17143248f2a3648e98f5a75b3",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/poteto-mode/scripts/worktree-audit.sh",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/principle-attack-the-premise/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "f9785ff9fdcf37d1c689e4468da7d611f3b76d4b",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-attack-the-premise/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-boundary-discipline/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "dfe9a6fb0e5acd6ae43a41437ee0951adfe839cb",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-boundary-discipline/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-build-the-lever/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "277189a10b00fddc7cbb63fcf2323c7341abb0df",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-build-the-lever/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-encode-lessons-in-structure/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "df9cd5ff2fb3c18267349cc6aecd8121848ef834",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-encode-lessons-in-structure/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-exhaust-the-design-space/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "85dd16f1312f3427e2dddcfc8e7deb89e2555bb3",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-exhaust-the-design-space/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-experience-first/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "5ea51741302cf3af4cc0b90ec70815bd3208dbf2",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-experience-first/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-fix-root-causes/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "7e5a419aeec97b4076fa517865013677428a9fa3",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-fix-root-causes/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-foundational-thinking/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "19cc6c0eaa6fcbc2863fb73d1d25ca196c6a46e0",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-foundational-thinking/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-guard-the-context-window/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "c4db544909b26981c45eed9caa6591d32885f841",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-guard-the-context-window/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-laziness-protocol/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "e5bc77e62aa96ae13e482a84df61b3c711c5d828",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-laziness-protocol/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-make-operations-idempotent/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "a0834247ca99b09c11441747717a8034d4c22d7c",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-make-operations-idempotent/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "06c7cfd87becc62d614d0af075b792f8ec6eb21d",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-minimize-reader-load/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "64541d963123e344078d82fd3977e857e76129df",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-minimize-reader-load/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-model-the-domain/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "e1d664a19243c90a84e5e7a816e9e05146c88720",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-model-the-domain/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-never-block-on-the-human/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "11f08b6ef1fd93a3b3e47c57eb84716dc9acbff9",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-never-block-on-the-human/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-outcome-oriented-execution/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "c49be0bc74783f0dee013101365ae09b2abb48a2",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-outcome-oriented-execution/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-prove-it-works/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "5dc14a3b06f9d579e5c17cd8a7242f432ddb3125",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-prove-it-works/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-redesign-from-first-principles/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "090a4325f43a96080cce3895f0e932b62c39146a",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-redesign-from-first-principles/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-separate-before-serializing-shared-state/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "ff93b4a2032c08e2232992a9a24f2891ee14e58f",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-separate-before-serializing-shared-state/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-sequence-verifiable-units/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "986371260ebccd9a5a6818c9561e88c1d270d0ee",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-sequence-verifiable-units/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-subtract-before-you-add/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "d28770cf47a5798d0250a25ad494aedfecad154e",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-subtract-before-you-add/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-test-behavior-not-implementation/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "42de6f8f7cab01b9f67aa28bd59b128f7574fbab",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-test-behavior-not-implementation/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/principle-type-system-discipline/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "6030f171bee0d1902cf7ca91f06225e09f0f5433",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/principle-type-system-discipline/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/recall/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "a70062a3f89a8d68b3391bc71fc4c6cc2dfcf6a4",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/recall/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/reflect/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "cb270acc507aeaeab7c37db11fc8130cbb2f93f4",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/reflect/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/reflect/references/divergent-reviewer.md",
@@ -1050,7 +1310,9 @@
       "type": "blob",
       "blob": "de95be3b9cc9c11052596249336dcc328473eb26",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/reflect/references/divergent-reviewer.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/reflect/references/judgment-reviewer.md",
@@ -1058,7 +1320,9 @@
       "type": "blob",
       "blob": "222f02b1c3c6eb3e700fa09a71bad108807d3485",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/reflect/references/judgment-reviewer.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/reflect/references/synthesizer.md",
@@ -1066,7 +1330,9 @@
       "type": "blob",
       "blob": "d0e78195186c0dd6cfdc87ba19402ea8cd2aa385",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/reflect/references/synthesizer.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/reflect/references/tooling-reviewer.md",
@@ -1074,23 +1340,29 @@
       "type": "blob",
       "blob": "a37e2009d6ef08f535df87e020e52426c6a5fa33",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/reflect/references/tooling-reviewer.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/setup-pstack/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "1009e73c6116c8f6c24b5870c8f0600ae144b631",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/setup-pstack/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/show-me-your-work/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "d350a150c36ca16382b4aa6d4196b39e67454ad1",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/show-me-your-work/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/show-me-your-work/references/decision-log-template.tsv",
@@ -1098,7 +1370,9 @@
       "type": "blob",
       "blob": "db220376ecb8c582a6a4f6575a8f26469603a38d",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/show-me-your-work/references/decision-log-template.tsv",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/show-me-your-work/scripts/log.sh",
@@ -1106,47 +1380,59 @@
       "type": "blob",
       "blob": "052e53b7e1090579eaec1d3d59f7a1cd2f2e452a",
       "checkpoint_disposition": "unchanged",
-      "review_area": "runtime/dependency/permission compatibility"
+      "review_area": "runtime/dependency/permission compatibility",
+      "final_path": "skills/show-me-your-work/scripts/log.sh",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/swarm/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "a63e09eda94558aa8c7ae6d0653951838a3abd3f",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/swarm/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/tdd/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "ca6f24c963001d9d518db2936dfe3d12f29b4e94",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/tdd/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/teach/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "25369f3f554ed6b5826340ae3eee688fac0bda80",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/teach/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/technical-writing/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "1cd44cf2595a5caeda1f702aacd4f8a25aa8166a",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/technical-writing/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/typescript-best-practices/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "2c0279d9a5f800192605e47b55cae4e75a17ec27",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/typescript-best-practices/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/typescript-best-practices/references/patterns.md",
@@ -1154,23 +1440,29 @@
       "type": "blob",
       "blob": "f44d22ffe9130c5340d55a2fa57028c6959479cb",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/typescript-best-practices/references/patterns.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/unslop/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "229a090708710c36caa0017f8d33e90880dc6846",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/unslop/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/why/SKILL.md",
       "mode": "100644",
       "type": "blob",
       "blob": "daac2c734a8f8fe43d30663054d694066f2b41ec",
-      "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "checkpoint_disposition": "adapted",
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/SKILL.md",
+      "reason": "Normalize name and supported Codex frontmatter; invocation policy moves to agents/openai.yaml. Original skill body unchanged. Cursor mode/reminder and path-scoping behavior still require runtime implementation."
     },
     {
       "path": "skills/why/references/epistemics.md",
@@ -1178,7 +1470,9 @@
       "type": "blob",
       "blob": "3732bf6881b60d1337fa3498574452a85d33ba30",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/epistemics.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/why/references/investigator-prompt.md",
@@ -1186,7 +1480,9 @@
       "type": "blob",
       "blob": "3b56af44c589833508f4605cfdd4432b39a16739",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/investigator-prompt.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/why/references/source-playbook.md",
@@ -1194,7 +1490,9 @@
       "type": "blob",
       "blob": "aa3d877cd539763ff05e266ae0a02dd811441e2b",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/source-playbook.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/why/references/sources/code-archaeology.md",
@@ -1202,7 +1500,9 @@
       "type": "blob",
       "blob": "32d5f97f8d2d3974c668f5f0392737b7e8e25afd",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/sources/code-archaeology.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/why/references/sources/databricks.md",
@@ -1210,7 +1510,9 @@
       "type": "blob",
       "blob": "2770763ff5d0d1ad004abcc9a0138c9537ad1978",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/sources/databricks.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/why/references/sources/datadog.md",
@@ -1218,7 +1520,9 @@
       "type": "blob",
       "blob": "d8363b1c1d1c7eadb15d47abd83bf70537c39620",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/sources/datadog.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/why/references/sources/incident-postmortem.md",
@@ -1226,7 +1530,9 @@
       "type": "blob",
       "blob": "450d6e52f25b1b41f741cb3e9c93e1c74ef858b4",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/sources/incident-postmortem.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/why/references/sources/linear.md",
@@ -1234,7 +1540,9 @@
       "type": "blob",
       "blob": "899c643c078f322afe6ae0ef78a007f8ffd356c1",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/sources/linear.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/why/references/sources/notion.md",
@@ -1242,7 +1550,9 @@
       "type": "blob",
       "blob": "d16230a4105fd1dacf870da0950a38faeb9381e6",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/sources/notion.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/why/references/sources/sentry.md",
@@ -1250,7 +1560,9 @@
       "type": "blob",
       "blob": "2b7cf6f3098ee868547dc4e69efacfe9c255246b",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/sources/sentry.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/why/references/sources/slack.md",
@@ -1258,7 +1570,9 @@
       "type": "blob",
       "blob": "863a527d60e4e055e680834ef8098ea04273a1ae",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/sources/slack.md",
+      "reason": "Unchanged at this implementation checkpoint."
     },
     {
       "path": "skills/why/references/synthesizer-prompt.md",
@@ -1266,7 +1580,9 @@
       "type": "blob",
       "blob": "9707dfcc2fc57ea126484a433c5cd9ee4d400ef3",
       "checkpoint_disposition": "unchanged",
-      "review_area": "skill metadata, tool mapping, resources and workflow parity"
+      "review_area": "skill metadata, tool mapping, resources and workflow parity",
+      "final_path": "skills/why/references/synthesizer-prompt.md",
+      "reason": "Unchanged at this implementation checkpoint."
     }
   ]
 }

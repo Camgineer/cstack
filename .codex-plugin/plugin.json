@@ -1,0 +1,21 @@
+{
+  "name": "cstack",
+  "version": "0.15.5-codex.0",
+  "description": "PStack engineering workflows adapted for local Codex CLI and Desktop.",
+  "author": {
+    "name": "Camgineer; upstream PStack by Lauren Tan (poteto)"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "CStack",
+    "shortDescription": "PStack engineering workflows for Codex.",
+    "longDescription": "A Codex adaptation of PStack by poteto. Development preview; runtime compatibility validation is in progress.",
+    "developerName": "Camgineer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Use CStack to understand this project."
+  },
+  "homepage": "https://github.com/Camgineer/cstack",
+  "repository": "https://github.com/Camgineer/cstack",
+  "license": "MIT"
+}

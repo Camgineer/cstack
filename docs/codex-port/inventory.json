@@ -42,11 +42,11 @@
       "mode": "100644",
       "type": "blob",
       "blob": "b7cdef8aeb15da88a8f9cdd82904d884552395b7",
-      "checkpoint_disposition": "unchanged",
+      "checkpoint_disposition": "adapted",
       "review_area": "PR2 public branding; retain original attribution",
       "final_path": "README.md",
-      "reason": "Retained unchanged from the exact upstream import.",
-      "ported_blob": "b7cdef8aeb15da88a8f9cdd82904d884552395b7"
+      "reason": "Concise CStack branding and original PStack attribution, reviewed separately and merged by the user in PR2.",
+      "ported_blob": "fc1be9a0ef9b7cf068a26f1a3bf2a5e73bc39d54"
     },
     {
       "path": "agents/comment-sicko.md",
@@ -328,11 +328,11 @@
       "mode": "100644",
       "type": "blob",
       "blob": "b8b1b079456d6f2b2c536937d21180ba5c21f733",
-      "checkpoint_disposition": "unchanged",
+      "checkpoint_disposition": "adapted",
       "review_area": "PR2 public branding; retain original attribution",
       "final_path": "docs/guide/README.md",
-      "reason": "Retained unchanged from the exact upstream import.",
-      "ported_blob": "b8b1b079456d6f2b2c536937d21180ba5c21f733"
+      "reason": "Concise CStack branding and original PStack attribution, reviewed separately and merged by the user in PR2.",
+      "ported_blob": "87bd2853e5985e2621f089487953ce5da7b6d345"
     },
     {
       "path": "docs/guide/images/design.jpg",

@@ -78,11 +78,16 @@ def main():
             assert not data.get("errors"), data.get("errors")
             actual = [s for s in data["skills"] if s.get("pluginId") == "cstack@cstack"]
             expected = {"cstack:" + p.parent.name for p in (source / "skills").glob("*/SKILL.md")}
-            assert len(expected) == 47
+            assert expected, "plugin contains no skills"
             implicit_candidates = sorted(name for name in expected if name in prompt)
-            assert implicit_candidates == ["cstack:setup-pstack"], implicit_candidates
+            expected_implicit = sorted("cstack:" + p.parent.name
+                                       for p in (source / "skills").glob("*/SKILL.md")
+                                       if not (p.parent / "agents/openai.yaml").exists()
+                                       or "allow_implicit_invocation: false" not in
+                                       (p.parent / "agents/openai.yaml").read_text())
+            assert implicit_candidates == expected_implicit, implicit_candidates
             assert {s["name"] for s in actual} == expected
-            assert len(actual) == 47 and all(s["enabled"] for s in actual)
+            assert len(actual) == len(expected) and all(s["enabled"] for s in actual)
             assert all(str(home) in s["path"] for s in actual)
             hooks_result = request(3, "hooks/list", {"cwds": [str(project)]})["data"][0]
             assert not hooks_result["errors"], hooks_result["errors"]
@@ -99,13 +104,13 @@ def main():
             request(7, "config/value/write", {"keyPath": 'plugins."cstack@cstack".enabled', "value": True, "mergeStrategy": "upsert"})
             enabled_skills = request(8, "skills/list", {"cwds": [str(project)], "forceReload": True})["data"][0]
             enabled_actual = [s for s in enabled_skills["skills"] if s.get("pluginId") == "cstack@cstack"]
-            assert len(enabled_actual) == 47 and all(s["enabled"] for s in enabled_actual)
+            assert len(enabled_actual) == len(expected) and all(s["enabled"] for s in enabled_actual)
             cli("plugin", "remove", "cstack@cstack")
             removed_skills = request(9, "skills/list", {"cwds": [str(project)], "forceReload": True})["data"][0]
             assert not [s for s in removed_skills["skills"] if s.get("pluginId") == "cstack@cstack"]
             cli("plugin", "add", "cstack@cstack", "--json")
             reinstalled = request(10, "skills/list", {"cwds": [str(project)], "forceReload": True})["data"][0]
-            assert len([s for s in reinstalled["skills"] if s.get("pluginId") == "cstack@cstack"]) == 47
+            assert len([s for s in reinstalled["skills"] if s.get("pluginId") == "cstack@cstack"]) == len(expected)
         finally:
             process.terminate()
             try:

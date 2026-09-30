@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 BASELINE = "c31f7ace991843f5576398ad025969465251192c"
 TREE = "975600f2f90dc6f755d58cccdccee27f950edcd2"
 
@@ -32,7 +32,7 @@ def main():
     if git("rev-parse", f"{BASELINE}^{{tree}}").decode().strip() != TREE:
         raise SystemExit("FAIL: baseline tree differs from the upstream PStack tree")
     baseline, current = entries(BASELINE), entries("HEAD")
-    inventory = json.loads((ROOT / "docs/codex-port/inventory.json").read_text())
+    inventory = json.loads((ROOT / "upstream/pstack-initial-inventory.json").read_text())
     locked = {row["path"]: {key: row[key] for key in ("mode", "type", "blob")}
               for row in inventory["files"]}
     if locked != baseline or len(baseline) != 158:

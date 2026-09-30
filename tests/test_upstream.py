@@ -114,6 +114,16 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(self.git(self.repo, 'branch', '--show-current').stdout, before)
         self.assertEqual(self.pin()['commit'], self.old)
 
+    def test_clean_paused_operation_detected_from_outside_checkout(self):
+        marker = self.repo / self.git(self.repo, 'rev-parse', '--git-path', 'CHERRY_PICK_HEAD').stdout.strip()
+        marker.write_text(self.initial + '\n')
+        self.assertEqual(self.git(self.repo, 'status', '--porcelain').stdout, '')
+        result = self.run_update('prepare', self.old)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn('existing Git operation', result.stderr)
+        self.assertTrue(marker.exists())
+        self.assertEqual(self.git(self.repo, 'rev-parse', 'HEAD').stdout.strip(), self.initial)
+
     def test_bad_pin_and_symbolic_ref_rejected(self):
         self.assertEqual(self.run_update('diff', 'main').returncode, 2)
         self.lock['tree'] = '0' * 40

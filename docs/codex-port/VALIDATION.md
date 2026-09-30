@@ -10,6 +10,7 @@
 | Official validators | Plugin and all 47 exposed skills pass. |
 | Standalone CLI 0.156.0 | Official isolated marketplace/add and app-server discovery: 47 enabled skills, zero errors, two untrusted hooks; only setup is exposed for implicit invocation. |
 | Desktop bundled CLI 0.159.2 | Same isolated discovery result. This is runtime coverage, not Desktop UI verification. |
+| Existing-login native delegation | Desktop bundled CLI 0.159.2 reused existing ChatGPT authentication in place with `--ignore-user-config`, plugins/hooks disabled, and read-only sandbox. One native child completed; parent thread=session, child thread differs and shares the root session. No credential copy, plugin install, or config/trust change. This is not plugin/persona-registration, hook, compaction, or GUI coverage. |
 | Python behavior tests | 19 pass: owned/idempotent persona setup; edited, duplicate, nested, and symlinked profile protection; model/effort validation; primary on/off/status receipts, quoted-content non-transitions, root/child identity isolation, stale state and opt-out tombstones, compaction restoration using synthetic events, and lock recovery after process death; helper startup without automatic dependency installation; worktree paths with spaces. |
 | Existing Bun helper suite | 52 pass, zero failures, 206 assertions; TypeScript strict typecheck passes. Dependencies were installed explicitly in a scratch copy with package lifecycle scripts disabled. |
 | Hook trust | Both hosts report the two hooks as `untrusted`; no trust records were written or bypass flags used. |
@@ -65,3 +66,6 @@ Do not install this branch into the production Desktop profile. Use only an appr
 2. Confirm CStack's 47 skills in the selector. Review only its SessionStart/UserPromptSubmit hooks through the normal hook UI, if separately approved.
 3. Ask to enable Poteto Mode naturally, verify the setter receipt, then ask to turn it off. Test a quoted activation example; it must not change stored mode.
 4. Repeat on/off across resume and compaction; check a harmless native-persona task and child isolation. Record actual results and app/runtime versions. Keep the PR unmerged and production untouched until its remaining gates are accepted.
+
+
+Existing-login limitation: `--ephemeral` could authenticate and read the contract, but native child creation failed because the parent had no saved rollout. Repeating as a normal disposable test conversation passed. This leaves a test history record in the existing Codex home, not a configuration or access change. An external `selectedCapabilityRoots` plugin route exists, but its executor currently filters ordinary command hooks, so it cannot substitute for this plugin's trusted lifecycle canaries.

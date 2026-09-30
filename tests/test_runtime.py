@@ -218,6 +218,14 @@ class ModeState(unittest.TestCase):
         self.assertFalse(self.control("off")["active"])
         self.assertEqual(self.call(source="resume")["systemMessage"], "CStack mode: inactive")
 
+    def test_status_and_child_rejection_do_not_acquire_write_lock(self):
+        from unittest.mock import patch
+        with patch.object(mode, "locked", side_effect=AssertionError("write lock requested")):
+            self.assertFalse(self.control("status")["active"])
+            for action in ("on", "off", "status"):
+                with self.assertRaisesRegex(ValueError, "parent thread"):
+                    self.control(action, CODEX_THREAD_ID="child-test")
+
     def test_cli_missing_identity_returns_failure_without_write(self):
         before = self.receipt.read_bytes()
         result = subprocess.run([os.sys.executable, str(ROOT / "scripts/mode_state.py"), "on",

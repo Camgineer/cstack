@@ -92,6 +92,20 @@ def main():
             configuration = request(4, "config/read", {"cwd": str(project), "includeLayers": True})
             disabled = [layer.get("disabledReason") for layer in configuration.get("layers", [])
                         if layer.get("disabledReason")]
+            disabled_write = request(5, "config/value/write", {"keyPath": 'plugins."cstack@cstack".enabled', "value": False, "mergeStrategy": "upsert"})
+            disabled_skills = request(6, "skills/list", {"cwds": [str(project)], "forceReload": True})["data"][0]
+            disabled_actual = [s for s in disabled_skills["skills"] if s.get("pluginId") == "cstack@cstack"]
+            assert not any(s["enabled"] for s in disabled_actual), disabled_actual
+            request(7, "config/value/write", {"keyPath": 'plugins."cstack@cstack".enabled', "value": True, "mergeStrategy": "upsert"})
+            enabled_skills = request(8, "skills/list", {"cwds": [str(project)], "forceReload": True})["data"][0]
+            enabled_actual = [s for s in enabled_skills["skills"] if s.get("pluginId") == "cstack@cstack"]
+            assert len(enabled_actual) == 47 and all(s["enabled"] for s in enabled_actual)
+            cli("plugin", "remove", "cstack@cstack")
+            removed_skills = request(9, "skills/list", {"cwds": [str(project)], "forceReload": True})["data"][0]
+            assert not [s for s in removed_skills["skills"] if s.get("pluginId") == "cstack@cstack"]
+            cli("plugin", "add", "cstack@cstack", "--json")
+            reinstalled = request(10, "skills/list", {"cwds": [str(project)], "forceReload": True})["data"][0]
+            assert len([s for s in reinstalled["skills"] if s.get("pluginId") == "cstack@cstack"]) == 47
         finally:
             process.terminate()
             try:
@@ -105,6 +119,7 @@ def main():
                           "persona_registration": "requires trusted-project live canary",
                           "disabled_config_layers": disabled,
                           "isolated_home": True, "production_install": False,
+                          "disable_reenable_uninstall_reinstall": "passed",
                           "runtime": cli("--version").strip()}, indent=2))
 
 

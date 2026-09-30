@@ -80,8 +80,8 @@ def control(action, receipt, environment, cwd):
         raise ValueError("unknown mode action")
     path = Path(receipt)
     safe_path(path)
-    with locked(path):
-        state = read_state(path)
+
+    def validate_identity(state):
         session, project, _ = state["identity"]
         thread = environment.get("CODEX_THREAD_ID")
         root_session = environment.get("CODEX_SESSION_ID")
@@ -91,17 +91,26 @@ def control(action, receipt, environment, cwd):
             raise ValueError("receipt belongs to a different session or a parent thread")
         if str(Path(cwd).resolve()) != project:
             raise ValueError("receipt belongs to a different project")
-        current = version()
-        stale = state["version"] != current
-        if action == "on" and stale:
-            raise ValueError("stale receipt; wait for a current trusted hook receipt")
-        if action != "status":
+
+    # Atomic replacement makes unlocked reads complete snapshots. Reject a child
+    # before requesting write access, and keep status genuinely read-only.
+    state = read_state(path)
+    validate_identity(state)
+    current = version()
+    stale = state["version"] != current
+    if action != "status":
+        with locked(path):
+            state = read_state(path)
+            validate_identity(state)
+            stale = state["version"] != current
+            if action == "on" and stale:
+                raise ValueError("stale receipt; wait for a current trusted hook receipt")
             state.update(active=action == "on", version=current)
             write_state(path, state)
             stale = False
-        return {"schema": SCHEMA, "action": action, "active": state["active"] and not stale,
-                "stale": stale, "recorded": action != "status", "receipt": str(path),
-                "live_restoration_verified": False}
+    return {"schema": SCHEMA, "action": action, "active": state["active"] and not stale,
+            "stale": stale, "recorded": action != "status", "receipt": str(path),
+            "live_restoration_verified": False}
 
 
 def handle(payload, data_root):

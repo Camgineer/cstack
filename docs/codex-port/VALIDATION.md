@@ -11,7 +11,7 @@
 | Standalone CLI 0.156.0 | Official isolated marketplace/add and app-server discovery: 47 enabled skills, zero errors, two untrusted hooks; only setup is exposed for implicit invocation. |
 | Desktop bundled CLI 0.159.2 | Same isolated discovery result. This is runtime coverage, not Desktop UI verification. |
 | Existing-login native delegation | Desktop bundled CLI 0.159.2 reused existing ChatGPT authentication in place with `--ignore-user-config`, plugins/hooks disabled, and read-only sandbox. One native child completed; parent thread=session, child thread differs and shares the root session. No credential copy, plugin install, or config/trust change. This is not plugin/persona-registration, hook, compaction, or GUI coverage. |
-| Python behavior tests | 19 pass: owned/idempotent persona setup; edited, duplicate, nested, and symlinked profile protection; model/effort validation; primary on/off/status receipts, quoted-content non-transitions, root/child identity isolation, stale state and opt-out tombstones, compaction restoration using synthetic events, and lock recovery after process death; helper startup without automatic dependency installation; worktree paths with spaces. |
+| Python behavior tests | 20 pass: owned/idempotent persona setup; edited, duplicate, nested, and symlinked profile protection; model/effort validation; primary on/off/status receipts, quoted-content non-transitions, root/child identity isolation, stale state and opt-out tombstones, compaction restoration using synthetic events, and lock recovery after process death; helper startup without automatic dependency installation; worktree paths with spaces. |
 | Existing Bun helper suite | 52 pass, zero failures, 206 assertions; TypeScript strict typecheck passes. Dependencies were installed explicitly in a scratch copy with package lifecycle scripts disabled. |
 | Hook trust | Both hosts report the two hooks as `untrusted`; no trust records were written or bypass flags used. |
 | Project trust | Both hosts' `config/read` explicitly disable the isolated project's local config until it is trusted. Generated persona files do not establish live registration. |
@@ -28,13 +28,15 @@ python3 docs/codex-port/audit_baseline.py
 
 Persona setup requires **Python 3.11+** and checks the version explicitly. The hook uses Python 3.9+ standard library only. Verify the interpreter visible to Desktop before the live hook canary. Discovery does not require Bun; the optional upstream helpers do. Run helper tests in an owned scratch copy after reviewing `package.json` and `bun.lock` and explicitly installing their frozen dependencies.
 
-## Exact remaining approval boundary
+## Approved test scope and remaining validation
 
-Positive native-persona and lifecycle testing needs a dedicated test project trusted through the normal host flow, followed by explicit review/trust of the two hook definitions through `/hooks`. This is a security/trust action, outside the instruction to make no security/access changes. The implementation does not self-approve, write trust hashes, or use bypass flags.
+The user approved normal project and two-hook trust in the two disposable test homes on 2026-09-30, then completed each normal sign-in. Trust was granted through the CLI UI, without bypass flags, credential copies, or changes to production trust.
 
-The smallest exception needed is **normal project and hook trust in a disposable pre-merge test environment only**, after reviewing `hooks/hooks.json` and `scripts/mode_state.py`. Production configuration, production hook trust, installed production plugins, and gateway state remain unchanged. Without that exception, these tests must wait for the user's normal post-merge setup; the PR cannot truthfully claim full pre-merge runtime validation.
+On standalone CLI 0.156.0 and Desktop-bundled CLI 0.159.2, live tests now confirm root hook dispatch, primary-mediated activation, quoted opt-out leaving mode unchanged, manual compaction restoring active state, both named native personas, explicit off, and off-state preservation after restarting the app-server and resuming. Host hook events corroborate the transitions; this is stronger than model self-report. Child shells have distinct thread IDs and share the root session ID.
 
-Desktop additionally needs an approved isolated UI test session. No supported GUI automation harness was established in this environment. Testing its bundled CLI does not replace opening the actual skill selector, reviewing hook trust, and observing the resulting Desktop conversation.
+The initial child negative test hit the sandbox's lock-write restriction before the identity check. The helper now checks identity before locking and keeps status read-only. The corrected live negative test remains in progress. Root on/off writes outside the project can still require normal command approval; trust in a hook does not grant shell commands broad write access.
+
+A separate actual Desktop profile has been launched using verified installed startup support for `CODEX_ELECTRON_USER_DATA_PATH`, a separate `--user-data-dir`, and the isolated `CODEX_HOME`. Its IPC endpoint is inside that test home. GUI skill-selector and conversation confirmation remain pending; bundled CLI evidence does not replace them. No OS Accessibility or Screen Recording permission was granted.
 
 ## Required live canaries
 

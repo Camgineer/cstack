@@ -3,6 +3,9 @@ name: principle-exhaust-the-design-space
 description: Apply when facing a novel UI interaction or architectural decision with no precedent in the codebase. Build 2-3 competing prototypes and compare side by side before committing.
 ---
 
+Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+
+
 # Exhaust the Design Space
 
 When a novel interaction or architectural decision has no established precedent, explore several concrete alternatives before implementation. Building the wrong thing costs more than exploring three options.

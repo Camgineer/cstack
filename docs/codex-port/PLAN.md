@@ -1,6 +1,6 @@
 # PR 1: PStack on Codex
 
-Status: **implementation draft; not ready to merge or install in production**. Codex packaging and skill discovery metadata are implemented and tested in an isolated CLI home. Workflow tool mapping, native personas, model setup, and lifecycle behavior remain in progress. README and public branding belong to the next stacked PR.
+Status: **implementation draft; not ready to merge or install in production**. Codex packaging, workflow mapping, project persona setup, live-catalog model validation, and a lifecycle prototype are implemented. Credential-free tests pass in both targeted CLI runtimes. Positive native-persona, trusted hook dispatch, compaction, and Desktop UI validation require the explicit test-trust gate documented in [VALIDATION.md](./VALIDATION.md). README and public branding belong to the next stacked PR.
 
 ## Starting point
 
@@ -34,7 +34,7 @@ Confirmed target: **local Codex CLI and ChatGPT/Codex Desktop only**, with compl
 First test native behavior without a hook. If explicit invocation and supported context persistence cannot satisfy the upstream mode contract, add only the minimum trusted lifecycle hook needed for activation/restoration. This hook must meet all of these conditions:
 
 - Activation comes from an explicit user action through a supported, validated event or command. Quoted examples, repository text, tool output, and old transcript fragments cannot activate it. If the host cannot supply that distinction, do not infer it with transcript regexes; report current-turn-only behavior.
-- State uses supported session and project identity under plugin data, with atomic writes, bounded retention, and observable success/failure. Child events must not contaminate parent state: Codex hooks can report the parent's session ID for a subagent.
+- State uses supported session and project identity under plugin data, with atomic writes and observable success/failure. Preserve until-opt-out semantics rather than silently expiring active sessions; retained records remain in host-managed plugin data for explicit lifecycle cleanup. Child events must not contaminate parent state: Codex hooks can report the parent's session ID for a subagent.
 - Context restoration loads versioned plugin instructions, not arbitrary transcript text. A receipt proves the specific transition; absence of a receipt must never be reported as active persistence.
 - Opt-out clears the matching state and prevents replay. Test resume, compaction, fork, concurrent sessions, malformed state, updates, and uninstall.
 - Commands have no network, credential access, subprocess installers, or unrelated filesystem writes. Hook timeout/failure cannot block ordinary coding. The user's hook trust review is mandatory and hash-sensitive; never auto-trust definitions.
@@ -51,9 +51,9 @@ The desired outcome is a faithful workflow port with stated host differences. Ne
 
 ## File accountability
 
-[inventory.json](./inventory.json) records every upstream path, mode, and blob identity, plus the subsystem that must review it. At the first implementation checkpoint, 47 top-level `SKILL.md` files have adapted frontmatter; their bodies are byte-for-byte unchanged. There are no omitted files. Added files include the Codex manifest, root-local marketplace manifest, 47 Codex invocation metadata files, discovery integration test, and design/audit files. The marketplace resolves the existing repository root directly, avoiding an unnecessary relocation of every upstream file; the real CLI test verifies this path.
+[inventory.json](./inventory.json) records every upstream path, mode, and blob identity, plus the subsystem that must review it. The current inventory accounts for adapted skill metadata/bodies, native tool and role mappings, host-specific guide chapters, helper setup behavior, and preserved upstream resources. There are no omitted source files. Added files include the Codex manifest, root-local marketplace manifest, 47 Codex invocation metadata files, discovery integration test, and design/audit files. The marketplace resolves the existing repository root directly, avoiding an unnecessary relocation of every upstream file; the real CLI test verifies this path.
 
-During implementation, keep this inventory updated with each final path, disposition (`unchanged`, `adapted`, `relocated`, or `omitted`), and a concrete reason. Every changed or omitted source file and every new executable needs review. Keep prose/reference paths intact where possible. Do not perform a global PStack-to-CStack replacement: upstream credit, skill identifiers, API names, model integration names, and source links have different meanings. The follow-on branding PR owns the README and guide entry page.
+Keep this inventory updated with each final path, disposition (`unchanged`, `adapted`, `relocated`, or `omitted`), and a concrete reason. Every changed or omitted source file and every new executable needs review. Keep prose/reference paths intact where possible. Do not perform a global PStack-to-CStack replacement: upstream credit, skill identifiers, API names, model integration names, and source links have different meanings. The follow-on branding PR owns the README and guide entry page.
 
 ## Validation gates
 
@@ -69,7 +69,7 @@ During implementation, keep this inventory updated with each final path, disposi
 | Install lifecycle | On a disposable Codex home: install, discover, update, disable, re-enable, uninstall; verify plugin data and owned profile handling. Run the complete applicable behavior matrix on local CLI and ChatGPT/Codex Desktop; neither surface is considered covered by the other's unit tests. |
 | Release | Distinguish measured support from design intent. Publish exact versions, passed tests, skipped checks, and limits. User merges; production install follows only after that merge. |
 
-Completed so far: exact source import and tree equality; source/metadata inventory; upstream/reference inspection; official plugin validation; all 47 skills passing the skill validator; and an isolated Codex CLI 0.156.0 marketplace/add plus actual app-server discovery with 47 enabled skills and zero errors. Reproduce with `python3 tests/discovery.py --codex /path/to/codex`. The test uses a disposable home without credentials or trusted hooks and never installs into production. **The remaining workflow port and lifecycle/Desktop gates are not complete.** Tests of any earlier customized implementation do not count as tests of this PR.
+Completed so far: exact source import and tree equality; source/metadata inventory; upstream/reference inspection; official plugin validation; all 47 skills passing the skill validator; and an isolated Codex CLI 0.156.0 marketplace/add plus actual app-server discovery with 47 enabled skills and zero errors. Reproduce with `python3 tests/discovery.py --codex /path/to/codex`. The test uses a disposable home without credentials or trusted hooks and never installs into production. See [VALIDATION.md](./VALIDATION.md) for the later workflow, persona, and helper results. **Trusted lifecycle/native-persona and Desktop UI gates are not complete.** Tests of any earlier customized implementation do not count as tests of this PR.
 
 ## Sources and implementation constraints
 

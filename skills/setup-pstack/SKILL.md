@@ -1,74 +1,60 @@
 ---
 name: setup-pstack
-description: Configure which models pstack uses per role and at what reasoning budget. Detects your available models and writes an always-applied rule that overrides the skill defaults. Use for /setup-pstack, "configure pstack models", "pstack budget", or changing pstack's model choices.
+description: Configure CStack's native project personas, per-role models, and supported reasoning effort. Use for setup-pstack, configuring CStack models, or changing a role's choices.
 ---
 
-# Setup pstack
+# Setup PStack workflows in Codex
 
-Write `~/.cursor/rules/pstack-models.mdc`, an always-applied rule that sets pstack's model per role.
+Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md). The skill keeps its upstream identifier; it configures this Codex project, not a Cursor rule or a gateway.
 
-## Steps
+## 1. Discover capabilities
 
-### 1. Detect available models
+Use the current host's supported model catalog, such as app-server `model/list`, including all pages. Record each exact `model` value and its `supportedReasoningEfforts`. Catalog visibility alone does not prove a particular child tool can select that model: inspect its actual schema or a supported native profile. If no catalog is exposed, ask for supported choices or offer explicit inheritance. Never synthesize provider slugs, edit suffixes, or assume entitlement from a model name in a document.
 
-Enumerate the model slugs you can pass to a `Task` subagent in this session. That is the dependable source. If Cursor also exposes a models API or CLI that lists the user's entitled models, prefer it for completeness. If you cannot detect any, ask the user to paste the slugs they have access to. Never write a real slug you have not confirmed is available. The aliases `inherit-parent` and `auto` are always valid even though they are not detected slugs.
+## 2. Load the project configuration
 
-### 2. Load current state
+Read `.codex/cstack/models.json` if present. Keep the user's existing roles and panel lists. Report unknown/retired roles before replacing them. Do not modify global `AGENTS.md`, provider credentials, model catalogs, or gateway configuration.
 
-The default role-to-model mapping is the rule shape shown in step 5 below. If `~/.cursor/rules/pstack-models.mdc` already exists, read it and treat its `# budget` line and its role values as the current choices. Otherwise start from those defaults. A line whose role is not in step 5, such as `how critics`, is from a retired role. Drop it.
+The upstream roles remain: `feature, refactoring`, `bug-fix`, `perf-issue`, `hillclimb`, `judgment and prose`, `hardest tasks`, `how explorer`, `how explainer`, `why investigators`, `why synthesizer`, `reflect tooling`, `reflect judgment, divergent, synthesizer`, `arena runners`, `arena cross-judge pool`, `swarm workers`, `architect runners`, and `interrogate reviewers`.
 
-### 3. Budget, map, and confirm
+## 3. Choose effort and roles
 
-**(a) Ask for a budget.** Prefer AskQuestion over free text. Offer these four options with these exact labels, and name the current budget when the rule records one.
+Present supported model/effort pairs from the current catalog. Keep model ID and effort separate. Offer the user's actual available effort range rather than an unsupported hard-coded budget ladder. Show the existing choice when re-running setup. No personal roster or default effort is embedded in this plugin.
 
-- `unlimited — keep max`
-- `large — xhigh reasoning`
-- `medium — high reasoning`
-- `small — medium reasoning`
+For a new panel, retain upstream's three-seat default and let the user choose each entry. A later explicit panel list determines the count. The cross-judge pool is a list from which one judge is selected, favoring another model family when identity is known. `auto` and `inherit-parent` keep a seat but omit overrides; neither asserts diversity or a served model. Explain any unavailable independent-model lane before accepting a reduced review.
 
-**(b) Apply it.** Build the working table from the skill defaults, and on a re-run keep any role you changed by family, list, or alias (`inherit-parent`, `auto`). `unlimited` leaves every effort as in that table. `large`, `medium`, and `small` set the effort token of every real slug, panel entries included, to `xhigh`, `high`, or `medium`. The effort token is the last token, or the one before a trailing `fast`, on the ladder `max` > `xhigh` > `high` > `medium` > `low`. If the result is not a detected slug, use the same family's detected slug with the highest effort at or below the target, else mark the role as needing a choice. `inherit-parent` and `auto` do not change. So `small` turns `claude-opus-5-5-max` into `claude-opus-5-5-medium`, and `grok-4.7-xhigh-fast` into `grok-4.7-medium-fast`.
+Show the complete proposed role map and confirm the choices using the supported user-question tool, unless the user already supplied those exact choices. Example shape (inheritance is illustrative, not a bundled model policy):
 
-**(c) Show the roles and confirm.** Show every role with its model, marking any real slug not in the detected set as needing a choice. Also list each line step 2 dropped. Ask whether to accept as-is or change specific roles, offering the detected models plus `inherit-parent` and `auto` (both mean: this role runs on the parent chat model, which is how Auto users stay on Auto) as the options. Prefer AskQuestion over free text. For panel roles (arena runners, architect runners, interrogate reviewers) the value is a list, and one subagent runs per entry, alias entries included, so the list length sets the count. `arena cross-judge pool` is also a list, but Arena selects one value from it whose model family differs from the parent's when possible. `swarm workers` is the default model for every worker unless a race or comparison assigns another model per arm.
-
-### 4. Validate
-
-Every real slug written must be in the detected set. `inherit-parent` and `auto` always pass. If a chosen real slug is not available, stop and ask again.
-
-### 5. Write the rule
-
-Write `~/.cursor/rules/pstack-models.mdc` with `alwaysApply: true`, a `# budget` line with the chosen label and its target effort, and one line per role, using the same labels poteto-mode uses. Overwrite the whole file so re-runs stay idempotent. Shape:
-
-```
----
-description: pstack per-role model choices (overrides skill defaults)
-alwaysApply: true
----
-# pstack model configuration. One line per role. Delete a line to fall back to the skill default.
-# `inherit-parent` or `auto` as a value: the role runs on the parent chat model (omit Task `model`). Alias entries in a panel list still count toward its fan-out.
-# budget: unlimited (max)
-feature, refactoring: grok-4.7-xhigh-fast
-bug-fix: grok-4.7-xhigh-fast
-perf-issue: grok-4.7-xhigh-fast
-hillclimb: grok-4.7-xhigh-fast
-judgment and prose: claude-opus-5-5-max
-hardest tasks: claude-opus-5-5-max
-how explorer: grok-4.7-xhigh-fast
-how explainer: claude-opus-5-5-max
-why investigators: grok-4.7-xhigh-fast
-why synthesizer: claude-opus-5-5-max
-reflect tooling: gpt-5.6-sol-max
-reflect judgment, divergent, synthesizer: claude-opus-5-5-max
-arena runners: claude-opus-5-5-max, gpt-5.6-sol-max, grok-4.7-xhigh-fast
-arena cross-judge pool: claude-opus-5-5-max, gpt-5.6-sol-max, grok-4.7-xhigh-fast
-swarm workers: grok-4.7-xhigh-fast
-architect runners: claude-opus-5-5-max, gpt-5.6-sol-max, grok-4.7-xhigh-fast
-interrogate reviewers: claude-opus-5-5-max, gpt-5.6-sol-max, grok-4.7-xhigh-fast
+```json
+{
+  "schema": 1,
+  "roles": {
+    "swarm workers": {"model": "inherit-parent"},
+    "arena runners": [
+      {"model": "inherit-parent"},
+      {"model": "inherit-parent"},
+      {"model": "inherit-parent"}
+    ]
+  }
+}
 ```
 
-### 6. Confirm
+For a concrete model, use `{"model": "<catalog model>", "reasoning_effort": "<supported effort>"}`. Do not write placeholder values. An omitted role remains unconfigured, not silently mapped to a provider default.
 
-Tell the user the rule was written and that it applies to new sessions. Re-running this skill updates it.
+## 4. Validate and save
 
-### 7. Offer a verification skill (optional)
+Export the non-secret live model catalog into an owned temporary file. Validate the proposed JSON with `python3 <plugin-root>/scripts/validate_models.py --config <proposal> --catalog <catalog>`. Resolve every rejected choice before saving. Save the confirmed map atomically to `.codex/cstack/models.json`, preserving a recoverable prior version. This file is loaded by CStack skills; it does not change the host's global model settings. Revalidate against live capabilities before future use when availability changes.
 
-Check whether the project has a way to drive the real app for proof (a `verify-*` skill, or an existing harness). If not, offer once: "want a project-local verification skill, so agents can drive the app the way a user does and prove changes work? I can generate one with /create-verification-skill." On yes, invoke `/create-verification-skill` (resolves wherever pstack is installed: workspace, user, or plugin). On no, move on without pushing.
+## 5. Optional native personas
+
+Offer project-scoped native personas once. The setup helper requires Python 3.11 or newer; use an existing compatible interpreter explicitly, and report a missing dependency rather than installing one silently. With the user's setup authorization, preview `python3 <plugin-root>/scripts/setup_agents.py --project <project>` and apply with `--apply`. It creates only `cstack-poteto` and `cstack-comment-sicko` profiles plus an ownership receipt. It refuses unowned, edited, or symlinked target profiles. A profile update after a plugin upgrade must pass the same ownership check; never overwrite an unrelated profile. Retired profiles must be handled through a separate reviewed cleanup, not deleted blindly.
+
+Profiles inherit the host's model and permission settings. Per-role model overrides use only supported native spawn fields; if that host needs additional role-specific profiles, present that explicit project configuration rather than pretending the base persona selected a different model. Until profiles are available, pass the full bundled persona to a native child as the runtime contract specifies. Open a fresh host session when required for project agent discovery.
+
+## 6. Verify and report
+
+Confirm discovered skill and persona names, actual supported model-selection mechanism, the saved role map, and any unverified served identity. Hook trust is a separate host review; setup never trusts a hook. Do not claim sticky activation or compaction restoration without lifecycle receipts and target-host tests.
+
+## 7. Optional verification skill
+
+If the project lacks a real application verification path, offer `create-verification-skill` once. On acceptance, generate a project-local skill under `.agents/skills/`; otherwise continue without adding one.

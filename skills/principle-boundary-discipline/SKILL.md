@@ -3,6 +3,9 @@ name: principle-boundary-discipline
 description: Apply when wiring validation, error handling, or framework adapters. Concentrate guards at system boundaries (CLI, config, network, external APIs); trust internal types and keep business logic in pure functions.
 ---
 
+Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+
+
 # Boundary Discipline
 
 Place validation, type narrowing, and error handling at system boundaries. Trust internal code unconditionally. Business logic lives in pure functions. The shell is thin and mechanical.

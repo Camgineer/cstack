@@ -3,6 +3,9 @@ name: principle-guard-the-context-window
 description: 'Apply when context is filling up: large outputs, long files, repeated reads, fan-out planning. Route bulk to subagents; keep summaries in the main thread, not raw payloads.'
 ---
 
+Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+
+
 # Guard the Context Window
 
 The context window is finite and non-renewable within a session. Every token should be worth its cost.

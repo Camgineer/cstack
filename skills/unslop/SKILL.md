@@ -3,6 +3,9 @@ name: unslop
 description: Cut AI tells from any writing. Must always apply.
 ---
 
+Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+
+
 # Unslop
 
 Edit text to remove AI patterns.

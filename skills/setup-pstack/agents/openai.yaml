@@ -1,5 +1,5 @@
 interface:
   display_name: Setup Pstack
-  short_description: Configure which models pstack uses per role and at what reasoning budget. Detects your available models and writes an al
+  short_description: Configure project personas and supported per-role model choices.
 policy:
   allow_implicit_invocation: true

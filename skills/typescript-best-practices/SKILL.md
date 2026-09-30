@@ -5,6 +5,9 @@ metadata:
   upstream-paths: '["**/*.ts", "**/*.tsx"]'
 ---
 
+Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+
+
 # TypeScript best practices
 
 Apply the **type-system-discipline** principle skill first.

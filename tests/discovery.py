@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import sys
 
 
 def main():
@@ -38,7 +39,12 @@ def main():
             return result.stdout
 
         cli("plugin", "marketplace", "add", str(package), "--json")
-        installed = json.loads(cli("plugin", "add", "cstack@cstack", "--json"))
+        cli("plugin", "add", "cstack@cstack", "--json")
+        subprocess.run([sys.executable, str(package / "scripts/setup_agents.py"),
+                        "--project", str(project), "--apply"], check=True,
+                       env=environment, stdout=subprocess.DEVNULL)
+        prompt = cli("debug", "prompt-input", "Inspect this project's native agents without doing work.")
+        # This diagnostic excludes tool definitions; it cannot prove agent registration.
         process = subprocess.Popen([args.codex, "app-server"], cwd=project, env=environment,
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.DEVNULL, text=True, bufsize=1)
@@ -73,9 +79,19 @@ def main():
             actual = [s for s in data["skills"] if s.get("pluginId") == "cstack@cstack"]
             expected = {"cstack:" + p.parent.name for p in (source / "skills").glob("*/SKILL.md")}
             assert len(expected) == 47
+            implicit_candidates = sorted(name for name in expected if name in prompt)
+            assert implicit_candidates == ["cstack:setup-pstack"], implicit_candidates
             assert {s["name"] for s in actual} == expected
             assert len(actual) == 47 and all(s["enabled"] for s in actual)
             assert all(str(home) in s["path"] for s in actual)
+            hooks_result = request(3, "hooks/list", {"cwds": [str(project)]})["data"][0]
+            assert not hooks_result["errors"], hooks_result["errors"]
+            hooks = [h for h in hooks_result["hooks"] if h.get("pluginId") == "cstack@cstack"]
+            assert len(hooks) == 2, hooks
+            assert all(h["trustStatus"] == "untrusted" for h in hooks), hooks
+            configuration = request(4, "config/read", {"cwd": str(project), "includeLayers": True})
+            disabled = [layer.get("disabledReason") for layer in configuration.get("layers", [])
+                        if layer.get("disabledReason")]
         finally:
             process.terminate()
             try:
@@ -84,6 +100,10 @@ def main():
                 process.kill()
                 process.wait()
         print(json.dumps({"discovered_skills": len(actual), "errors": [],
+                          "discovered_untrusted_hooks": len(hooks),
+                          "implicit_candidates": implicit_candidates,
+                          "persona_registration": "requires trusted-project live canary",
+                          "disabled_config_layers": disabled,
                           "isolated_home": True, "production_install": False,
                           "runtime": cli("--version").strip()}, indent=2))
 

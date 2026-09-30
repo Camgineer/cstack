@@ -29,7 +29,7 @@ Use a Codex plugin containing PStack's skills, playbooks, reference prompts, and
 
 **PStack at this pin contains no hooks.** Its persistent mode is Cursor behavior. Any hook in this port would be new Codex compatibility code. Hooks from older CStack versions are not part of this baseline and will not be carried over.
 
-Recommended target: local Codex CLI/Desktop first, with a clearly documented skill-only fallback on surfaces without plugin hooks. Official documentation says plugin hooks are not supported in cloud-orchestrated ChatGPT Work; synced Work has a separate administrator-defined MCP-hook model. We cannot promise the same sticky mode on every surface.
+Confirmed target: **local Codex CLI and ChatGPT/Codex Desktop only**, with complete behavior and integration validation on both. Cloud Work and other harnesses are outside this port's scope; no fallback implementation is planned for them. The separately installed Claude plugin is not changed by this project.
 
 First test native behavior without a hook. If explicit invocation and supported context persistence cannot satisfy the upstream mode contract, add only the minimum trusted lifecycle hook needed for activation/restoration. This hook must meet all of these conditions:
 
@@ -39,11 +39,11 @@ First test native behavior without a hook. If explicit invocation and supported 
 - Opt-out clears the matching state and prevents replay. Test resume, compaction, fork, concurrent sessions, malformed state, updates, and uninstall.
 - Commands have no network, credential access, subprocess installers, or unrelated filesystem writes. Hook timeout/failure cannot block ordinary coding. The user's hook trust review is mandatory and hash-sensitive; never auto-trust definitions.
 
-If these conditions are unavailable on a supported host, the PR must state that limitation and keep the skill-only path working. No claim of identical runtime behavior is justified merely by file parity.
+If these conditions cannot be met on either target surface, keep the PR in draft, explain the specific gap, and review a solution before claiming complete support. No claim of identical runtime behavior is justified merely by file parity.
 
-## Decisions to review before implementation
+## Scope and remaining design choices
 
-1. **Support scope:** recommend local CLI/Desktop as the full target; Work gets the supported skill subset, with no persistent-mode claim until proven on that surface.
+1. **Support scope (confirmed):** full local CLI and ChatGPT/Codex Desktop support only. No cloud Work fallback and no other-harness port.
 2. **Agent profiles:** recommend portable persona prompts by default, with optional project-scoped native profiles installed by explicit setup. Personal/global profiles should require a separate scope choice.
 3. **Unavailable upstream capabilities:** recommend explicit capability gaps and a documented, reviewed fallback for each workflow. Keep Benny dormant and do not convert event automation to polling as part of an assumed port.
 
@@ -66,7 +66,7 @@ During implementation, update this inventory with each final path, disposition (
 | Lifecycle | Real activation, opt-out, later turn, resume, compaction, concurrent session, and child-isolation tests. Test trusted, untrusted, modified, absent, timed-out, and malformed hooks if hooks are introduced. A synthetic summary is not a real compaction test. |
 | Helpers | Review dependency/install behavior first; run Bun unit tests and typecheck in isolated scratch state with explicit dependency setup. Test watcher pagination/errors, orchestration collisions, and plan validation. No live merge/deploy test. |
 | Authority | Test quoted activation attacks, unsupported tools, connector write requests outside scope, credential absence, and unauthorized automation setup. No workload gets extra authority from a persona or a hook. |
-| Install lifecycle | On a disposable Codex home: install, discover, update, disable, re-enable, uninstall; verify plugin data and owned profile handling. Repeat on target Desktop where its behavior differs. |
+| Install lifecycle | On a disposable Codex home: install, discover, update, disable, re-enable, uninstall; verify plugin data and owned profile handling. Run the complete applicable behavior matrix on local CLI and ChatGPT/Codex Desktop; neither surface is considered covered by the other's unit tests. |
 | Release | Distinguish measured support from design intent. Publish exact versions, passed tests, skipped checks, and limits. User merges; production install follows only after that merge. |
 
 Completed so far: exact source import and tree equality, source/metadata inventory, upstream/reference inspection, and local runtime capability inspection. **The Codex port and the gates above are not complete.** Tests of any earlier customized implementation do not count as tests of this PR.

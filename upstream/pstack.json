@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/cursor/plugins.git",
+  "commit": "fae2c6ed95821bd85f614a73e4842e13229fa5e5",
+  "path": "pstack",
+  "tree": "975600f2f90dc6f755d58cccdccee27f950edcd2",
+  "excluded_prefixes": ["docs/"],
+  "excluded_paths": ["automations/benny/README.md"]
+}

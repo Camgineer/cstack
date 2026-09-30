@@ -2,6 +2,10 @@
 
 Use this contract with every CStack workflow. It translates host operations; retain the workflow's task steps, review coverage, candidate count, and result format. User instructions and the host's permissions govern all work. A workflow never grants new authority.
 
+## Writing
+
+Before drafting or revising prose for a person, read and apply [simple-as-prose](../../simple-as-prose/SKILL.md). Before drafting or revising prompts, personas, skills, or other instructions a model reads, apply [writing-for-agents](../../writing-for-agents/SKILL.md). Load the writing reference when that task occurs; an unrelated workflow does not need it.
+
 ## Native tools and personas
 
 - Use the native `spawn_agent`, `send_input`/steering, `wait`, `resume_agent`, and `close_agent` tools actually exposed by this session. Hosts may expose equivalent names; inspect their live schemas. Do not call a Cursor `Task` tool or invent unsupported arguments.

@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/Camgineer/cstack-legacy-2026-09-30",
+  "commit": "e50a852272cea0fbbf9186aec60f8e296ff9c1b3",
+  "path": "skills/simple-as-prose",
+  "source_sha256": {
+    "SKILL.md": "534d14d9cd291b764e1e8b069965e7c6fc5d3fbc907ff43096410292d2e4ebbe",
+    "ai-tells.md": "8eb24df2a0f7a4fc99fdf8bc9cc47ac714eaae4013047ae03faf50aaf58a495e"
+  },
+  "adaptations": [
+    "Codex discovery metadata; skill and AI-tells reference preserved verbatim.",
+    "Legacy MIT license retained alongside upstream PStack MIT at repository root."
+  ]
+}

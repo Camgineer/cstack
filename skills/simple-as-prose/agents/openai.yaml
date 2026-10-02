@@ -1,0 +1,5 @@
+interface:
+  display_name: "Simple as prose"
+  short_description: "Write plain, specific prose for people"
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,24 @@
+{
+  "platformReference": "033fd71fdc1b61a094c77942abd6f8efc93b52c0",
+  "inputs": {
+    "LICENSE": "bc957ca6bee02792566a1a028d105e02e247c6e77cf057061674273da77b200e",
+    "openmausbot/activation.md": "25826e61138ab8d43f54a842e7bca0952b7a379a99a6e8f7388bb027a0f86e38",
+    "openmausbot/pilot.json": "a4cb8ce3d0e52b54114575e04b85e3316a317a086f7550c27d2b9ae2815129c1",
+    "openmausbot/skills/cstack-how/SKILL.md": "a7b4292fa0d89b671bc3eba45b87e41f2b3acf96fc23191f899e7e3f6e173f26",
+    "openmausbot/skills/cstack-how/references/explain.md": "7da83947800ac29218747511592bce240f16abf11ee956c661bb1f8d6da219aa",
+    "openmausbot/skills/cstack-how/references/explore.md": "a0c8c2c9820241fc5c32f2d0ba7d20982550be42c5315543797a70b09f130a7e",
+    "scripts/build_openmausbot.mjs": "dcda415358558b708633ce291fb631e669bc9982e99327d63c1f45b875569ab9",
+    "skills/simple-as-prose/LICENSE": "d7a2dceddf79ab3bf245ccb1f3e6e451be208eacfca87754910d15f8d00a151f",
+    "skills/simple-as-prose/SKILL.md": "534d14d9cd291b764e1e8b069965e7c6fc5d3fbc907ff43096410292d2e4ebbe",
+    "skills/simple-as-prose/ai-tells.md": "8eb24df2a0f7a4fc99fdf8bc9cc47ac714eaae4013047ae03faf50aaf58a495e",
+    "skills/writing-for-agents/LICENSE": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+    "skills/writing-for-agents/SKILL-MECHANICS.md": "506d4fc9653786b49e1f9dc3a704e837d64d22c99ea832d7321bf0a1dd916c5c",
+    "skills/writing-for-agents/SKILL.md": "13a103bae45b0d3c68bd8b85841a6d191e8a2b3c9b6104298f50700947fb19bb"
+  },
+  "outputs": {
+    "cstack-pilot-0.1.0.openmaus.json": "789af29d046644ebe2c1138066feb7c8cfae9ff4e24ef404457ee169a04bb136",
+    "skills/cstack-how/SKILL.md": "bcb7271996f1923ba1074abf17e7bb52d924549d9bc56c0b8c9ce29480fd182c",
+    "skills/simple-as-prose/SKILL.md": "7748fe8dba2079d6bf2ab7ee9aab7b6fc1e8989743aa2292802f594ce2bd6c24",
+    "skills/writing-for-agents/SKILL.md": "c8f363d3348a0bf8e6218d8623a2c06ac8af3229a0d2fa91413d1afc451d462c"
+  }
+}

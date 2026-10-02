@@ -1,0 +1,38 @@
+{
+  "id": "cstack-pilot",
+  "release": "0.1.0",
+  "name": "CStack pilot",
+  "tagline": "Source-based code explanations and writing rules for both audiences.",
+  "summary": "A pilot of pstack's How workflow for OpenMausBot, with Simple as Prose for all human-facing text and Writing for Agents for all agent-facing text. Review and enable all three skills after creating a bot. Live behavioral evaluation is pending.",
+  "category": "Engineering",
+  "author": {"name": "Camgineer", "url": "https://github.com/Camgineer/cstack"},
+  "license": "MIT",
+  "outcomes": ["Trace code and explain its behavior with source references", "Apply the selected writing rules to every relevant output"],
+  "setupMinutes": 10,
+  "requirements": {"apps": [], "capabilities": ["Read access to the code being explained", "Enabled skills and full skill text access", "File presets in OpenMausBot package format v2"]},
+  "activation": "openmausbot/activation.md",
+  "platformReference": "033fd71fdc1b61a094c77942abd6f8efc93b52c0",
+  "skills": [
+    {
+      "entry": "skills/simple-as-prose/SKILL.md",
+      "references": ["skills/simple-as-prose/ai-tells.md"],
+      "licenses": ["skills/simple-as-prose/LICENSE", "LICENSE"],
+      "source": "https://github.com/Camgineer/cstack/blob/b1327c5f31882576571fae060043591806b8e001/skills/simple-as-prose/SKILL.md",
+      "adaptation": "Skill and AI-tells text recovered unchanged. References and both MIT notices are embedded for OpenMausBot. Audience routing is defined by the activation block."
+    },
+    {
+      "entry": "skills/writing-for-agents/SKILL.md",
+      "references": ["skills/writing-for-agents/SKILL-MECHANICS.md"],
+      "licenses": ["skills/writing-for-agents/LICENSE"],
+      "source": "https://github.com/Camgineer/cstack/blob/856e06ea398243305f14bc7d42eb02b77e7ddef2/skills/writing-for-agents/SKILL.md",
+      "adaptation": "Instruction body recovered unchanged from the prior CStack port of Matt Pocock's writing-for-agents. SKILL-MECHANICS.md now describes the OpenMausBot file-preset contract. References and the MIT notice are embedded."
+    },
+    {
+      "entry": "openmausbot/skills/cstack-how/SKILL.md",
+      "references": ["openmausbot/skills/cstack-how/references/explore.md", "openmausbot/skills/cstack-how/references/explain.md"],
+      "licenses": ["LICENSE"],
+      "source": "https://github.com/Camgineer/cstack/blob/c31f7ace991843f5576398ad025969465251192c/skills/how/SKILL.md",
+      "adaptation": "Adapted from pstack How and its explorer and explainer prompts. Preserves complexity assessment, trace coverage, synthesis, uncertainty, and output structure. Replaces mandatory Cursor Task/model dispatch with lead execution and authorized optional delegation."
+    }
+  ]
+}

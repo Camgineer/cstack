@@ -1,0 +1,16 @@
+{
+  "repository": "https://github.com/milind-soni/OpenMausBot",
+  "commit": "033fd71fdc1b61a094c77942abd6f8efc93b52c0",
+  "dependencies": {
+    "zod": "4.4.3",
+    "yaml": "2.9.0",
+    "croner": "10.0.1"
+  },
+  "files": {
+    "shared/package-format.ts": "a8224cc8ab5ad051b5c2e02f09211e9c90fd6bf5a1b42a195bf68874e3b05919",
+    "shared/skill-md.ts": "be98dc956724a2ba65540b2487c54e1f603d0879babcf472d00b14b056c96777",
+    "shared/bot-profile.ts": "2facf7e8406ba1db8c32cea218ad9afe046d06bba6710285ad2f69518f7ea16e",
+    "shared/redact.ts": "eff37eba024f66bb9a3b8ac887f9ba92e08e69bc1e98d1ed5fb1880b31a15443",
+    "shared/routine-schedule.ts": "a60253f7876bbefd62d316c6d26f273a80b757e84a37eb5a84e4da48502937fd"
+  }
+}

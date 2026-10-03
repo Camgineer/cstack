@@ -10,7 +10,8 @@
   "adaptations": [
     "Expanded description to cover all agent-facing instructions.",
     "Replaced Claude-specific invocation mechanics with Codex discovery policy and direct-reference semantics.",
-    "Added Codex invocation policy; upstream MIT retained."
+    "Added Codex invocation policy; upstream MIT retained.",
+    "Replaced the stronger-word advice for weak leading words with precise wording, since emphasis makes current models over-apply rules."
   ],
   "installer": {
     "package": "skills",

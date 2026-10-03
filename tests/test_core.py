@@ -97,13 +97,22 @@ class Plans(unittest.TestCase):
                     self.assertEqual(result.stdout, text)
                     self.assertNotIn("git show origin/main:skills/", text)
 
+    def test_legitimate_goal_and_absolute_plugin_paths_are_accepted(self):
+        result = self.run_plan(self.plan + '\nRead `src/goals.ts` and `/opt/pstack/skills/how/SKILL.md`.\n')
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_runtime_isolation_decision_is_required(self):
+        result = self.run_plan(self.plan.replace("Runtime isolation.", "Isolation omitted."))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('lacks "Runtime isolation."', result.stderr)
+
     def test_missing_objective_is_rejected(self):
         result = self.run_plan(self.plan.replace("Program objective.", "Objective omitted."))
         self.assertEqual(result.returncode, 1)
         self.assertIn('lacks "Program objective."', result.stderr)
 
     def test_unsupported_commands_and_wrong_plugin_path_are_rejected(self):
-        for marker in ("`/goal`", "`/loop`", "pstack/skills/swarm/SKILL.md"):
+        for marker in ("`/goal`", "`/loop`", "pstack/skills/swarm/SKILL.md", "./pstack/skills/swarm/SKILL.md"):
             with self.subTest(marker=marker):
                 result = self.run_plan(self.plan + "\n" + marker + "\n")
                 self.assertEqual(result.returncode, 1)

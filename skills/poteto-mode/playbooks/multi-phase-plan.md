@@ -65,8 +65,9 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 
 ### Boot recipe, for every live lane
 
-Each live lane runs on its own isolated worktree at the PR head. Drive through an available verified UI or CLI control tool; name the tool and its commands.
+Each live lane owns an isolated worktree at the PR head. Worktrees isolate files and Git state. Allocate or serialize live runtime access in the checklist below. Drive through an available verified UI or CLI control tool; name the tool and its commands.
 
+- [ ] Runtime isolation. Allocate independent application/runtime instances and record lane-specific ports, browser profiles or sessions, and simulator instances where used. When a desktop, browser, simulator, port, or another live resource must be shared, serialize the affected lanes and record exclusive access for each run. Never treat separate worktrees as proof of live-runtime isolation.
 - [ ] `git fetch origin <head-branch> && git checkout <head SHA>`.
 - [ ] <Start the backend and the surface. Wait for ready.>
 - [ ] <Deliver input only through the control skill's commands. Name the read-only diagnostics.>
@@ -117,7 +118,7 @@ Each live lane runs on its own isolated worktree at the PR head. Drive through a
 **Review gate.** The operator reviews before merge.
 
 - [ ] Copy lane <n> screenshots into `<media path>/<pr-id>-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of the change on a lane VM. Save it as `<media path>/<pr-id>-review.mp4`.
+- [ ] Record a 30 to 60 second video of the change on its isolated runtime instance or during its exclusive serialized run. Save it as `<media path>/<pr-id>-review.mp4`.
 - [ ] Post the screenshots and the video in chat. Stop at merge-ready. Wait for the operator's click.
 
 **Merge.**

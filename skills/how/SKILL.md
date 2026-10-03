@@ -16,7 +16,7 @@ Use each named role as the assignment label. Resolve model and effort through th
 
 If the scope is ambiguous, state your interpretation and explore. The user can redirect.
 
-- **Simple** (a single module, a small utility, a narrow question such as "how does function X work"): no explorers. One explainer explores and explains in a single pass. Go to Step 2b.
+- **Simple** (a single module, a small utility, a narrow question such as "how does function X work"): no subagents. Explore and explain it yourself in a single pass. Go to Step 2b.
 - **Complex** (a subsystem spanning multiple files or services, a cross-cutting feature, a full architectural overview): spawn parallel explorers first, then hand off to the explainer. Go to Step 2a.
 
 When in doubt, take the simple path.
@@ -33,13 +33,7 @@ Each explorer gets the prompt in `references/explorer-prompt.md` with its angle 
 
 ## Step 2b. Direct Explain (simple questions)
 
-Spawn one native subagent that explores and explains in one pass:
-
-- Persona: generic native investigator; apply the workflow reference prompt.
-- Model role: `how explainer` through the runtime contract.
-- Scope: read-only; use the supported sandbox and no connector writes.
-
-Build its prompt from `references/explainer-prompt.md` without the explorer-findings section. Go to Step 4.
+Read the code yourself and write the explanation in the Output Format of `references/explainer-prompt.md`. A question this narrow takes a handful of reads, which costs less than briefing a subagent. Go to Step 4.
 
 ## Step 3. Synthesize (complex questions only)
 
@@ -53,7 +47,7 @@ Build its prompt from `references/explainer-prompt.md` with every explorer's fin
 
 ## Step 4. Present
 
-Present the explainer's output to the user. Light edits for clarity or context from the conversation are fine. Do not substantially rewrite it.
+Present the explanation to the user. Light edits to an explainer's output for clarity or context from the conversation are fine. Do not substantially rewrite it.
 
 ## Output Format
 

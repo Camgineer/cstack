@@ -1,31 +1,22 @@
 {
-	"name": "pstack",
-	"displayName": "pstack",
-	"version": "0.15.5",
-	"description": "if you want to go fast, go deep first. pstack helps you write less, but higher quality code. rigorous agent workflows you can parallelize with confidence.",
-	"author": {
-		"name": "Lauren Tan"
-	},
-	"homepage": "https://github.com/cursor/plugins/tree/main/pstack",
-	"repository": "https://github.com/cursor/plugins",
-	"license": "MIT",
-	"logo": "assets/logo.png",
-	"keywords": [
-		"pstack",
-		"poteto-mode",
-		"workflow",
-		"principles",
-		"agent-style",
-		"subagents",
-		"unslop"
-	],
-	"category": "developer-tools",
-	"tags": [
-		"workflow",
-		"principles",
-		"review",
-		"planning"
-	],
-	"skills": "./skills/",
-	"agents": "./agents/"
+  "name": "cstack",
+  "displayName": "CStack",
+  "version": "0.16.0",
+  "description": "Engineering workflows for coding agents: investigate, design, build, verify, and review. Adapted from PStack by Lauren Tan (poteto).",
+  "author": {
+    "name": "CStack contributors"
+  },
+  "license": "MIT",
+  "logo": "assets/logo.png",
+  "keywords": [
+    "workflow",
+    "principles",
+    "review",
+    "planning",
+    "subagents",
+    "verification"
+  ],
+  "category": "developer-tools",
+  "skills": "./skills/",
+  "agents": "./agents/"
 }

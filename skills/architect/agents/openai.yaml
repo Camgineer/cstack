@@ -1,5 +1,5 @@
 interface:
-  display_name: Architect
-  short_description: Sketch types, signatures, and module structure before code, then stay in the loop while implementation fills in. Use for
+  display_name: "Architect"
+  short_description: "Sketch types, signatures, and module structure before code, then stay in the loop while implementation fills in. Use..."
 policy:
   allow_implicit_invocation: false

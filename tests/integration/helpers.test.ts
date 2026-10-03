@@ -7,7 +7,7 @@ import { basename, join, resolve } from "node:path";
 const scripts = resolve(import.meta.dir, "../../skills/poteto-mode/scripts");
 
 function inTemporaryDirectory(run: (directory: string) => void): void {
-  const directory = mkdtempSync(join(tmpdir(), "cstack helper "));
+  const directory = mkdtempSync(join(tmpdir(), "plugin helper "));
   try {
     run(directory);
   } finally {
@@ -27,12 +27,12 @@ test.each(["orch/orch.ts", "watch-pr/watch-pr"])(
       mkdirSync(bins);
       for (const installer of ["bun", "npm", "pnpm", "yarn"]) {
         const path = join(bins, installer);
-        writeFileSync(path, '#!/bin/sh\nprintf attempted > "$CSTACK_INSTALL_ATTEMPT"\nexit 91\n');
+        writeFileSync(path, '#!/bin/sh\nprintf attempted > "$FAKE_INSTALL_ATTEMPT"\nexit 91\n');
         chmodSync(path, 0o755);
       }
       const result = spawnSync(process.execPath, [join(copy, entry), "--help"], {
         cwd: directory,
-        env: { ...process.env, PATH: `${bins}:${process.env.PATH ?? ""}`, CSTACK_INSTALL_ATTEMPT: attempted },
+        env: { ...process.env, PATH: `${bins}:${process.env.PATH ?? ""}`, FAKE_INSTALL_ATTEMPT: attempted },
         encoding: "utf8",
         timeout: 10_000,
       });

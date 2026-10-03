@@ -1,14 +1,22 @@
 #!/usr/bin/env bun
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { cp, mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, isAbsolute, join, relative, sep } from "node:path";
 import { parseArgs } from "node:util";
 
-const pluginId = "cstack@cstack";
+const metadata: unknown = JSON.parse(readFileSync(join(import.meta.dir, "../../tools/metadata.json"), "utf8"));
+assert(isRecord(metadata) && typeof metadata.name === "string", "Expected a plugin name in tools/metadata.json");
+const pluginName = metadata.name;
+const pluginId = `${pluginName}@${pluginName}`;
 const timeoutMs = 30_000;
 
 function isObject(value: unknown): value is object {
+  return typeof value === "object" && value !== null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
@@ -153,15 +161,15 @@ async function main() {
   const source = join(import.meta.dir, "../..");
   const expected: string[] = [];
   for await (const path of new Bun.Glob("*/SKILL.md").scan({ cwd: join(source, "skills") })) {
-    expected.push(`cstack:${path.split(/[\\/]/)[0]}`);
+    expected.push(`${pluginName}:${path.split(/[\\/]/)[0]}`);
   }
   expected.sort();
-  assert.equal(expected.length, 49, "Expected the approved 49-skill catalog");
+  assert.equal(expected.length, 48, "Expected the approved 48-skill catalog");
 
-  const scratch = await mkdtemp(join(tmpdir(), "cstack-discovery-"));
+  const scratch = await mkdtemp(join(tmpdir(), "plugin-discovery-"));
   const home = join(scratch, "codex-home");
   const project = join(scratch, "project");
-  const packageRoot = join(scratch, "cstack");
+  const packageRoot = join(scratch, pluginName);
   let server: AppServer | undefined;
   let report;
   try {
@@ -208,19 +216,19 @@ async function main() {
     await cli("plugin", "add", pluginId, "--json");
     const prompt = await cli("debug", "prompt-input", "List applicable writing guidance without doing work.");
     const implicitCandidates = expected.filter((name) => prompt.includes(name));
-    assert.deepEqual(implicitCandidates, ["cstack:setup-pstack", "cstack:simple-as-prose", "cstack:writing-for-agents"]);
+    assert.deepEqual(implicitCandidates, ["setup-pstack", "simple-as-prose", "writing-for-agents"].map((skill) => `${pluginName}:${skill}`));
     const runtime = (await cli("--version")).trim();
     const running = new AppServer({ codex, cwd: project, env });
     server = running;
     await running.request("initialize", {
-      clientInfo: { name: "cstack-discovery", version: "1" },
+      clientInfo: { name: "plugin-discovery", version: "1" },
       capabilities: { experimentalApi: true },
     });
     await running.notify("initialized");
     const list = () => running.request("skills/list", { cwds: [project], forceReload: true });
     function assertEnabled(skills: ReturnType<typeof pluginSkills>) {
       assert.deepEqual(skills.map((skill) => skill.name).sort(), expected);
-      assert(skills.every((skill) => skill.enabled), "Expected every CStack skill to be enabled");
+      assert(skills.every((skill) => skill.enabled), "Expected every plugin skill to be enabled");
     }
     const skills = pluginSkills(await list());
     assertEnabled(skills);

@@ -8,7 +8,7 @@ const root = resolve(import.meta.dir, "../..");
 const checker = join(root, "skills/poteto-mode/scripts/check-plan.ts");
 
 function inTemporaryDirectory(run: (directory: string) => void): void {
-  const directory = mkdtempSync(join(tmpdir(), "cstack consumer "));
+  const directory = mkdtempSync(join(tmpdir(), "plugin consumer "));
   try {
     run(directory);
   } finally {
@@ -18,20 +18,20 @@ function inTemporaryDirectory(run: (directory: string) => void): void {
 
 const plan = `# Invoice export plan
 
-Give billing staff a CSV download of paid invoices. PR10 adds the download and its verification. Cam owns the merge.
+Give billing staff a CSV download of paid invoices. PR10 adds the download and its verification. The maintainer owns the merge.
 
 ## How to read this
 
 One box is one unit of work. Each box names the evidence that checks it. Check a box only when its evidence exists.
-Run the installed playbooks/autopilot-full.md from the resolved plugin root. Cam reviews the download and merges PR10.
+Run the installed playbooks/autopilot-full.md from the resolved plugin root. The maintainer reviews the download and merges PR10.
 Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
 ## Program checklist
 
 ### Arm the program
 
-- [ ] Program objective. Ship a CSV download that preserves invoice amounts. Complete when PR10 is verified and Cam merges it.
-- [ ] Continuation. Iterate in this task until the PR is ready for Cam.
+- [ ] Program objective. Ship a CSV download that preserves invoice amounts. Complete when PR10 is verified and the maintainer merges it.
+- [ ] Continuation. Iterate in this task until the PR is ready for the maintainer.
 - [ ] Cadence. Audit each completed verification checkpoint.
 - [ ] Resources. Read the installed execution playbook and the consumer project's source separately.
 - [ ] Runtime isolation. Give each live lane its own application port and browser profile.
@@ -47,7 +47,7 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 
 ### Verdict and merge
 
-- [ ] Send the evidence to Cam and wait for his merge decision.
+- [ ] Send the evidence to the maintainer and wait for their merge decision.
 
 ### Boot recipe
 
@@ -87,11 +87,11 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 - [ ] Baseline. Record the trunk billing-table load before running the head probe. Trunk has no download action.
 - [ ] Rule. Fail if the head billing-table median exceeds trunk by 10 percent or the head download takes more than 500 ms.
 
-**Review gate.** Cam reviews before merge.
-- [ ] Give the operator a screenshot and a video of the download. Record Cam's decision.
+**Review gate.** The maintainer reviews before merge.
+- [ ] Give the operator a screenshot and a video of the download. Record the maintainer's decision.
 
 **Merge.**
-- [ ] Cam merges the reviewed and verified PR head.
+- [ ] The maintainer merges the reviewed and verified PR head.
 
 ## Close the program
 
@@ -100,11 +100,11 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 ## Appendix A Prototype evidence
 
 The prototype preserves decimal amounts and CSV quoting. Its commit and recordings are attached to PR10.
-Read the installed helper at \`/opt/cstack plugin/skills/how/SKILL.md\`.
+Read the installed helper at \`/opt/installed plugin/skills/how/SKILL.md\`.
 `;
 
 function runPlan(text: string) {
-  const directory = mkdtempSync(join(tmpdir(), "cstack consumer "));
+  const directory = mkdtempSync(join(tmpdir(), "plugin consumer "));
   try {
     const path = join(directory, "reviewable invoice plan.md");
     writeFileSync(path, text);
@@ -184,10 +184,10 @@ test("discovery refuses an unauthorized install before launching Codex or creati
     const launched = join(directory, "codex was launched");
     mkdirSync(runtimeHome);
     mkdirSync(temporary);
-    writeFileSync(codex, '#!/bin/sh\nprintf launched > "$CSTACK_CODEX_LAUNCH"\nexit 91\n');
+    writeFileSync(codex, '#!/bin/sh\nprintf launched > "$FAKE_CODEX_LAUNCH"\nexit 91\n');
     chmodSync(codex, 0o755);
     const result = spawnSync(process.execPath, [join(root, "tests/e2e/plugin-discovery.ts"), "--codex", codex], {
-      env: { ...process.env, HOME: runtimeHome, CODEX_HOME: codexHome, TMPDIR: temporary, CSTACK_CODEX_LAUNCH: launched },
+      env: { ...process.env, HOME: runtimeHome, CODEX_HOME: codexHome, TMPDIR: temporary, FAKE_CODEX_LAUNCH: launched },
       encoding: "utf8",
       timeout: 10_000,
     });

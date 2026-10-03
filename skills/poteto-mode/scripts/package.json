@@ -8,7 +8,9 @@
     "test:unit": "bun test ../../../tests/unit",
     "test:integration": "bun test ../../../tests/integration",
     "test:e2e": "bun ../../../tests/e2e/plugin-discovery.ts",
-    "typecheck": "tsc --project tsconfig.json"
+    "typecheck": "tsc --project tsconfig.json",
+    "sync:hosts": "bun ../../../tools/sync-hosts.ts",
+    "check:hosts": "bun ../../../tools/sync-hosts.ts --check"
   },
   "dependencies": {
     "commander": "14.0.0"

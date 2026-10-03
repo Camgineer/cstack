@@ -1,21 +1,19 @@
 {
   "name": "cstack",
-  "version": "0.15.5-codex.1",
-  "description": "PStack workflows adapted to native Codex tools with explicit host capability checks.",
+  "version": "0.16.0",
+  "description": "Engineering workflows for coding agents: investigate, design, build, verify, and review. Adapted from PStack by Lauren Tan (poteto).",
   "author": {
-    "name": "Camgineer; upstream PStack by Lauren Tan (poteto)"
+    "name": "CStack contributors"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "CStack",
-    "shortDescription": "PStack engineering workflows for Codex.",
-    "longDescription": "Core Codex port of PStack by poteto. Local and cloud runtime acceptance is tracked per host; optional Cursor automations require separate adaptation.",
-    "developerName": "Camgineer",
+    "shortDescription": "PStack engineering workflows for any coding agent.",
+    "longDescription": "Engineering workflows for coding agents: investigate, design, build, verify, and review. Adapted from PStack by Lauren Tan (poteto).",
+    "developerName": "CStack contributors",
     "category": "Productivity",
     "capabilities": [],
     "defaultPrompt": "Use CStack to understand this project."
   },
-  "homepage": "https://github.com/Camgineer/cstack",
-  "repository": "https://github.com/Camgineer/cstack",
   "license": "MIT"
 }

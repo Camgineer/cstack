@@ -1,5 +1,5 @@
 interface:
-  display_name: Principle Fix Root Causes
-  short_description: Apply when debugging. Trace each symptom to its root cause and fix it there; reproduce first, ask why until you reach it
+  display_name: "Principle Fix Root Causes"
+  short_description: "Apply when debugging. Trace each symptom to its root cause and fix it there; reproduce first, ask why until you..."
 policy:
   allow_implicit_invocation: false

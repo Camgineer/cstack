@@ -1,5 +1,5 @@
 interface:
-  display_name: Principle Laziness Protocol
-  short_description: Apply when refactoring, evaluating diff size, or tempted to add abstractions, layers, or signal threading. Bias toward d
+  display_name: "Principle Laziness Protocol"
+  short_description: "Apply when refactoring, evaluating diff size, or tempted to add abstractions, layers, or signal threading. Bias..."
 policy:
   allow_implicit_invocation: false

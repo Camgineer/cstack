@@ -1,0 +1,5 @@
+interface:
+  display_name: "Show Me"
+  short_description: "Show the current topic as the smallest high-fidelity view (pseudocode, call tree, file tree, diff, Mermaid, or a..."
+policy:
+  allow_implicit_invocation: true

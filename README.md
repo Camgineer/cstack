@@ -1,6 +1,6 @@
 # CStack
 
-This is a portable engineering toolkit for coding agents. It runs the same workflows in Claude Code, Codex, and Cursor: investigate, design, build, verify, and review. It builds on [PStack by Lauren Tan (poteto)](https://github.com/cursor/plugins/tree/main/pstack) and ships 48 skills.
+This is a portable engineering toolkit for coding agents. It runs the same workflows in Claude Code, Codex, and Cursor: investigate, design, build, verify, and review. It builds on [PStack by Lauren Tan (poteto)](https://github.com/cursor/plugins/tree/main/pstack) and ships 52 skills.
 
 The toolkit holds process only. It has nothing about who uses it or which repositories they work in. Keep personal context in your agent's own memory.
 
@@ -55,6 +55,8 @@ Poteto Mode picks a playbook and loads the skills the task needs. It reports any
 | Explain how existing code works | `how` |
 | Investigate why a decision was made | `why` |
 | Compare designs before implementation | `architect` |
+| Stress-test a plan and record its glossary and decisions | `grill-with-docs` |
+| Show a design or change as code, diffs, or diagrams | `show-me` |
 | Review a change | `interrogate` |
 | Build with a failing test first | `tdd` |
 | Coordinate independent tasks | `swarm` |
@@ -140,4 +142,4 @@ The imported baseline is PStack 0.15.5 at `cursor/plugins@fae2c6ed95821bd85f614a
 
 ## License
 
-[MIT](LICENSE). Upstream license notices and source provenance remain with the imported material.
+[MIT](LICENSE). Upstream license notices and source provenance remain with the imported material. `grill-with-docs` and `domain-modeling` adapt [mattpocock/skills](https://github.com/mattpocock/skills), and `show-me` adapts [humanlayer/skills](https://github.com/humanlayer/skills). Each keeps its upstream MIT license and an `origin.json` beside its `SKILL.md`.

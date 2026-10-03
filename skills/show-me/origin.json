@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/humanlayer/skills",
+  "commit": "ca7c8088db69e315a8b2deea43820270457f8f3c",
+  "path": "plugins/show-me/skills/show-me",
+  "source_sha256": {
+    "SKILL.md": "434a2346cc95e313b0d367d477dda2e23ba642dd2181757415a09500664af100"
+  },
+  "adaptations": [
+    "Model-invocable, per the plugin's rule for bundled skills.",
+    "Replaced the host-specific open command with a harness-neutral instruction.",
+    "Added a fidelity rule pointing at principle-show-dont-tell."
+  ]
+}

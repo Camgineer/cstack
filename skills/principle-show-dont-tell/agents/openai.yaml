@@ -1,0 +1,5 @@
+interface:
+  display_name: "Principle Show Dont Tell"
+  short_description: "Apply when explaining, proposing, reporting, or asking the user to decide. Show the thing itself at the highest..."
+policy:
+  allow_implicit_invocation: false

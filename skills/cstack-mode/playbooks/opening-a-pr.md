@@ -4,9 +4,9 @@ Invoked at the end of every other playbook.
 
 **Worktree.** Work from a git worktree off main. Subagents inherit it. Multiple native subagent calls on the same branch each get their own worktree, or `git fetch && git reset --hard origin/<branch>` between them. Dirty branch with unrelated work: patch out, fresh worktree, apply. Snarled worktree: reset from main, redo minimally.
 
-**Commits.** Commit liberally. Rebase into small, ordered commits before opening PRs. Each commit is a future PR: landable, ordered to tell the story. Amend when the fix belongs in a just-made commit. New commit when separable.
+**Commits.** Commit liberally. Rebase into small, ordered commits before opening PRs. Each commit is a future PR: landable, ordered to tell the story. Amend when the fix belongs in a just-made commit. New commit when separable. Before regrouping commits that are already pushed, record `git rev-parse HEAD^{tree}`. Before the force-push, confirm the tree hash is unchanged. A different hash means the regroup changed content, so stop and restore the original branch.
 
-**PRs.** Run the `deslop` companion skill over the diff before commit. Run `no-comments` before review. Write every PR title, PR description, and commit body with `technical-writing`, then apply `unslop`. Apply every technical-writing layer except Diátaxis. Use one word for each action, keep articles, and avoid `-ing` when a plain verb works.
+**PRs.** Run the **deslop** skill over the diff before commit. Run `no-comments` before review. Write every PR title, PR description, and commit body with `technical-writing`, then apply `unslop`. Apply every technical-writing layer except Diátaxis. Use one word for each action, keep articles, and avoid `-ing` when a plain verb works.
 
 **Titles.** Use Conventional Commits in the form `type(scope): subject`. Use `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, or `perf` as the type. Use the changed area, such as `cstack-mode` or `swarm`, as the scope. Keep the subject short and imperative. Name a real symbol when one carries the change. For example, `fix(cstack-mode): retarget opening-a-pr babysit trigger`. Do not add a trailing period.
 

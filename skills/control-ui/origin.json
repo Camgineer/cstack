@@ -1,0 +1,15 @@
+{
+  "repository": "https://github.com/cursor/plugins",
+  "commit": "23e4138daa01c42d4969f7a5465f82704e64f798",
+  "path": "cursor-team-kit/skills/control-ui",
+  "source_sha256": {
+    "SKILL.md": "410cae25bdb1e5d2323b126abc5047b0213be7fdb0195710213fa8de8a751871"
+  },
+  "adaptations": [
+    "Replaced the verify-this reference with principle-prove-it-works and added create-verification-skill as a reusable harness.",
+    "Replaced hardcoded /tmp artifact paths with a temporary-directory placeholder and runner-neutral probe instructions.",
+    "Guardrails phrased as positive instructions.",
+    "Model-invocable, per the plugin's rule for bundled skills.",
+    "Added the runtime contract opening line and upstream MIT license."
+  ]
+}

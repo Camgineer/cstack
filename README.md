@@ -1,6 +1,6 @@
 # CStack
 
-This is a portable engineering toolkit for coding agents. It runs the same workflows in Claude Code, Codex, and Cursor: investigate, design, build, verify, and review. It builds on [PStack by Lauren Tan (poteto)](https://github.com/cursor/plugins/tree/main/pstack) and ships 52 skills.
+This is a portable engineering toolkit for coding agents. It runs the same workflows in Claude Code, Codex, and Cursor: investigate, design, build, verify, and review. It builds on [PStack by Lauren Tan (poteto)](https://github.com/cursor/plugins/tree/main/pstack) and ships 55 skills.
 
 The toolkit holds process only. It has nothing about who uses it or which repositories they work in. Keep personal context in your agent's own memory.
 
@@ -61,6 +61,7 @@ In Claude Code and Codex, the mode stays on for the project once you invoke it, 
 | Show a design or change as code, diffs, or diagrams | `show-me` |
 | Review a change | `interrogate` |
 | Build with a failing test first | `tdd` |
+| Drive a UI or CLI to verify a change | `control-ui`, `control-cli` |
 | Coordinate independent tasks | `swarm` |
 | Write clear prose for people | `simple-as-prose` |
 | Write prompts, skills, and agent instructions | `writing-for-agents` |
@@ -145,4 +146,4 @@ The imported baseline is PStack 0.15.5 at `cursor/plugins@fae2c6ed95821bd85f614a
 
 ## License
 
-[MIT](LICENSE). Upstream license notices and source provenance remain with the imported material. `grill-with-docs` and `domain-modeling` adapt [mattpocock/skills](https://github.com/mattpocock/skills), and `show-me` adapts [humanlayer/skills](https://github.com/humanlayer/skills). Each keeps its upstream MIT license and an `origin.json` beside its `SKILL.md`.
+[MIT](LICENSE). Upstream license notices and source provenance remain with the imported material. `grill-with-docs` and `domain-modeling` adapt [mattpocock/skills](https://github.com/mattpocock/skills), `show-me` adapts [humanlayer/skills](https://github.com/humanlayer/skills), and `deslop`, `control-ui`, and `control-cli` adapt [Cursor Team Kit](https://github.com/cursor/plugins/tree/main/cursor-team-kit). Each keeps its upstream MIT license and an `origin.json` beside its `SKILL.md`.

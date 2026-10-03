@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/blader/humanizer",
+  "commit": "225a6f39ac85f76ee48dbad772ea4abe4ed6c9d8",
+  "path": "SKILL.md",
+  "source_sha256": {
+    "SKILL.md": "0612f1dfb1672b0ea9b97e139bf1f06cabe98d8b27424fe8ff01e1fb4cc99cad"
+  },
+  "adaptations": [
+    "Appended rules 34 to 39 for humanizer patterns 2 to 5, 25, and 26; patterns unslop or ai-tells already covered were skipped.",
+    "Strength tiers, the fact-preservation check, and the quoted-text carve-outs condensed from humanizer's How to work and When not to act sections.",
+    "Earlier unslop rules and their numbers kept unchanged."
+  ]
+}

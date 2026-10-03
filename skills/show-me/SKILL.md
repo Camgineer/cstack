@@ -126,6 +126,8 @@ function expandSkill(command: string): string {
 
 Prefer the highest-fidelity view that answers the point: real output or the code itself over a diagram of it, and a diagram over prose about it ([principle-show-dont-tell](../principle-show-dont-tell/SKILL.md)).
 
+When a view depicts real code, such as a call tree, a component tree, or a Mermaid flow, build it under the Evidence rules of the [how skill](../how/SKILL.md): each node and edge cites `path:line`, and anything optional or unknown is marked as such.
+
 Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to answer the user's current question or the options to resolve the current discussion point.
 
 You may use one of these, you may use several, it is unlikely you will use all of them. Use your judgement and don't overwhelm the user.

@@ -1,4 +1,20 @@
-# pstack
+# CStack
+
+CStack adapts PStack 0.15.5 by Lauren Tan (poteto) to native Codex tools. The original MIT license and source provenance remain intact. This core candidate builds on the merged Simple as Prose and Writing for Agents foundation.
+
+**Development preview.** The core package contains 49 top-level skills. Its [runtime contract](skills/poteto-mode/references/codex-runtime.md) covers native delegation, inherited model choices, resource paths, history, permissions, continuation, and writing guidance. Bundled persona prompts require no generated profiles. Poteto Mode applies to the current task.
+
+Source checks do not prove installed discovery or actual host behavior. Local CLI, Desktop, saved-cloud tasks, and managed assistants each require evidence for the candidate. Desktop requires actual selector and conversation checks. Installation of an unmerged candidate requires explicit user authorization.
+
+Run source and regression checks with `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v`. When an isolated candidate installation is explicitly authorized, `tests/discovery.py --allow-isolated-install --codex <binary>` checks discovery in a disposable, credential-free home. The flag is a command guard, not user permission.
+
+Bun helpers, the `gh` PR watcher, and the Graphite stack frontier retain their declared dependencies. Missing capabilities are reported before dependent work. Benny and `make-bot-ui` retain optional Cursor automation sources; native adaptation requires separate scope. Skill discovery and helper startup never install software.
+
+The imported source is `cursor/plugins@fae2c6ed95821bd85f614a73e4842e13229fa5e5`, PStack tree `975600f2f90dc6f755d58cccdccee27f950edcd2`. The original 158-file import remains in Git history at `c31f7ace991843f5576398ad025969465251192c`.
+
+## Upstream reference
+
+The guide below is preserved PStack source for Cursor. Its installation commands and host-specific claims are upstream reference; use the Codex runtime contract above for this port.
 
 i'm [poteto](https://x.com/poteto). i'm not a president or ceo, but i've worked with millions of lines of code at Meta, Netflix, and Cursor. i'm also on the react core team where i help build and maintain react compiler.
 

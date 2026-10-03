@@ -1,8 +1,10 @@
 ---
 name: principle-fix-root-causes
 description: "Apply when debugging. Trace each symptom to its root cause and fix it there; reproduce first, ask why until you reach it, resist nil-check guards that silence crashes."
-disable-model-invocation: true
 ---
+
+Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+
 
 # Fix Root Causes
 

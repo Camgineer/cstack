@@ -1,8 +1,10 @@
 ---
 name: principle-prove-it-works
 description: "Apply after completing a task, before declaring done. Verify against the real artifact (run the feature, read the actual value, inspect the diff), not a proxy, self-report, or 'it compiles.'"
-disable-model-invocation: true
 ---
+
+Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+
 
 # Prove It Works
 

@@ -1,0 +1,20 @@
+{
+  "name": "cstack",
+  "interface": {
+    "displayName": "CStack"
+  },
+  "plugins": [
+    {
+      "name": "cstack",
+      "source": {
+        "source": "local",
+        "path": "."
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

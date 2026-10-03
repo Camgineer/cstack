@@ -1,0 +1,5 @@
+interface:
+  display_name: Principle Test Behavior Not Implementation
+  short_description: Apply when you write, change, or keep a test. Call the code the way its users do and assert the result they observe agai
+policy:
+  allow_implicit_invocation: false

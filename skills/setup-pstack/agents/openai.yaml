@@ -1,0 +1,5 @@
+interface:
+  display_name: Setup Pstack
+  short_description: Configure project personas and supported per-role model choices.
+policy:
+  allow_implicit_invocation: true

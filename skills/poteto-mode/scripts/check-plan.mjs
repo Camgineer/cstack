@@ -17,7 +17,7 @@ const SUB_BLOCKS = [
 	"Merge.",
 ];
 const PROGRAM_H3 = ["Arm the program", "Spawn owners", "PR mechanics", "Verdict and merge", "Boot recipe"];
-const PROGRAM_MARKERS = ["/goal", "git show origin/main:", /30[- ]minute/, "status message"];
+const PROGRAM_MARKERS = ["Program objective.", "Continuation.", "Cadence.", "Resources.", "status message"];
 const HOW_TO_READ_MARKERS = [
 	"One box is one unit of work",
 	"names the evidence",
@@ -37,6 +37,11 @@ if (!file) {
 const raw = fs.readFileSync(file, "utf8").split(/\r?\n/);
 const problems = [];
 const fail = (line, message) => problems.push(`${file}:${line}: ${message}`);
+for (let i = 0; i < raw.length; i++) {
+	if (/\/goal|`\/loop`|pstack\/skills\//.test(raw[i])) {
+		fail(i + 1, "unresolved host command or bundled resource path");
+	}
+}
 
 let start = 0;
 if (raw[0] === "---") {

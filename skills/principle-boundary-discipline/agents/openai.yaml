@@ -2,4 +2,4 @@ interface:
   display_name: "Principle Boundary Discipline"
   short_description: "Apply when wiring validation, error handling, or framework adapters. Concentrate guards at system boundaries (CLI..."
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

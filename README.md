@@ -91,7 +91,7 @@ flowchart LR
 | `tools/metadata.json` | The single source for the plugin's name, version, and description. |
 | `contrib/` | Optional sources that need one vendor's automation APIs. No manifest loads them. |
 
-To rename the plugin or change its version, edit `tools/metadata.json` and regenerate. To make a skill explicit-only, set `disable-model-invocation: true` in its frontmatter and regenerate.
+To rename the plugin or change its version, edit `tools/metadata.json` and regenerate. Every bundled skill stays visible to the agent. A skill with `disable-model-invocation: true` drops out of the agent's skill list, so the agent can't load it unless someone types its command. CI fails if a bundled skill sets it.
 
 ```bash
 bun run --cwd skills/poteto-mode/scripts sync:hosts

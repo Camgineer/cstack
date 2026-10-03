@@ -1,7 +1,6 @@
 ---
 name: principle-boundary-discipline
 description: "Apply when wiring validation, error handling, or framework adapters. Concentrate guards at system boundaries (CLI, config, network, external APIs); trust internal types and keep business logic in pure functions."
-disable-model-invocation: true
 ---
 
 Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.

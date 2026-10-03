@@ -22,6 +22,8 @@ Keep the project name in two places only: the README title and `tools/metadata.j
 
 Keep the repository user-agnostic. Leave out the names, accounts, repositories, and preferences of anyone who uses or maintains it. That context belongs in the user's own memory, never in the toolkit. Preserve license notices and source provenance.
 
+Keep every bundled skill model-invocable. Never set `disable-model-invocation` in a bundled skill's frontmatter. The agent then can't see the skill, and some hosts give users no way to type its command.
+
 Keep sources that need one vendor's APIs in `contrib/`, which no manifest loads.
 
 ## Documentation scope

@@ -2,4 +2,4 @@ interface:
   display_name: "Typescript Best Practices"
   short_description: "TypeScript best practices. Use when reading or editing any .ts or .tsx file."
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

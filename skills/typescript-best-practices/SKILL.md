@@ -3,7 +3,6 @@ name: typescript-best-practices
 description: TypeScript best practices. Use when reading or editing any .ts or .tsx file.
 metadata:
   upstream-paths: '["**/*.ts", "**/*.tsx"]'
-disable-model-invocation: true
 ---
 
 Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.

@@ -2,4 +2,4 @@ interface:
   display_name: "Blast Radius"
   short_description: "Find what a change could break somewhere else before it ships, beyond the diff, and prove the one fact it's safe..."
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

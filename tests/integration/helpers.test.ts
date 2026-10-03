@@ -4,7 +4,7 @@ import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmS
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
-const scripts = resolve(import.meta.dir, "../skills/poteto-mode/scripts");
+const scripts = resolve(import.meta.dir, "../../skills/poteto-mode/scripts");
 
 function inTemporaryDirectory(run: (directory: string) => void): void {
   const directory = mkdtempSync(join(tmpdir(), "cstack helper "));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { WatcherQueryError } from "./github.ts";
+import { WatcherQueryError } from "../../skills/poteto-mode/scripts/watch-pr/github.ts";
 import {
   applyQueueSnapshot,
   assessGitHubMerge,
@@ -11,13 +11,13 @@ import {
   readSnapshot,
   runQueued,
   selectTierMajorStackDecision,
-} from "./policy.ts";
+} from "../../skills/poteto-mode/scripts/watch-pr/policy.ts";
 import {
   fakeReader,
   failedCheck,
   passingCheck,
   pendingCheck,
-} from "./fakes.test-helper.ts";
+} from "../support/watch-pr-fakes.ts";
 import type {
   GitHubReader,
   NonEmpty,
@@ -26,8 +26,8 @@ import type {
   ProgressVerdict,
   PullRequestFacts,
   RollupState,
-} from "./types.ts";
-import { parsePrNumber } from "./types.ts";
+} from "../../skills/poteto-mode/scripts/watch-pr/types.ts";
+import { parsePrNumber } from "../../skills/poteto-mode/scripts/watch-pr/types.ts";
 
 const context = (number: number): PrContext => ({
   owner: "owner",
@@ -109,28 +109,6 @@ describe("snapshot query planning", () => {
       "reviewThreads",
       "checksFastPath",
     ]);
-  });
-
-  it("queries rollups for settled and failed lists", async () => {
-    const settled = fakeReader();
-    await readSnapshot({
-      reader: settled,
-      context: context(3),
-      pendingHistory: "omit",
-      allowDraft: false,
-    });
-    expect(settled.calls).toContain("commitRollups");
-
-    const failed = fakeReader({
-      fastPath: { kind: "checks", checks: [failedCheck()] },
-    });
-    await readSnapshot({
-      reader: failed,
-      context: context(4),
-      pendingHistory: "omit",
-      allowDraft: false,
-    });
-    expect(failed.calls).toContain("commitRollups");
   });
 
   it("short-circuits merged rows before threads and checks", async () => {

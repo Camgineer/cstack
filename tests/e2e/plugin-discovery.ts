@@ -150,7 +150,7 @@ async function main() {
   }
   const codex = values.codex;
   assert(codex, "Expected a Codex executable");
-  const source = join(import.meta.dir, "..");
+  const source = join(import.meta.dir, "../..");
   const expected: string[] = [];
   for await (const path of new Bun.Glob("*/SKILL.md").scan({ cwd: join(source, "skills") })) {
     expected.push(`cstack:${path.split(/[\\/]/)[0]}`);

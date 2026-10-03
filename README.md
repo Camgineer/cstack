@@ -50,12 +50,24 @@ bun run --cwd skills/poteto-mode/scripts typecheck
 bun run --cwd skills/poteto-mode/scripts test
 ```
 
+GitHub Actions runs typechecking and the automatic test suites on pull requests and pushes to main. The tests are grouped by what they exercise.
+
+| Location | Category | Execution |
+| --- | --- | --- |
+| `tests/unit/` | Watcher policy, parsing, rendering, and query logic with controlled readers | `test:unit` |
+| `tests/integration/` | Real CLI processes, filesystem stores, Git worktrees, and bundled resource links | `test:integration` |
+| `tests/types/` | Compiler checks for valid and invalid watcher states | `typecheck` |
+| `tests/support/` | Shared test fixtures | Loaded by tests |
+| `tests/e2e/` | Real Codex plugin discovery and installation lifecycle in an isolated home | Explicitly authorized `test:e2e` run |
+
+`test` runs the unit and integration suites. The end-to-end harness is a standalone command because it needs a Codex executable and permission to install the candidate. It is excluded from automatic CI.
+
 For a Linux x86_64 cloud environment with Node and npm available, use `bash .codex/setup.sh` as the Install script. It installs the pinned Bun runtime into `/workspace/.cstack-tools`, installs locked dependencies, and runs the checks. Add `/workspace/.cstack-tools/bin` to the environment PATH. Save and republish the tested environment so new tasks inherit the setup.
 
 Plugin discovery can also be tested in a disposable, credential-free home. After explicit authorization to install the candidate for that test, run:
 
 ```bash
-bun tests/discovery.ts --allow-isolated-install --codex <binary>
+bun run --cwd skills/poteto-mode/scripts test:e2e --allow-isolated-install --codex <binary>
 ```
 
 The flag guards the command; it does not grant permission. Source checks and isolated CLI tests cover their own execution paths. Verify host-specific behavior in the host where you intend to use CStack.

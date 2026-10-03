@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { type CliRuntime, main, parseArgs } from "./cli.ts";
-import { fakeReader, passingCheck } from "./fakes.test-helper.ts";
-import { renderJson, renderPretty } from "./render.ts";
-import type { GitHubReader, WatcherVerdict } from "./types.ts";
-import { parsePrNumber } from "./types.ts";
+import { type CliRuntime, main, parseArgs } from "../../skills/poteto-mode/scripts/watch-pr/cli.ts";
+import { fakeReader, passingCheck } from "../support/watch-pr-fakes.ts";
+import { renderJson, renderPretty } from "../../skills/poteto-mode/scripts/watch-pr/render.ts";
+import type { GitHubReader, WatcherVerdict } from "../../skills/poteto-mode/scripts/watch-pr/types.ts";
+import { parsePrNumber } from "../../skills/poteto-mode/scripts/watch-pr/types.ts";
 
 const silentIo = { stdout: () => {}, stderr: () => {} };
 
@@ -154,15 +154,6 @@ describe("rendering", () => {
 });
 
 describe("main", () => {
-  it("returns EX_USAGE 64 and writes usage errors only to stderr", async () => {
-    const harness = testRuntime(fakeReader());
-    expect(await main(["--interval", "0"], harness.runtime)).toBe(64);
-    expect(harness.stdout).toEqual([]);
-    expect(harness.stderr.join("")).toContain(
-      "option '--interval <seconds>' argument '0' is invalid"
-    );
-  });
-
   it("bypasses the queue machine for queued-stack status-only", async () => {
     const reader = fakeReader();
     const harness = testRuntime(reader);

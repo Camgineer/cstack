@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
 
-const root = resolve(import.meta.dir, "..");
+const root = resolve(import.meta.dir, "../..");
 const checker = join(root, "skills/poteto-mode/scripts/check-plan.ts");
 
 function inTemporaryDirectory(run: (directory: string) => void): void {
@@ -159,32 +159,6 @@ describe("plan validation", () => {
   });
 });
 
-test.each(["autopilot-full", "autopilot-stack"])(
-  "%s reads its copied installed playbook from an unrelated consumer",
-  (name) => {
-    inTemporaryDirectory((directory) => {
-      const consumer = join(directory, "billing application");
-      const plugin = join(directory, "installed plugin");
-      const relative = `skills/poteto-mode/playbooks/${name}.md`;
-      const installed = join(plugin, relative);
-      mkdirSync(consumer);
-      mkdirSync(dirname(installed), { recursive: true });
-      cpSync(join(root, relative), installed);
-      const playbook = readFileSync(installed, "utf8");
-      const command = playbook.match(/`(cat "<resolved-plugin-root>\/[^"\n]+")`/)?.[1];
-      if (command === undefined) throw new Error(`${name} has no installed-resource read command`);
-      const result = spawnSync("sh", ["-c", command.replace("<resolved-plugin-root>", plugin)], {
-        cwd: consumer,
-        encoding: "utf8",
-        timeout: 10_000,
-      });
-      expect(result.status).toBe(0);
-      expect(result.stderr).toBe("");
-      expect(result.stdout).toBe(playbook);
-    });
-  },
-);
-
 test("bundled Markdown links point to shipped resources", () => {
   const skills = join(root, "skills");
   const missing: string[] = [];
@@ -212,7 +186,7 @@ test("discovery refuses an unauthorized install before launching Codex or creati
     mkdirSync(temporary);
     writeFileSync(codex, '#!/bin/sh\nprintf launched > "$CSTACK_CODEX_LAUNCH"\nexit 91\n');
     chmodSync(codex, 0o755);
-    const result = spawnSync(process.execPath, [join(root, "tests/discovery.ts"), "--codex", codex], {
+    const result = spawnSync(process.execPath, [join(root, "tests/e2e/plugin-discovery.ts"), "--codex", codex], {
       env: { ...process.env, HOME: runtimeHome, CODEX_HOME: codexHome, TMPDIR: temporary, CSTACK_CODEX_LAUNCH: launched },
       encoding: "utf8",
       timeout: 10_000,

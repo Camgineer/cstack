@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/mattpocock/skills",
+  "commit": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60",
+  "path": "skills/engineering/domain-modeling",
+  "source_sha256": {
+    "SKILL.md": "7b925d7b1e341a2eeae33ad68a8a8c0ab889a38ddd22a7598e4c240e5a7556a3",
+    "ADR-FORMAT.md": "944c92aa790e8fbdc9199640b170979abb8a34ba8d0fe18c2a01a63bce140ca0",
+    "GLOSSARY-FORMAT.md": "21dcc40cdec8e151a829b98ab1517c1867bc444e3665134a98c6983411996801"
+  },
+  "adaptations": [
+    "Added license, source, and the runtime-contract pointer to SKILL.md; body and format references preserved verbatim."
+  ]
+}

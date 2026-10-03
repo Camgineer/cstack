@@ -1,0 +1,18 @@
+{
+  "repository": "https://github.com/mattpocock/skills",
+  "commit": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60",
+  "paths": [
+    "skills/engineering/grill-with-docs",
+    "skills/productivity/grilling"
+  ],
+  "source_sha256": {
+    "skills/engineering/grill-with-docs/SKILL.md": "7de372c13488f1ee96cc11cd8907b56b6809cc93eef776eeddd37de6b6cbe3fe",
+    "skills/productivity/grilling/SKILL.md": "10ff989e7498b23b5acb49d5048f11dcd906757d2f79c5cdf8a00001381296f2"
+  },
+  "adaptations": [
+    "Merged the grill-with-docs router and the grilling interview into one skill; grilling and grill-me have no separate entry point.",
+    "Every round runs show-me and domain-modeling; questions show code, diffs, or diagrams instead of prose.",
+    "Model-invocable, per the plugin's rule for bundled skills.",
+    "Harness tool names replaced with runtime-contract capabilities."
+  ]
+}

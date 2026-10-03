@@ -165,7 +165,8 @@ test("bundled Markdown links point to shipped resources", () => {
   for (const relative of readdirSync(skills, { recursive: true, encoding: "utf8" })) {
     if (!relative.endsWith(".md") || relative.split(sep).includes("node_modules")) continue;
     const source = join(skills, relative);
-    for (const match of readFileSync(source, "utf8").matchAll(/\]\(([^)]+)\)/g)) {
+    const prose = readFileSync(source, "utf8").replace(/^(`{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$/gm, "");
+    for (const match of prose.matchAll(/\]\(([^)]+)\)/g)) {
       const target = match[1];
       if (target === undefined || /^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#") || target === "url") continue;
       const path = target.split("#")[0];

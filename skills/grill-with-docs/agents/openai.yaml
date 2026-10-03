@@ -1,0 +1,5 @@
+interface:
+  display_name: "Grill With Docs"
+  short_description: "Grill the user relentlessly about a plan, design, or decision, showing each question and writing the glossary and..."
+policy:
+  allow_implicit_invocation: true

@@ -15,7 +15,7 @@ Interview the user relentlessly until you reach a shared understanding. Map this
 
 Run two companion skills for the whole session, every round:
 
-- The **show-me** skill puts each question in front of the user as the thing itself. A question about a signature shows the signature. A question about flow shows the call tree. A choice between options shows each option as code, a diff, or a diagram, side by side. Prose frames the question in a line or two; the view carries it. Follow **principle-show-dont-tell**.
+- The **show-me** skill puts each question in front of the user as the thing itself. A question about a signature shows the signature. A question about flow shows the call tree. A choice between options shows each option as code, a diff, or a diagram, side by side. Prose frames the question in a line or two; the view carries it. Follow [principle-show-dont-tell](../principle-show-dont-tell/SKILL.md).
 - The **domain-modeling** skill keeps the language sharp. Challenge terms against `GLOSSARY.md`, write each term into it the moment it resolves, and offer an ADR when a decision qualifies.
 
 ## Rounds

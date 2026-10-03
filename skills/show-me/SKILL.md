@@ -124,7 +124,7 @@ function expandSkill(command: string): string {
 
 ### guidance
 
-Prefer the highest-fidelity view that answers the point: real output or the code itself over a diagram of it, and a diagram over prose about it (**principle-show-dont-tell**).
+Prefer the highest-fidelity view that answers the point: real output or the code itself over a diagram of it, and a diagram over prose about it ([principle-show-dont-tell](../principle-show-dont-tell/SKILL.md)).
 
 Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to answer the user's current question or the options to resolve the current discussion point.
 

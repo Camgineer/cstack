@@ -1,6 +1,7 @@
 ---
 name: principle-show-dont-tell
 description: "Apply when explaining, proposing, reporting, or asking the user to decide. Show the thing itself at the highest fidelity available (output, code, diff, diagram) instead of prose about it."
+disable-model-invocation: true
 ---
 
 Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.

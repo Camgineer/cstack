@@ -1,7 +1,6 @@
 ---
 name: no-comments
 description: "Spawn Comment Sicko, fix accepted findings, and offer encodings for claimed constraints."
-disable-model-invocation: true
 ---
 
 Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.

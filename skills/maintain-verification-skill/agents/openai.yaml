@@ -2,4 +2,4 @@ interface:
   display_name: "Maintain Verification Skill"
   short_description: "Periodic pass that keeps a project's verification skill and feature map honest: parallel source readers per feature..."
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

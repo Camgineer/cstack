@@ -2,4 +2,4 @@ interface:
   display_name: "Tdd"
   short_description: "Use only when the user explicitly asks for TDD, a failing test, or a regression test, OR when the bug has an obvious..."
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

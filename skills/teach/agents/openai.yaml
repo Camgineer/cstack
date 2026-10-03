@@ -2,4 +2,4 @@ interface:
   display_name: "Teach"
   short_description: "Explain a body of work plainly so a person actually understands it. Runs the `how` and `why` skills and weaves what..."
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

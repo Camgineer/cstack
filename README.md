@@ -6,7 +6,9 @@ CStack adapts PStack 0.15.5 by Lauren Tan (poteto) to native Codex tools. The or
 
 Source checks do not prove installed discovery or actual host behavior. Local CLI, Desktop, saved-cloud tasks, and managed assistants each require evidence for the candidate. Desktop requires actual selector and conversation checks. Installation of an unmerged candidate requires explicit user authorization.
 
-Run source and regression checks with `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v`. When an isolated candidate installation is explicitly authorized, `tests/discovery.py --allow-isolated-install --codex <binary>` checks discovery in a disposable, credential-free home. The flag is a command guard, not user permission.
+Run `bun run --cwd skills/poteto-mode/scripts test` and `bun run --cwd skills/poteto-mode/scripts typecheck` from an owned checkout with the locked dependencies available. Tooling uses Bun and TypeScript 7.0.2 with strict checking, `erasableSyntaxOnly`, and `verbatimModuleSyntax`. When an isolated candidate installation is explicitly authorized, `bun tests/discovery.ts --allow-isolated-install --codex <binary>` checks discovery in a disposable, credential-free home. The flag is a command guard, not user permission.
+
+For Linux x86_64 cloud setup, run `bash .codex/setup.sh` in the environment's Install script. It installs pinned Bun 1.4.2 into `/workspace/.cstack-tools`, installs locked helper dependencies, and runs the checks. Set the environment PATH to include `/workspace/.cstack-tools/bin`, then save and republish the tested environment for new tasks. Setup does not install the CStack plugin.
 
 Bun helpers, the `gh` PR watcher, and the Graphite stack frontier retain their declared dependencies. Missing capabilities are reported before dependent work. Benny and `make-bot-ui` retain optional Cursor automation sources; native adaptation requires separate scope. Skill discovery and helper startup never install software.
 

@@ -2,15 +2,16 @@
   "name": "@cursor-skill/poteto-mode-tools",
   "private": true,
   "type": "module",
+  "packageManager": "bun@1.4.2",
   "scripts": {
-    "test": "bun test orch watch-pr",
-    "typecheck": "tsc --project watch-pr/tsconfig.json --noEmit --strict"
+    "test": "bun test orch watch-pr ../../../tests",
+    "typecheck": "tsc --project tsconfig.json"
   },
   "dependencies": {
     "commander": "14.0.0"
   },
   "devDependencies": {
-    "bun-types": "latest",
-    "typescript": "latest"
+    "bun-types": "1.4.2",
+    "typescript": "7.0.2"
   }
 }

@@ -1,6 +1,10 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import fs from "node:fs";
 import process from "node:process";
+
+type Line = { n: number; text: string; code: boolean };
+type Section = { title: string; n: number; body: Line[] };
+type Block = { name: string; n: number; rest: string; lines: Line[] };
 
 const RULE =
 	"Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.";
@@ -30,13 +34,13 @@ const BOX = /^\s*- \[[ x]\] (.*)$/;
 
 const file = process.argv[2];
 if (!file) {
-	console.error("Usage: node check-plan.mjs <plan.md>");
+	console.error("Usage: bun check-plan.ts <plan.md>");
 	process.exit(2);
 }
 
 const raw = fs.readFileSync(file, "utf8").split(/\r?\n/);
-const problems = [];
-const fail = (line, message) => problems.push(`${file}:${line}: ${message}`);
+const problems: string[] = [];
+const fail = (line: number, message: string) => problems.push(`${file}:${line}: ${message}`);
 for (let i = 0; i < raw.length; i++) {
 	if (/(?:^|[\s`"'(])\/(?:goal|loop)(?=$|[\s`"'),;!?])|(?:^|[\s`"'(])(?:\.\/)?pstack\/skills\//.test(raw[i])) {
 		fail(i + 1, "unresolved host command or bundled resource path");
@@ -48,7 +52,7 @@ if (raw[0] === "---") {
 	start = raw.indexOf("---", 1) + 1;
 }
 
-const lines = [];
+const lines: Line[] = [];
 let fence = false;
 for (let i = start; i < raw.length; i++) {
 	const text = raw[i];
@@ -65,16 +69,19 @@ for (let i = start; i < raw.length; i++) {
 	if (/: \S/.test(prose)) fail(n, "mid-sentence colon");
 }
 
-const h2 = (l) => (!l.code && l.text.startsWith("## ") ? l.text.slice(3).trim() : null);
-const sections = [];
+const h2 = (l: Line) => (!l.code && l.text.startsWith("## ") ? l.text.slice(3).trim() : null);
+const sections: Section[] = [];
 for (const l of lines) {
 	const title = h2(l);
 	if (title !== null) sections.push({ title, n: l.n, body: [] });
-	else if (sections.length) sections.at(-1).body.push(l);
+	else sections.at(-1)?.body.push(l);
 }
-const find = (title) => sections.find((s) => s.title === title);
-const bodyText = (s) => s.body.map((l) => l.text).join("\n");
-const boxes = (ls) => ls.filter((l) => !l.code && BOX.test(l.text)).map((l) => ({ n: l.n, text: l.text.match(BOX)[1] }));
+const find = (title: string) => sections.find((s) => s.title === title);
+const bodyText = (s: Section) => s.body.map((l) => l.text).join("\n");
+const boxes = (ls: Line[]) => ls.flatMap((l) => {
+	const match = l.code ? null : l.text.match(BOX);
+	return match ? [{ n: l.n, text: match[1] }] : [];
+});
 
 const h1 = lines.findIndex((l) => !l.code && l.text.startsWith("# "));
 if (h1 === -1) fail(1, "no H1 title");
@@ -99,33 +106,32 @@ else {
 		else cursor = at + 1;
 	}
 	for (const marker of PROGRAM_MARKERS) {
-		const ok = marker instanceof RegExp ? marker.test(bodyText(program)) : bodyText(program).includes(marker);
-		if (!ok) fail(program.n, `Program checklist lacks "${marker}"`);
+		if (!bodyText(program).includes(marker)) fail(program.n, `Program checklist lacks "${marker}"`);
 	}
 }
 
 const close = find("Close the program");
 if (!close) fail(1, 'no "## Close the program" section');
-const programIndex = sections.indexOf(program);
-const closeIndex = sections.indexOf(close);
+const programIndex = program ? sections.indexOf(program) : -1;
+const closeIndex = close ? sections.indexOf(close) : -1;
 const prSections = programIndex === -1 || closeIndex === -1 ? [] : sections.slice(programIndex + 1, closeIndex);
 if (prSections.length === 0) fail(1, "no PR sections between Program checklist and Close the program");
 
-const report = [];
+const report: string[] = [];
 for (const pr of prSections) {
-	const heads = [];
+	const heads: Block[] = [];
 	for (const l of pr.body) {
 		if (l.code) continue;
 		const m = l.text.match(/^\*\*([^*]+)\*\*(.*)$/);
 		if (m && SUB_BLOCKS.includes(m[1])) heads.push({ name: m[1], n: l.n, rest: m[2].trim(), lines: [] });
-		else if (heads.length) heads.at(-1).lines.push(l);
+		else heads.at(-1)?.lines.push(l);
 	}
 	const names = heads.map((h) => h.name);
 	if (names.join("|") !== SUB_BLOCKS.join("|")) {
 		fail(pr.n, `${pr.title}: sub-blocks are [${names.join(", ")}], expected [${SUB_BLOCKS.join(", ")}]`);
 	}
-	const block = (name) => heads.find((h) => h.name === name);
-	const counts = {};
+	const block = (name: string) => heads.find((h) => h.name === name);
+	const counts: Record<string, number> = {};
 	for (const h of heads) counts[h.name] = boxes(h.lines).length;
 
 	const depends = block("Depends on.");
@@ -143,7 +149,7 @@ for (const pr of prSections) {
 	if (live) {
 		if (!LANES.test(live.rest)) fail(live.n, `${pr.title}: Verify, live lacks "Ten lanes on \`<swarm workers model>\` at the PR head" with the model filled in`);
 		const lanes = boxes(live.lines).map((b) => ({ ...b, m: b.text.match(/^Lane (\d+)\. /) }));
-		const numbers = lanes.filter((b) => b.m).map((b) => Number(b.m[1])).sort((a, b) => a - b);
+		const numbers = lanes.flatMap((b) => b.m ? [Number(b.m[1])] : []).sort((a, b) => a - b);
 		if (numbers.join(",") !== "1,2,3,4,5,6,7,8,9,10") fail(live.n, `${pr.title}: lanes are [${numbers.join(",")}], expected 1 to 10`);
 		for (const lane of lanes) {
 			if (!lane.m) fail(lane.n, `${pr.title}: live box is not a lane`);
@@ -177,7 +183,7 @@ for (const pr of prSections) {
 	report.push(`${pr.title}  boxes=${total}  ${cells.join(" ")}`);
 }
 
-if (closeIndex !== -1) {
+if (close) {
 	const tail = sections.slice(closeIndex + 1);
 	for (const s of tail) {
 		if (!s.title.startsWith("Appendix")) fail(s.n, `"## ${s.title}" after Close the program is not an appendix`);

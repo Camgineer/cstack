@@ -3,7 +3,7 @@ name: architect
 description: Sketch types, signatures, and module structure before code, then stay in the loop while implementation fills in. Use for architect, 'architect this', 'design this', or non-trivial work where jumping to code would lock in the wrong shape.
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Architect

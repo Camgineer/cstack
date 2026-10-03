@@ -6,7 +6,7 @@ metadata:
   source: "control-ui from Cursor Team Kit by Cursor, https://github.com/cursor/plugins/tree/23e4138daa01c42d4969f7a5465f82704e64f798/cursor-team-kit/skills/control-ui"
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 # Control UI
 

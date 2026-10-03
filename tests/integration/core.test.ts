@@ -6,7 +6,7 @@ import { basename, dirname, join, resolve, sep } from "node:path";
 
 const root = resolve(import.meta.dir, "../..");
 const pluginName: string = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8")).name;
-const checker = join(root, "skills/poteto-mode/scripts/check-plan.ts");
+const checker = join(root, "skills/cstack-mode/scripts/check-plan.ts");
 
 function inTemporaryDirectory(run: (directory: string) => void): void {
   const directory = mkdtempSync(join(tmpdir(), "plugin consumer "));
@@ -238,11 +238,11 @@ test("host sync check catches frontmatter drift, stray metadata, and a skill wit
     expect(sync().status).toBe(0);
     expect(sync("--check").status).toBe(0);
 
-    const skill = join(directory, "skills/poteto-mode/SKILL.md");
+    const skill = join(directory, "skills/cstack-mode/SKILL.md");
     writeFileSync(skill, readFileSync(skill, "utf8").replace(/^description: .*$/m, "description: Changed for the drift fixture."));
     const drifted = sync("--check");
     expect(drifted.status).toBe(1);
-    expect(drifted.stderr).toContain("out of date: skills/poteto-mode/agents/openai.yaml");
+    expect(drifted.stderr).toContain("out of date: skills/cstack-mode/agents/openai.yaml");
     expect(sync().status).toBe(0);
 
     mkdirSync(join(directory, "skills/retired/agents"), { recursive: true });

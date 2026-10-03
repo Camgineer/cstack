@@ -12,14 +12,14 @@ import {
   parseReviewThreads,
   resolveChecks,
   resolveContext,
-} from "../../skills/poteto-mode/scripts/watch-pr/github.ts";
+} from "../../skills/cstack-mode/scripts/watch-pr/github.ts";
 import {
   fakeReader,
   failedCheck,
   passingCheck,
   pendingCheck,
 } from "../support/watch-pr-fakes.ts";
-import { parsePrNumber } from "../../skills/poteto-mode/scripts/watch-pr/types.ts";
+import { parsePrNumber } from "../../skills/cstack-mode/scripts/watch-pr/types.ts";
 
 const context = {
   owner: "owner",

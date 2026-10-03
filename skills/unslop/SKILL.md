@@ -6,7 +6,7 @@ metadata:
   source: "Adapts unslop from PStack by Lauren Tan, https://github.com/cursor/plugins/tree/main/pstack/skills/unslop. Rules 34 to 39, the fact check, Strength, and When not to act adapt humanizer by Siqi Chen, https://github.com/blader/humanizer, which draws on Wikipedia's Signs of AI writing."
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Unslop

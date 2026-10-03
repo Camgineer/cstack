@@ -4,7 +4,7 @@ description: "Apply when explaining, proposing, reporting, or asking the user to
 disable-model-invocation: true
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Show, Don't Tell

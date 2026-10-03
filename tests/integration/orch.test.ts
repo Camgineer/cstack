@@ -18,9 +18,9 @@ import {
   parseVerdict,
   type OpenStoreOptions,
   type Store,
-} from "../../skills/poteto-mode/scripts/orch/store.ts";
+} from "../../skills/cstack-mode/scripts/orch/store.ts";
 
-const SCRIPT = join(import.meta.dir, "../../skills/poteto-mode/scripts/orch/orch.ts");
+const SCRIPT = join(import.meta.dir, "../../skills/cstack-mode/scripts/orch/orch.ts");
 const directories: string[] = [];
 const handles: Store[] = [];
 
@@ -230,7 +230,7 @@ describe("Store", () => {
     const updated = await store.units.set({
       id: "u1",
       state: "done",
-      branch: "poteto/u1",
+      branch: "feat/u1",
       pr: 184530,
       sha: "abc123",
     });
@@ -238,7 +238,7 @@ describe("Store", () => {
       id: "u1",
       track: "build",
       state: "done",
-      branch: "poteto/u1",
+      branch: "feat/u1",
       pr: "184530",
       sha: "abc123",
       brief: "briefs/u1.md",

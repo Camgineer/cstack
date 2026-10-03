@@ -3,7 +3,7 @@ name: interrogate
 description: "Use for \"interrogate\", \"adversarial review\", \"multi-model review\", \"challenge this\", \"stress test this code\", \"find blind spots\", or \"tear this apart\". Multiple LLM reviewers challenge changes from independent angles."
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Interrogate

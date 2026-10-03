@@ -1,12 +1,18 @@
 ---
-name: poteto-mode
-description: poteto's agent style for concise, detailed responses, deliberate subagents, unslopped prose, simple code, and verified work. Use for poteto, poteto-mode, or requests to work in this style.
+name: cstack-mode
+description: The plugin's working mode for engineering tasks, with concise, detailed replies, deliberate subagents, unslopped prose, simple code, and verified work. Use for cstack-mode, an engineering task from investigation through verification, or requests to work in this style.
 ---
 
 Read [the runtime contract](references/runtime.md) before executing this workflow.
 
 
-# Poteto mode
+# CStack mode
+
+## On and off
+
+When the user invokes this skill with the argument `off`, stop applying it and reply that the mode is off. Otherwise the mode stays on for the rest of the session.
+
+On hosts that run the plugin's hooks, the user's typed command for this skill also keeps it on for the project in later sessions, after `/clear`, and after compaction. The argument `off` turns it off there too. If the user asks in plain words to turn the mode off, run `sh <plugin-root>/hooks/mode.sh off` from the project directory.
 
 ## Non-negotiables
 
@@ -88,7 +94,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Subagents
 
-**Use the complete bundled `agents/poteto-agent.md` persona prompt, or an existing matching native profile, for implementation delegates inside a playbook step.** Poteto must read this skill and its Principles index. Routed workflows (`how`, `why`, `interrogate`, `reflect`, `swarm`) keep their own specialist prompts for diverse review; do not override those with Poteto.
+**Use the complete bundled `agents/cstack-agent.md` persona prompt, or an existing matching native profile, for implementation delegates inside a playbook step.** The cstack agent must read this skill and its Principles index. Routed workflows (`how`, `why`, `interrogate`, `reflect`, `swarm`) keep their own specialist prompts for diverse review; do not override those with the cstack agent.
 
 **Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Resolve model and effort through the runtime contract: inherit the host model unless the user chose one; `setup-pstack` can assess missing capabilities. Preserve the workflow's independent review coverage and verify any claimed model diversity.
 

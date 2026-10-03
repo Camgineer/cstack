@@ -4,7 +4,7 @@ description: "Apply to multi-step work (sweeps, migrations, runs of similar edit
 disable-model-invocation: true
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Sequence work into verifiable units

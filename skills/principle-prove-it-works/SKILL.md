@@ -7,7 +7,7 @@ metadata:
   source: "Settle a claim adapts verify-this from Cursor Team Kit, https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/verify-this"
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Prove It Works

@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 tool_root="${SETUP_TOOL_ROOT:-/workspace/.plugin-tools}"
-scripts="$repo_root/skills/poteto-mode/scripts"
+scripts="$repo_root/skills/cstack-mode/scripts"
 bun_version="$(node -p 'require(process.argv[1]).packageManager.replace(/^bun@/, "")' "$scripts/package.json")"
 if [[ ! "$bun_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   printf 'Expected a pinned Bun version in package.json\n' >&2

@@ -4,7 +4,7 @@ description: "Apply when context is filling up: large outputs, long files, repea
 disable-model-invocation: true
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Guard the Context Window

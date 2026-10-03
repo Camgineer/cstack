@@ -29,7 +29,7 @@ When a capability is missing, say which workflow step it blocks. Keep going with
 
 Give each child the least permission it needs. Investigators get read-only scope for both files and connected apps. A filesystem sandbox does not grant connector write authority. Assign exclusive writable paths or isolated worktrees before parallel edits. If the spawn tool has no working-directory field, name the prepared worktree in the brief and have the child verify its directory before writing. Schedule lanes within actual capacity and report any missing coverage.
 
-The bundled personas live in `agents/` at the plugin root. `agents/poteto-agent.md` is the implementation delegate. It must read Poteto Mode and its Principles index. `agents/comment-sicko.md` is the comment reviewer. When the host registers plugin agents, spawn them by name. Otherwise pass the complete persona file as the child's instructions. Routed workflows such as How, Why, Interrogate, and Reflect use their own specialist reference prompts.
+The bundled personas live in `agents/` at the plugin root. `agents/cstack-agent.md` is the implementation delegate. It must read CStack Mode and its Principles index. `agents/comment-sicko.md` is the comment reviewer. When the host registers plugin agents, spawn them by name. Otherwise pass the complete persona file as the child's instructions. Routed workflows such as How, Why, Interrogate, and Reflect use their own specialist reference prompts.
 
 Reuse a child only when the host reports it resumable. Read its status without waking or duplicating it. Each follow-up carries the current objective, constraints, and evidence pointers. The parent reviews results and resolves disagreements.
 
@@ -43,7 +43,7 @@ The plugin needs no model configuration file, provider gateway, or setup script.
 
 ## Skills, resources, and writing
 
-Resolve bundled paths from the loaded skill directory or plugin root, independent of the consumer project's working directory. When the host note names no other way to find the plugin root, take it from a loaded skill: its `SKILL.md` sits at `<root>/skills/<name>/SKILL.md`, so the root is two levels above that file. In Poteto playbooks, `playbooks/`, `references/`, and `scripts/` are relative to `skills/poteto-mode/`. Material written into another project must use resolved absolute paths or Markdown links back to the installed resources. Keep consumer source-control paths separate from plugin paths. Keep installed plugin files immutable.
+Resolve bundled paths from the loaded skill directory or plugin root, independent of the consumer project's working directory. When the host note names no other way to find the plugin root, take it from a loaded skill: its `SKILL.md` sits at `<root>/skills/<name>/SKILL.md`, so the root is two levels above that file. In CStack Mode playbooks, `playbooks/`, `references/`, and `scripts/` are relative to `skills/cstack-mode/`. Material written into another project must use resolved absolute paths or Markdown links back to the installed resources. Keep consumer source-control paths separate from plugin paths. Keep installed plugin files immutable.
 
 The host note names two skill directories. In workflows, `<project-skills>` stands for the project skill directory and `<user-skills>` for the personal one. Write project-authored skills, such as a verification skill, under `<project-skills>`. Use `<user-skills>` only when the user chooses personal scope.
 
@@ -61,7 +61,7 @@ Check source-control and connector access before selecting a workflow backend. A
 
 ## Continuation
 
-Apply Poteto Mode to the current task when requested. Honor an opt-out immediately. The plugin installs no hooks and stores no activation, so it does not restore itself across sessions or compaction. On a handoff, record the requested mode and let the receiving session apply current user instructions.
+Apply CStack Mode when requested. Honor an opt-out immediately. On hosts that run the plugin's hooks, the user's typed command keeps the mode on for that project across sessions, `/clear`, and compaction, and the `off` argument or `hooks/mode.sh off` ends it. The host note says whether the host runs the hooks. On other hosts, the mode lasts for the current session only. On a handoff, record the requested mode and let the receiving session apply current user instructions.
 
 Run iterative work in the active task. If the objective needs wake-ups after the task ends, first find the host's authorized **Continue later** capability and its limits. Record the program objective, completion predicate, owner gates, continuation mechanism, and cadence in the plan. If the cadence or persistence is unsupported, report it as blocked and leave a resumable handoff. Never create a daemon or silently turn an event-driven request into polling.
 

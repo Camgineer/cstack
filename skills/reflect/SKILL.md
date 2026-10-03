@@ -3,7 +3,7 @@ name: reflect
 description: Spawn three parallel review subagents over the active transcript, surface learnings, and route each to a concrete edit on an existing skill. Use when the user says reflect.
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Reflect
@@ -53,7 +53,7 @@ For each approved Accepted item, follow the Routing field exactly:
 - Trivial existing-skill edit (a one-line bullet, a tightened sentence, a stale fact corrected): parent does directly.
 - Substantive existing-skill edit (a new section, a new pattern table, more than ~10 lines): apply the **writing-for-agents** skill and its `SKILL-MECHANICS.md`, then draft, test, and iterate.
 - `tune description: <skill path>` (the skill exists but didn't trigger when it should have): rewrite the description per the Discovery section of writing-for-agents' `SKILL-MECHANICS.md`.
-- `new skill: <kebab-name>`: author it through Poteto Mode's `playbooks/authoring-a-skill.md`, which applies **writing-for-agents**.
+- `new skill: <kebab-name>`: author it through CStack Mode's `playbooks/authoring-a-skill.md`, which applies **writing-for-agents**.
 
 If your environment ships a SKILL.md validator, run it on every touched skill before declaring done. Skip this step if it doesn't.
 

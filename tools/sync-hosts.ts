@@ -160,9 +160,14 @@ function expectedFiles(root: string): Map<string, string> {
     category: "developer-tools",
     skills: "./skills/",
     agents: "./agents/",
+    // Cursor would otherwise auto-load hooks/hooks.json, which uses the Claude Code and Codex event names.
+    hooks: "./hooks/cursor.json",
   }));
 
-  for (const skill of readSkills(root)) {
+  const skills = readSkills(root);
+  // The hooks and the entry-point docs find the mode skill by the plugin's name.
+  if (!skills.some((skill) => skill.name === `${metadata.name}-mode`)) throw new Error(`skills/${metadata.name}-mode must exist; rename it with the plugin`);
+  for (const skill of skills) {
     files.set(`skills/${skill.directory}/agents/openai.yaml`, codexSkillMetadata(skill));
   }
   return files;
@@ -188,7 +193,7 @@ function main(): void {
     }
     for (const [path] of changed) console.error(`out of date: ${path}`);
     for (const path of stale) console.error(`stale: ${path}`);
-    console.error("Run `bun run --cwd skills/poteto-mode/scripts sync:hosts` and commit the result.");
+    console.error("Run `bun run --cwd skills/cstack-mode/scripts sync:hosts` and commit the result.");
     process.exit(1);
   }
 

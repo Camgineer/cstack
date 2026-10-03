@@ -4,7 +4,7 @@ description: "Apply when concurrent actors might write to the same file, branch,
 disable-model-invocation: true
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Separate Before Serializing Shared State

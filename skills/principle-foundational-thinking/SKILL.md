@@ -4,7 +4,7 @@ description: "Apply before writing logic: choosing core types and data structure
 disable-model-invocation: true
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Foundational Thinking

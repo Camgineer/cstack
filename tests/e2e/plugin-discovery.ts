@@ -216,7 +216,7 @@ async function main() {
     await cli("plugin", "add", pluginId, "--json");
     const prompt = await cli("debug", "prompt-input", "List applicable writing guidance without doing work.");
     const implicitCandidates = expected.filter((name) => prompt.includes(name));
-    assert.deepEqual(implicitCandidates, expected);
+    assert.deepEqual(implicitCandidates, expected.filter((name) => !name.startsWith(`${pluginName}:principle-`)));
     const runtime = (await cli("--version")).trim();
     const running = new AppServer({ codex, cwd: project, env });
     server = running;

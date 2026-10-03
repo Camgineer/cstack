@@ -22,7 +22,7 @@ Keep the project name in two places only: the README title and `tools/metadata.j
 
 Keep the repository user-agnostic. Leave out the names, accounts, repositories, and preferences of anyone who uses or maintains it. That context belongs in the user's own memory, never in the toolkit. Preserve license notices and source provenance.
 
-Keep every bundled skill model-invocable. Never set `disable-model-invocation` in a bundled skill's frontmatter. The agent then can't see the skill, and some hosts give users no way to type its command.
+Set `disable-model-invocation: true` on every `principle-*` skill and on no other bundled skill. A skill with that key drops out of the agent's skill list, and some hosts give users no way to type its command. `poteto-mode` indexes the principles and reads each one's file when a step needs it, so they stay out of the list and its budget.
 
 Keep sources that need one vendor's APIs in `contrib/`, which no manifest loads.
 

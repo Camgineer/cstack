@@ -224,6 +224,11 @@ export type QueryFailure =
       readonly detail: string;
     }
   | {
+      readonly kind: "command-spawn";
+      readonly retryable: false;
+      readonly detail: string;
+    }
+  | {
       readonly kind: "invalid-context-url";
       readonly retryable: false;
       readonly detail: string;

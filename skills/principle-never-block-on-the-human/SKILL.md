@@ -1,6 +1,7 @@
 ---
 name: principle-never-block-on-the-human
 description: "Apply when tempted to ask 'should I do X?' on reversible work. Proceed, present the result, let the human course-correct after the fact; reserve confirmation for irreversible actions."
+disable-model-invocation: true
 ---
 
 Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.

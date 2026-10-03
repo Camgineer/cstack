@@ -2,4 +2,4 @@ interface:
   display_name: "Principle Attack the Premise"
   short_description: "Apply when two or more fixes that share one premise have failed the same gate. Take a census of which actors hold..."
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

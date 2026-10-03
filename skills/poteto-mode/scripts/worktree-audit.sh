@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Read-only worktree prune audit. Classifies every git worktree by size, merge
-# state, uncommitted work, remote/PR state, and the most recent chat that
-# operated in it. Emits a table sorted by size with a suggested bucket. Never
-# deletes anything; deletion stays a human-gated step in the playbook.
+# state, uncommitted work, and remote/PR state. Emits a table sorted by size
+# with a suggested bucket. Never deletes anything; deletion stays a
+# human-gated step in the playbook.
 #
 # Usage: worktree-audit.sh [repo-path]   (defaults to the current repo)
 set -u
@@ -14,18 +14,19 @@ cd "$repo" || exit 1
 # Main worktree is the first entry; everything else is a candidate.
 main_wt=$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -1)
 
-# origin/main drives the merge check. Best-effort; stale is fine for a first pass.
-echo "note: using local origin/main; merged column may be stale" >&2
+# The remote default branch drives the merge check. Best-effort; stale is fine for a first pass.
+base=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main)
+echo "note: using local $base; merged column may be stale" >&2
 
 # PR state by branch, fetched once. Empty if gh is unavailable.
 prs=$(mktemp)
 gh pr list --author "@me" --state all --limit 1000 \
 	--json number,state,headRefName 2>/dev/null > "$prs" || echo "[]" > "$prs"
+command -v jq >/dev/null 2>&1 || echo "warning: jq not found; PR column shows '-' for every worktree" >&2
 
-# Chat history is available only through supported host APIs, not private transcript scans.
 now=$(date +%s)
 
-printf "SIZE\tAGE\tMERGED\tDIRTY\tREMOTE\tPR\tLAST_CHAT\tBUCKET\tWORKTREE\n"
+printf "SIZE\tAGE\tMERGED\tDIRTY\tREMOTE\tPR\tBUCKET\tWORKTREE\n"
 
 git worktree list --porcelain | sed -n 's/^worktree //p' | while read -r wt; do
 	[ "$wt" = "$main_wt" ] && continue
@@ -37,7 +38,7 @@ git worktree list --porcelain | sed -n 's/^worktree //p' | while read -r wt; do
 
 	# Squash-merged branches are not ancestors of main, so PR state is the
 	# real signal; merge-base only catches fast-forward/rebase merges.
-	git merge-base --is-ancestor "$head" origin/main 2>/dev/null && merged=YES || merged=no
+	git merge-base --is-ancestor "$head" "$base" 2>/dev/null && merged=YES || merged=no
 
 	# Distinguish real WIP (tracked edits) from disposable untracked scratch.
 	porcelain=$(git -C "$wt" status --porcelain 2>/dev/null)
@@ -58,18 +59,15 @@ git worktree list --porcelain | sed -n 's/^worktree //p' | while read -r wt; do
 		'.[] | select(.headRefName==$b) | "#\(.number)/\(.state)"' "$prs" 2>/dev/null | head -1)
 	[ -z "$pr" ] && pr="-"
 
-	last="unavailable"; recent=no
-
 	case "$dirty" in wip:*) bucket=hold-wip ;; *)
 		case "$pr" in *OPEN*) bucket=hold-open-pr ;; *)
-			if [ "$recent" = yes ]; then bucket=verify-recent-chat
-			elif [ "$merged" = YES ] || [ "$pr" != "-" ]; then bucket=review-history
+			if [ "$merged" = YES ] || [ "$pr" != "-" ]; then bucket=review-history
 			else bucket=review; fi ;;
 		esac ;;
 	esac
 
-	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-		"$size" "$age" "$merged" "$dirty" "$remote" "$pr" "$last" "$bucket" "$wt"
+	printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+		"$size" "$age" "$merged" "$dirty" "$remote" "$pr" "$bucket" "$wt"
 done | sort -t$'\t' -k1,1 -rh
 
 rm -f "$prs"

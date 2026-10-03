@@ -355,7 +355,7 @@ describe("Store", () => {
     await store.close();
     await writeFile(join(directory, ".orch.lock"), `${process.pid}\n`);
 
-    const blocked = useStore(directory);
+    const blocked = useStore(directory, { lockWaitMs: 50 });
     await expect(
       blocked.units.add({ id: "u1", track: "build" })
     ).rejects.toThrow(`store lock held by pid ${process.pid}`);
@@ -575,6 +575,44 @@ describe("orch CLI", () => {
       sha: "",
       brief: "",
     });
+  });
+
+  it("serializes concurrent inbox pushes behind one stale-lock takeover", async () => {
+    const directory = await makeDirectory();
+    expect(runCli(["--store", directory, "init"]).code).toBe(0);
+    const exited = Bun.spawn(["true"]);
+    await exited.exited;
+    await writeFile(join(directory, ".orch.lock"), `${exited.pid}\n`);
+
+    const pushes = Array.from({ length: 12 }, (_, index) => {
+      const child = Bun.spawn(
+        [
+          process.execPath,
+          SCRIPT,
+          "--store",
+          directory,
+          "inbox",
+          "push",
+          `agent-${index}`,
+          "u1",
+          "done",
+        ],
+        { stdout: "pipe", stderr: "pipe" }
+      );
+      return Promise.all([
+        child.exited,
+        new Response(child.stderr).text(),
+      ]);
+    });
+    const results = await Promise.all(pushes);
+
+    expect(results.filter(([code]) => code !== 0)).toEqual([]);
+    expect(
+      results.filter(([, stderr]) => stderr.includes("replacing stale store lock"))
+    ).toHaveLength(1);
+    expect(
+      runCli(["--store", directory, "inbox", "count"]).stdout.trim()
+    ).toBe("12");
   });
 
   it("maps user and not-found outcomes to the preserved exit codes", async () => {

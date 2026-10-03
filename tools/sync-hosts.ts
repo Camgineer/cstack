@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
@@ -51,11 +51,21 @@ function readSkill(root: string, directory: string): Skill {
   return { directory, name, description, explicitOnly: policy === true };
 }
 
+// A directory holding only generated metadata is a removed skill's leftover, which the stale check reports.
+function holdsOnlyGeneratedFiles(directory: string): boolean {
+  return readdirSync(directory, { recursive: true, encoding: "utf8" })
+    .every((path) => path === join("agents", "openai.yaml") || statSync(join(directory, path)).isDirectory());
+}
+
 function readSkills(root: string): Skill[] {
-  return readdirSync(join(root, "skills"), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && existsSync(join(root, "skills", entry.name, "SKILL.md")))
-    .map((entry) => readSkill(root, entry.name))
-    .sort((left, right) => left.name.localeCompare(right.name));
+  const skills: Skill[] = [];
+  for (const entry of readdirSync(join(root, "skills"), { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const directory = join(root, "skills", entry.name);
+    if (existsSync(join(directory, "SKILL.md"))) skills.push(readSkill(root, entry.name));
+    else if (!holdsOnlyGeneratedFiles(directory)) throw new Error(`skills/${entry.name} has no SKILL.md`);
+  }
+  return skills.sort((left, right) => left.name.localeCompare(right.name));
 }
 
 function titleCase(name: string): string {

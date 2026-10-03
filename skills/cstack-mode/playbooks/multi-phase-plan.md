@@ -51,7 +51,7 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 ### PR mechanics, for every PR
 
 - [ ] Resolve the forge once per **Forge** in `playbooks/opening-a-pr.md`. Record the backend and any unavailable operations. CLI-only helpers still require their declared dependencies.
-- [ ] Open the PR ready, never draft, with `origin pr create --status open --base <base-branch>` or `gh pr create --base <base-branch>` according to the resolved forge. A stack child targets its parent branch.
+- [ ] Open the PR as a draft with `gh pr create --draft --base <base-branch>`, or the Origin equivalent, according to the resolved forge. Mark it ready only when it is merge-ready per **Readiness** in `playbooks/opening-a-pr.md`. A stack child targets its parent branch.
 - [ ] Run the repo's lint and typecheck once before the PR-facing push. Push with hooks on.
 - [ ] Run an available prose/code cleanup equivalent before each commit and `no-comments` before review.
 - [ ] When review bots (Bugbot or equivalent) or the security reviewer comment, triage each comment per `../references/bugbot-triage.md`.

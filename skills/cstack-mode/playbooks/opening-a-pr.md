@@ -24,9 +24,19 @@ After these sections, attach videos or screenshots when they prove a claim. Do n
 
 **Forge.** Resolve the forge before the first PR operation and keep that choice for create, edit, view, watch, and merge. GitHub CLI (`gh`) is the default. If `command -v origin` succeeds and Origin can resolve the repository, prefer `origin pr ...`. If Origin is absent or cannot resolve the repository, stay on `gh` and record the fallback. Do not require Graphite (`gt`).
 
-**Size and stacks.** Prefer five narrow PRs to one large PR. A stack is a base-branch chain. The root PR targets trunk. Each child branch rebases onto its parent's exact tip and its PR targets the parent branch. Create a child with `origin pr create --status open --base <parent-branch>` or `gh pr create --base <parent-branch>` according to the resolved forge. Retarget an existing child with `origin pr edit <pr> --base <parent-branch>` or `gh pr edit <pr> --base <parent-branch>`. Branch from trunk only for independent work. Rebase on trunk before substantial stack work.
+**Size and stacks.** Prefer five narrow PRs to one large PR. A stack is a base-branch chain. The root PR targets trunk. Each child branch rebases onto its parent's exact tip and its PR targets the parent branch. Create a child as a draft per **Readiness**, with `gh pr create --draft --base <parent-branch>` or the Origin equivalent. Retarget an existing child with `origin pr edit <pr> --base <parent-branch>` or `gh pr edit <pr> --base <parent-branch>`. Branch from trunk only for independent work. Rebase on trunk before substantial stack work.
 
-**Readiness.** Open every PR ready, never as a draft. With Origin, pass `--status open`. With `gh`, omit `--draft`. Some PR creation tools default to draft, so set the tool's draft option to false on every PR creation call. If a PR still opens as a draft, run `origin pr ready <number>` or `gh pr ready <number>` according to the resolved forge. Run `origin pr view <number>` or `gh pr view <number>` before you refer to PR status.
+**Readiness.** Ready for review means merge-ready. The work is done and verified as fully as agentic automation can take it, so the only step left for the human is the merge. Their own validation is optional. Open every PR as a draft, and keep it a draft until every merge-ready item holds:
+
+- CI is green on the current head on every platform the repo runs.
+- `deslop` and `no-comments` ran on the final diff.
+- Every review-bot finding is triaged per `../references/bugbot-triage.md`.
+- A reviewer other than the author reviewed the diff, and its proven findings are fixed.
+- The load-bearing behavior is proven on the real surface the change touches, per the **prove-it-works** principle skill.
+- The PR description is complete per **Descriptions**.
+- No question or pending decision for the human is open.
+
+Create the draft with `gh pr create --draft`, or with the draft status that `origin pr create --help` lists, according to the resolved forge. When every item holds, run `gh pr ready <number>` or `origin pr ready <number>`. When a ready PR regresses (red CI, a new finding, or a pushed change that is not yet verified), convert it back to a draft with `gh pr ready --undo <number>` or Origin's draft conversion, and mark it ready again only when every item holds. If Origin has no draft conversion, comment the regression on the PR and report it. Run `origin pr view <number>` or `gh pr view <number>` before you refer to PR status.
 
 **Babysit.** Opening a PR does not start a babysit. Post the URL and keep building. Finish the phase or stack first. Run a separate babysit pass only when the user asks for one after the whole stack exists. A babysit for each new PR stalls the build and spends checks on commits that later waves restart. Push back when feedback drifts from intent.
 

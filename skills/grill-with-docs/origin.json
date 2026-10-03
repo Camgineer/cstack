@@ -13,6 +13,7 @@
     "Merged the grill-with-docs router and the grilling interview into one skill; grilling and grill-me have no separate entry point.",
     "Every round runs show-me and domain-modeling; questions show code, diffs, or diagrams instead of prose.",
     "Model-invocable, per the plugin's rule for bundled skills.",
-    "Harness tool names replaced with runtime-contract capabilities."
+    "Harness tool names replaced with runtime-contract capabilities.",
+    "Added a problem-first opening round, adapted from a product-management technique with no source text."
   ]
 }

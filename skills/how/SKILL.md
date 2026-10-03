@@ -12,6 +12,16 @@ Explore the codebase to answer "how does X work?" questions. Produce architectur
 
 Use each named role as the assignment label. Resolve model and effort through the runtime contract, inheriting for ordinary work unless the user chose a supported override. Report unavailable model requirements without inventing a replacement.
 
+## Evidence
+
+Every claim about the code rests on source you read. Apply these rules on both paths, and pass this section into each explorer and explainer prompt:
+
+- Pin the commit with `git rev-parse HEAD` and state it in the answer. Note any uncommitted changes in the files you cite.
+- Cite `path:line` for each component and each relationship between components.
+- Trace a read, write, or call to the call site that performs it. A doc, a name, or a config value is a lead to follow, never the evidence.
+- Describe a capability that is exported or configured but never called on the traced path as optional, not as part of the runtime flow.
+- Write each unknown next to the claim it affects, such as "`save` calls `writeFile` at `store.ts:88`; durability unknown".
+
 ## Step 1. Assess Complexity
 
 If the scope is ambiguous, state your interpretation and explore. The user can redirect.

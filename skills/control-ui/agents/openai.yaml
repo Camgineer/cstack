@@ -1,0 +1,5 @@
+interface:
+  display_name: "Control Ui"
+  short_description: "Build or adapt a local browser or CDP harness to drive and inspect a web, IDE, or Electron UI. Use for UI..."
+policy:
+  allow_implicit_invocation: true

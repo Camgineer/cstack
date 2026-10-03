@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/cursor/plugins",
+  "commit": "23e4138daa01c42d4969f7a5465f82704e64f798",
+  "path": "cursor-team-kit/skills/verify-this",
+  "source_sha256": {
+    "SKILL.md": "c1c7b27c1133085bd3409c601ea12b6e6f61b4b23debcd52bc248fc01907e7de"
+  },
+  "adaptations": [
+    "Folded the falsifiable claim, same-surface baseline and treatment, and three-verdict rule into the principle; the artifact layout and surface list were left out."
+  ]
+}

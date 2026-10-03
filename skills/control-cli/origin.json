@@ -1,0 +1,15 @@
+{
+  "repository": "https://github.com/cursor/plugins",
+  "commit": "23e4138daa01c42d4969f7a5465f82704e64f798",
+  "path": "cursor-team-kit/skills/control-cli",
+  "source_sha256": {
+    "SKILL.md": "13ac93e595bbda2000849bdb815d5f2ca03f7c2ca63788c8335f9212b9b422a2"
+  },
+  "adaptations": [
+    "Added a Bun inspector command beside the Node one and dropped the Chrome-specific DevTools wording.",
+    "Added create-verification-skill as a reusable harness; replaced the hardcoded /tmp harness location with a temporary directory.",
+    "Guardrails phrased as positive instructions.",
+    "Model-invocable, per the plugin's rule for bundled skills.",
+    "Added the runtime contract opening line and upstream MIT license."
+  ]
+}

@@ -1,6 +1,9 @@
 ---
 name: unslop
 description: Cut AI tells from any writing. Must always apply.
+license: MIT
+metadata:
+  source: "Adapts unslop from PStack by Lauren Tan, https://github.com/cursor/plugins/tree/main/pstack/skills/unslop. Rules 34 to 39, the fact check, Strength, and When not to act adapt humanizer by Siqi Chen, https://github.com/blader/humanizer, which draws on Wikipedia's Signs of AI writing."
 ---
 
 Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
@@ -12,8 +15,9 @@ Edit text to remove AI patterns.
 
 ## Process
 
-1. Scan for the patterns below.
+1. Scan for the patterns below and weigh each match by [strength](#strength).
 2. Rewrite. Preserve meaning, match intended tone.
+3. Compare the rewrite with the original. It adds no fact, name, number, date, quote, or claim the original lacks, and drops none unless a rule calls for cutting it. When a sentence needs a detail you do not have, ask for it or write a simpler sentence.
 
 ## Patterns to detect and fix
 
@@ -67,3 +71,20 @@ Rule numbers are stable ids that other skills cite. A removed rule leaves a gap.
 31. **Prefer the plain word.** "utilize" becomes "use", "leverage" becomes "use", "facilitate" becomes "help", "numerous" becomes "many", "in the event that" becomes "if". The fancier synonym is rarely clearer.
 32. **Mannered prose.** Metaphor or flourish where a literal phrase exists: aphorisms ("wire it or delete it"), rhetorical fragments for effect, personified code ("the plan holds it"), figurative verbs ("rides along", "stands on"), stock framing phrases. "A dial worth turning" becomes "a parameter worth varying". Say what you mean. Rule 26 covers the metaphor nouns.
 33. **Over-compression.** Dropped articles, verbless fragments, symbol-speak, and abbreviations that make the reader decode instead of read. "Parser rejects bad date → exit 2, no write" becomes "The parser rejects a bad date, exits with code 2, and writes nothing." Write whole sentences with their articles and verbs, and spell out arrows and abbreviations.
+
+### Staging and framing
+
+34. **One-line closers.** A short sentence or one-line paragraph that restates what came before: "That is the real win.", "That distinction matters.", "Let that sink in.", or a line after an example that names what it showed. Cut it. Keep it when it adds a fact or consequence the example does not show. Rule 32 covers fragments written for effect.
+35. **Sayings that sound deep.** "The real question is", "at its core", "what really matters", "fundamentally", "the heart of the matter", "X is the language of Y", "X becomes a trap". The frame dresses an ordinary point as a hidden truth. State the specific claim.
+36. **Staged run-ups.** "Here's the thing", "Honestly?", "Look,", "Let's dive in", "Let's break this down", "Here's what you need to know", "Real talk". Start with the point. "Honestly" inside an ordinary sentence is fine; the tell is a standalone opener before a routine claim.
+37. **Arguing with no one.** "To be clear", "I'm not saying", "This isn't about", "A tempting approach would be", "You might think... but". The text rebuts an objection or rejects an option nobody raised. Cut the rebuttal and state the claim. Keep an objection the text attributes or answers in full, and an option the reader would actually weigh.
+38. **Writing about the document instead of its subject.** "This was added to replace", "compiled from", "anything unconfirmed is flagged rather than guessed", "the table below compares". Describe the subject. Mention a previous version only in change logs, release notes, and migration guides. Keep a source credit the reader can follow and a caveat that changes what the reader does.
+39. **Re-explaining what the reader knows.** A reply that restates the problem, diagnosis, or evidence the other person already has before reaching the decision. Lead with the decision and keep only the reasoning the reader lacks. Apply this rule when you can see the conversation or the text is plainly a reply.
+
+## Strength
+
+Weak tells justify a rewrite only when several cluster in one passage: 19, 24, 29, and a single sentence describing the page under 38. Every other rule is a strong tell, and one sighting justifies the rewrite.
+
+## When not to act
+
+Leave a matched phrase as written inside quoted text, a title or proper name, or a passage that discusses the phrase rather than uses it.

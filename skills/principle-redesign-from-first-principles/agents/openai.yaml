@@ -2,4 +2,4 @@ interface:
   display_name: "Principle Redesign From First Principles"
   short_description: "Apply when integrating a new requirement into an existing design. Redesign as if the requirement had been a..."
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

@@ -175,18 +175,18 @@ test("bundled Markdown links point to shipped resources", () => {
   expect(missing).toEqual([]);
 });
 
-test("every bundled skill stays in the agent's skill list", () => {
+test("the agent's skill list shows every workflow and hides only the principles", () => {
   const skills = join(root, "skills");
-  const hidden: string[] = [];
+  const mismatched: string[] = [];
   for (const directory of readdirSync(skills)) {
     const source = join(skills, directory, "SKILL.md");
     if (!existsSync(source)) continue;
     const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(readFileSync(source, "utf8"))?.[1];
     expect(frontmatter).toBeDefined();
     const fields = Bun.YAML.parse(frontmatter ?? "") as Record<string, unknown>;
-    if (fields["disable-model-invocation"] === true) hidden.push(directory);
+    if ((fields["disable-model-invocation"] === true) !== directory.startsWith("principle-")) mismatched.push(directory);
   }
-  expect(hidden).toEqual([]);
+  expect(mismatched).toEqual([]);
 });
 
 test("discovery refuses an unauthorized install before launching Codex or creating its home", () => {

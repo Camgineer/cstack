@@ -49,15 +49,9 @@ The host note names two skill directories. In workflows, `<project-skills>` stan
 
 When drafting or editing text for people, read and apply `skills/simple-as-prose/SKILL.md` from the plugin root. For agent instructions, apply `skills/writing-for-agents/SKILL.md`. Apply both for mixed audiences. Skill edits also need its `SKILL-MECHANICS.md`. Review the result against that guidance before returning it.
 
-## Companion skills
+## Live verification
 
-Some playbooks name skills that this plugin does not ship. Use an installed skill with that name or an equivalent that exercises the real target.
-
-- `deslop` strips slop from a diff before commit.
-- `control-ui` drives browser, Electron, and web UIs.
-- `control-cli` drives CLIs and TUIs.
-
-A project verification skill from **create-verification-skill** can stand in for either control skill. When none is available, report the missing live verification. Static checks and bundled CLI tests do not prove UI behavior.
+Playbooks pick a control skill by surface: **control-ui** for browser, Electron, and web UIs, and **control-cli** for CLIs and TUIs. A project verification skill from **create-verification-skill** can stand in for either. When no skill can drive the surface, report the missing live verification. Static checks and bundled CLI tests do not prove UI behavior.
 
 ## History, connectors, and verification
 

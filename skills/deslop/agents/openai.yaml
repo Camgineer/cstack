@@ -1,0 +1,5 @@
+interface:
+  display_name: "Deslop"
+  short_description: "Remove AI-generated code slop from the branch diff before commit. Use for deslop, a slop-strip step, or cleaning..."
+policy:
+  allow_implicit_invocation: true

@@ -4,7 +4,7 @@ description: "Apply when reviewing or shaping code that's hard to trace. Count l
 disable-model-invocation: true
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Minimize Reader Load

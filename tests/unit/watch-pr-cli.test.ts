@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { type CliRuntime, main, parseArgs } from "../../skills/poteto-mode/scripts/watch-pr/cli.ts";
+import { type CliRuntime, main, parseArgs } from "../../skills/cstack-mode/scripts/watch-pr/cli.ts";
 import { fakeReader, passingCheck } from "../support/watch-pr-fakes.ts";
-import { renderJson, renderPretty } from "../../skills/poteto-mode/scripts/watch-pr/render.ts";
-import type { GitHubReader, WatcherVerdict } from "../../skills/poteto-mode/scripts/watch-pr/types.ts";
-import { parsePrNumber } from "../../skills/poteto-mode/scripts/watch-pr/types.ts";
+import { renderJson, renderPretty } from "../../skills/cstack-mode/scripts/watch-pr/render.ts";
+import type { GitHubReader, WatcherVerdict } from "../../skills/cstack-mode/scripts/watch-pr/types.ts";
+import { parsePrNumber } from "../../skills/cstack-mode/scripts/watch-pr/types.ts";
 
 const silentIo = { stdout: () => {}, stderr: () => {} };
 

@@ -3,7 +3,7 @@ name: no-comments
 description: "Strip unneeded code comments from a diff or files before review: a Comment Sicko child flags them, then fix accepted findings and offer encodings for claimed constraints. Use when a workflow says to run no-comments or the user asks for it."
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # No comments

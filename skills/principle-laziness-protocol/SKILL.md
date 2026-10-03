@@ -4,7 +4,7 @@ description: "Apply when refactoring, evaluating diff size, or tempted to add ab
 disable-model-invocation: true
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Laziness Protocol

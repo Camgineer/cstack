@@ -3,7 +3,7 @@ name: arena
 description: Spawn N parallel candidates at the same task, pick a base, graft the strongest parts of the losers into it. Use for arena, 'arena this', 'throw it in the arena', or when one attempt at a non-trivial artifact would lock in the wrong shape.
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Arena

@@ -4,7 +4,7 @@ description: "Apply when sequencing an addition, refactor, or rewrite. Remove de
 disable-model-invocation: true
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Subtract Before You Add

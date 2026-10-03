@@ -10,7 +10,7 @@ Hosts select a skill by its description by default. Set `disable-model-invocatio
 
 In this plugin, the frontmatter is the single source for invocation policy. Codex reads `agents/openai.yaml` instead, and `bun run sync:hosts` generates that file from the frontmatter. Edit the frontmatter and regenerate. Never edit the YAML by hand.
 
-An explicit-only skill stays available to users through its host command; each host note under `skills/poteto-mode/references/hosts/` names the syntax. Another workflow can still read its installed file when instructed. Discovery policy is not a file-access restriction. Confirm actual visibility with the host's skill list.
+An explicit-only skill stays available to users through its host command; each host note under `skills/cstack-mode/references/hosts/` names the syntax. Another workflow can still read its installed file when instructed. Discovery policy is not a file-access restriction. Confirm actual visibility with the host's skill list.
 
 ## Splitting and routing
 

@@ -3,7 +3,7 @@ name: unslop
 description: Cut AI tells from any writing. Must always apply.
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Unslop

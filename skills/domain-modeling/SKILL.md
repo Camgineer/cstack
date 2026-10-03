@@ -6,7 +6,7 @@ metadata:
   source: "domain-modeling from mattpocock/skills, https://github.com/mattpocock/skills"
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Domain Modeling

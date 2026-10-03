@@ -238,7 +238,8 @@ async function main() {
     }
     const hooks = dataset(await running.request("hooks/list", { cwds: [project] }));
     assert("hooks" in hooks && isArray(hooks.hooks), "Expected discovered hooks");
-    assert.equal(hooks.hooks.filter((hook) => isObject(hook) && "pluginId" in hook && hook.pluginId === pluginId).length, 0);
+    const pluginHooks = hooks.hooks.filter((hook) => isObject(hook) && "pluginId" in hook && hook.pluginId === pluginId);
+    assert.equal(pluginHooks.length, 2, "Expected the SessionStart and UserPromptSubmit mode hooks");
     const writeEnabled = (enabled: boolean) => running.request("config/value/write", {
       keyPath: `plugins."${pluginId}".enabled`,
       value: enabled,
@@ -254,7 +255,7 @@ async function main() {
     assertEnabled(pluginSkills(await list()));
     report = {
       discovered_skills: skills.length,
-      discovered_hooks: 0,
+      discovered_hooks: pluginHooks.length,
       implicit_candidates: implicitCandidates,
       disable_reenable_uninstall_reinstall: "passed",
       runtime,

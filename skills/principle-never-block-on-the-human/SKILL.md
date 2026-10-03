@@ -4,7 +4,7 @@ description: "Apply when tempted to ask 'should I do X?' on reversible work. Pro
 disable-model-invocation: true
 ---
 
-Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
+Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
 
 
 # Never Block on the Human

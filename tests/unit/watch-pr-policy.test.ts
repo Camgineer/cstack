@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { WatcherQueryError } from "../../skills/poteto-mode/scripts/watch-pr/github.ts";
+import { WatcherQueryError } from "../../skills/cstack-mode/scripts/watch-pr/github.ts";
 import {
   applyQueueSnapshot,
   assessGitHubMerge,
@@ -11,7 +11,7 @@ import {
   readSnapshot,
   runQueued,
   selectTierMajorStackDecision,
-} from "../../skills/poteto-mode/scripts/watch-pr/policy.ts";
+} from "../../skills/cstack-mode/scripts/watch-pr/policy.ts";
 import {
   fakeReader,
   failedCheck,
@@ -26,8 +26,8 @@ import type {
   ProgressVerdict,
   PullRequestFacts,
   RollupState,
-} from "../../skills/poteto-mode/scripts/watch-pr/types.ts";
-import { parsePrNumber } from "../../skills/poteto-mode/scripts/watch-pr/types.ts";
+} from "../../skills/cstack-mode/scripts/watch-pr/types.ts";
+import { parsePrNumber } from "../../skills/cstack-mode/scripts/watch-pr/types.ts";
 
 const context = (number: number): PrContext => ({
   owner: "owner",

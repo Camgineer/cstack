@@ -1,11 +1,11 @@
-import { parsePrNumber } from "../../skills/poteto-mode/scripts/watch-pr/types.ts";
+import { parsePrNumber } from "../../skills/cstack-mode/scripts/watch-pr/types.ts";
 import type {
   CiClean,
   GitHubMergeAllowed,
   PrContext,
   ReadyPr,
   TerminalVerdict,
-} from "../../skills/poteto-mode/scripts/watch-pr/types.ts";
+} from "../../skills/cstack-mode/scripts/watch-pr/types.ts";
 
 type ReadyVerdict = Extract<TerminalVerdict, { readonly kind: "READY" }>;
 

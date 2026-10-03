@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve, sep } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 
 const root = resolve(import.meta.dir, "../..");
+const pluginName: string = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8")).name;
 const checker = join(root, "skills/poteto-mode/scripts/check-plan.ts");
 
 function inTemporaryDirectory(run: (directory: string) => void): void {
@@ -126,6 +127,12 @@ describe("plan validation", () => {
     expect(result.stdout).toContain("1 PR sections, 0 problems");
   });
 
+  test("accepts a consumer project's own skills directory", () => {
+    const result = runPlan(`${plan}\nSee [swarm](../skills/swarm/SKILL.md) and \`app/skills/billing/rules.md\`.\n`);
+    expect(result.stderr).toBe("");
+    expect(result.status).toBe(0);
+  });
+
   test.each([
     {
       name: "live verification is missing",
@@ -150,6 +157,11 @@ describe("plan validation", () => {
     {
       name: "a consumer-relative plugin path remains",
       text: `${plan}\nRead \`./pstack/skills/swarm/SKILL.md\`.\n`,
+      diagnostic: "unresolved host command or bundled resource path",
+    },
+    {
+      name: "the plugin's own consumer-relative path remains",
+      text: `${plan}\nSee (${pluginName}/skills/review/references/gate.md).\n`,
       diagnostic: "unresolved host command or bundled resource path",
     },
   ])("rejects a plan when $name", ({ text, diagnostic }) => {
@@ -198,5 +210,37 @@ test("discovery refuses an unauthorized install before launching Codex or creati
     expect(existsSync(join(runtimeHome, ".codex"))).toBe(false);
     expect(existsSync(launched)).toBe(false);
     expect(readdirSync(temporary)).toEqual([]);
+  });
+});
+
+test("host sync check catches frontmatter drift, stray metadata, and a skill without SKILL.md", () => {
+  inTemporaryDirectory((directory) => {
+    for (const entry of ["tools", "skills", ".claude-plugin", ".codex-plugin", ".cursor-plugin", ".agents"]) {
+      cpSync(join(root, entry), join(directory, entry), { recursive: true, filter: (source) => basename(source) !== "node_modules" });
+    }
+    const sync = (...args: string[]) =>
+      spawnSync(process.execPath, [join(directory, "tools/sync-hosts.ts"), ...args], { encoding: "utf8", timeout: 20_000 });
+    expect(sync().status).toBe(0);
+    expect(sync("--check").status).toBe(0);
+
+    const skill = join(directory, "skills/poteto-mode/SKILL.md");
+    writeFileSync(skill, readFileSync(skill, "utf8").replace(/^description: .*$/m, "description: Changed for the drift fixture."));
+    const drifted = sync("--check");
+    expect(drifted.status).toBe(1);
+    expect(drifted.stderr).toContain("out of date: skills/poteto-mode/agents/openai.yaml");
+    expect(sync().status).toBe(0);
+
+    mkdirSync(join(directory, "skills/retired/agents"), { recursive: true });
+    writeFileSync(join(directory, "skills/retired/agents/openai.yaml"), "interface: {}\n");
+    const stray = sync("--check");
+    expect(stray.status).toBe(1);
+    expect(stray.stderr).toContain("stale: skills/retired/agents/openai.yaml");
+    expect(sync().status).toBe(0);
+    expect(sync("--check").status).toBe(0);
+
+    writeFileSync(join(directory, "skills/retired/README.md"), "Notes left behind.\n");
+    const missing = sync("--check");
+    expect(missing.status).not.toBe(0);
+    expect(missing.stderr).toContain("skills/retired has no SKILL.md");
   });
 });

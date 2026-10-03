@@ -44,7 +44,18 @@ function run(argv: readonly [string, ...string[]]): Promise<CommandResult> {
     child.stderr.on("data", (chunk: string) => {
       stderr += chunk;
     });
-    child.on("error", reject);
+    child.on("error", (error: NodeJS.ErrnoException) =>
+      reject(
+        new WatcherQueryError({
+          kind: "command-spawn",
+          retryable: false,
+          detail:
+            error.code === "ENOENT"
+              ? `${argv[0]} not found on PATH`
+              : `${argv[0]} could not start: ${error.message}`,
+        })
+      )
+    );
     child.on("close", (code) => resolve({ code: code ?? -1, stdout, stderr }));
   });
 }

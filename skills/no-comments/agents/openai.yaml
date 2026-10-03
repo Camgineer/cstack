@@ -1,5 +1,5 @@
 interface:
   display_name: "No Comments"
-  short_description: "Spawn Comment Sicko, fix accepted findings, and offer encodings for claimed constraints."
+  short_description: "Strip unneeded code comments from a diff or files before review: a Comment Sicko child flags them, then fix accepted..."
 policy:
   allow_implicit_invocation: false

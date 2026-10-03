@@ -50,11 +50,11 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 
 ### PR mechanics, for every PR
 
-- [ ] Resolve the forge once. Use available authorized GitHub connector tools or a supported CLI backend. Record the backend and any unavailable operations. CLI-only helpers still require their declared dependencies. Never require `gt` for this workflow.
+- [ ] Resolve the forge once per **Forge** in `playbooks/opening-a-pr.md`. Record the backend and any unavailable operations. CLI-only helpers still require their declared dependencies.
 - [ ] Open the PR ready, never draft, with `origin pr create --status open --base <base-branch>` or `gh pr create --base <base-branch>` according to the resolved forge. A stack child targets its parent branch.
 - [ ] Run the repo's lint and typecheck once before the PR-facing push. Push with hooks on.
 - [ ] Run an available prose/code cleanup equivalent before each commit and `no-comments` before review.
-- [ ] Triage every Bugbot and security-reviewer comment per `../references/bugbot-triage.md`.
+- [ ] When review bots (Bugbot or equivalent) or the security reviewer comment, triage each comment per `../references/bugbot-triage.md`.
 - [ ] Rebase onto current trunk before the code-ready report and babysit. Keep that merge base in fix rounds. Rebase again only at merge prep, on a `git merge-tree` conflict with trunk, or on a CI failure that comes from a change on trunk.
 
 ### Verdict and merge, for every PR
@@ -124,7 +124,7 @@ Each live lane owns an isolated worktree at the PR head. Worktrees isolate files
 **Merge.**
 
 - [ ] Root's clean verdict at the exact head SHA.
-- [ ] Bugbot triage done.
+- [ ] Review-bot triage done, if any bot commented.
 - [ ] Rebased onto current trunk after the verdict, patch-id unchanged.
 - [ ] <The owner squash-merges its own PR, or the root appends it to the base-branch stack and the operator lands it bottom-up.>
 

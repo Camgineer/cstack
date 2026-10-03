@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   checks:
-    name: Typecheck, unit and integration tests
+    name: Typecheck, host manifests, unit and integration tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -25,6 +25,6 @@ jobs:
           persist-credentials: false
       - name: Install pinned Bun and run checks
         env:
-          CSTACK_TOOL_ROOT: ${{ runner.temp }}/cstack-tools
-          CSTACK_BUN_CACHE: ${{ runner.temp }}/bun-cache
-        run: bash .codex/setup.sh
+          SETUP_TOOL_ROOT: ${{ runner.temp }}/plugin-tools
+          SETUP_BUN_CACHE: ${{ runner.temp }}/bun-cache
+        run: bash tools/setup.sh

@@ -1,5 +1,5 @@
 interface:
-  display_name: "Simple as prose"
-  short_description: "Write plain, specific prose for people"
+  display_name: "Simple as Prose"
+  short_description: "Write or revise prose for a person or an agent so it is plain, specific, and easy to act on. Use for replies, docs..."
 policy:
   allow_implicit_invocation: true

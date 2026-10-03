@@ -1,0 +1,17 @@
+{
+  "name": "cstack",
+  "owner": {
+    "name": "CStack contributors"
+  },
+  "metadata": {
+    "description": "PStack engineering workflows for any coding agent."
+  },
+  "plugins": [
+    {
+      "name": "cstack",
+      "source": "./",
+      "description": "Engineering workflows for coding agents: investigate, design, build, verify, and review. Adapted from PStack by Lauren Tan (poteto).",
+      "version": "0.16.0"
+    }
+  ]
+}

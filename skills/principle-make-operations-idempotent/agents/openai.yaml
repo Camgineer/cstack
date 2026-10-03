@@ -1,5 +1,5 @@
 interface:
-  display_name: Principle Make Operations Idempotent
-  short_description: Apply when designing commands, lifecycle steps, or processing loops that run amid crashes, restarts, and retries. Conver
+  display_name: "Principle Make Operations Idempotent"
+  short_description: "Apply when designing commands, lifecycle steps, or processing loops that run amid crashes, restarts, and retries..."
 policy:
   allow_implicit_invocation: false

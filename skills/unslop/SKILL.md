@@ -1,9 +1,10 @@
 ---
 name: unslop
 description: Cut AI tells from any writing. Must always apply.
+disable-model-invocation: true
 ---
 
-Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
 
 
 # Unslop

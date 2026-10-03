@@ -3,11 +3,9 @@ name: make-bot-ui
 description: Use when building a custom UI (page, dashboard, buttons) that should wake a Grok Bot over a webhook, when the user must provide a webhook sender key, or when exposing that UI on Tailscale.
 ---
 
-Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
-
 # How to make a bot UI
 
-This source requires Cursor routine APIs and credentials; it is an optional automation reference, not a native Codex workflow. On Codex, report that missing capability before any setup. A native adaptation requires separately authorized design and verification.
+This optional source needs a host that exposes webhook routines through `update_state` and stores sender keys as secrets. No plugin manifest loads it. On a host without that API, report the missing capability before any setup.
 
 Build a page the user clicks. A server on this computer POSTs JSON to a webhook routine. The bot wakes with that JSON. Keep the sender key on the server. Do not put the sender key in the browser, in chat, or in this skill.
 

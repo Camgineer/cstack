@@ -1,14 +1,16 @@
-# Skill mechanics for Codex
+# Skill mechanics
 
-Apply [writing-for-agents](SKILL.md) to the instruction body. This reference covers discovery and invocation in Codex.
+Apply [writing-for-agents](SKILL.md) to the instruction body. This reference covers discovery and invocation. These skills follow the shared `SKILL.md` format, so one skill works in Claude Code, Codex, and Cursor.
 
 ## Discovery
 
-Keep `name` and `description` in `SKILL.md` frontmatter. The description names the task and the conditions for using the skill. Keep required instructions in the body; link branch-specific references where the agent needs them.
+Keep `name` and `description` in `SKILL.md` frontmatter. The description names the task and the conditions for using the skill. Keep required instructions in the body; link branch-specific references where the agent needs them. Keep the body free of harness tool names. Name a capability from the runtime contract instead, and let the host notes map it.
 
-Codex allows implicit invocation by default. Set `policy.allow_implicit_invocation: false` in `agents/openai.yaml` when the skill must be explicit-only. Keep its description for the selector; that policy excludes the skill from default model context. Use `true` or omit the policy when the model should select the skill by task.
+Hosts select a skill by its description by default. Set `disable-model-invocation: true` in the frontmatter when the skill must be explicit-only. Keep its description for the selector. Omit the key when the model should select the skill by task.
 
-An explicit-only skill remains available through its registered identity, such as `$cstack:poteto-mode`. Another workflow can still read its installed file when instructed. Discovery policy is not a file-access restriction. Confirm actual visibility with the host's skill list and prompt inspection.
+In this plugin, the frontmatter is the single source for invocation policy. Codex reads `agents/openai.yaml` instead, and `bun run sync:hosts` generates that file from the frontmatter. Edit the frontmatter and regenerate. Never edit the YAML by hand.
+
+An explicit-only skill stays available to users through its host command, such as `/<plugin>:poteto-mode` or `$<plugin>:poteto-mode`. Another workflow can still read its installed file when instructed. Discovery policy is not a file-access restriction. Confirm actual visibility with the host's skill list.
 
 ## Splitting and routing
 

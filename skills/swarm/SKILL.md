@@ -1,9 +1,10 @@
 ---
 name: swarm
-description: Fan out N parallel workers, drain them, and return one report. Use for $cstack:swarm, 'swarm this', or parallel coverage, races, gauntlets, and exploration.
+description: Fan out N parallel workers, drain them, and return one report. Use for swarm, 'swarm this', or parallel coverage, races, gauntlets, and exploration.
+disable-model-invocation: true
 ---
 
-Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
 
 
 # Swarm
@@ -29,7 +30,7 @@ Open a todolist with one entry per phase before launching anything.
 
 ## Phase B: Fan out
 
-Spawn all N workers through the native tools, using the selected role and explicit scope. Run within actual native capacity, with exclusive writable paths or worktrees. Do not pass Cursor environment or background parameters to Codex tools.
+Spawn all N workers through the native tools, using the selected role and explicit scope. Run within actual native capacity, with exclusive writable paths or worktrees. Pass only the fields the host's spawn tool exposes.
 
 When a worker needs a non-default branch, prepare its isolated worktree at that exact ref before spawning. Pass the working directory through a supported field when available; otherwise include it in the brief and require the child to verify it before writing.
 

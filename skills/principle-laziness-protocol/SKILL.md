@@ -1,9 +1,10 @@
 ---
 name: principle-laziness-protocol
 description: "Apply when refactoring, evaluating diff size, or tempted to add abstractions, layers, or signal threading. Bias toward deletion and the smallest change that solves the problem."
+disable-model-invocation: true
 ---
 
-Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
 
 
 # Laziness Protocol

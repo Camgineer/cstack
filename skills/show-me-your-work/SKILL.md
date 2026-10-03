@@ -1,9 +1,10 @@
 ---
 name: show-me-your-work
-description: 'Keep a reviewable decision trail for long-running or unattended work: a TSV log with one row per decision (what, why, evidence, result). Local by default; commit it when a reviewer needs the trail to trust the result. Use for $cstack:show-me-your-work, autonomous or multi-phase runs, or work a human reviews after stepping away.'
+description: 'Keep a reviewable decision trail for long-running or unattended work: a TSV log with one row per decision (what, why, evidence, result). Local by default; commit it when a reviewer needs the trail to trust the result. Use for show-me-your-work, autonomous or multi-phase runs, or work a human reviews after stepping away.'
+disable-model-invocation: true
 ---
 
-Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
 
 
 # Show me your work
@@ -56,7 +57,7 @@ Commit it only when the work is ambitious enough that a reviewer needs the trail
 
 ## Audit the log against the transcript
 
-At the end of the run, before handing back, check the log told the truth. Read this run's evidence through supported Codex thread/history tools or an authorized export. Do not scan private host storage or other projects. If full tool history is unavailable, label that audit coverage incomplete. Walk this run's rows against what actually happened. Each stretch of them begins at one of this run's `start` rows, or at the first row if this run created the log, and ends at the next `start` row of another run:
+At the end of the run, before handing back, check the log told the truth. Read this run's evidence through the host's supported history tools or an authorized export. Do not scan private host storage or other projects. If full tool history is unavailable, label that audit coverage incomplete. Walk this run's rows against what actually happened. Each stretch of them begins at one of this run's `start` rows, or at the first row if this run created the log, and ends at the next `start` row of another run:
 
 - Check that every row maps to a real decision or action.
 - Check that each row's evidence resolves and shows what the row claims.

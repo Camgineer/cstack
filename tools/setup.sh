@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-tool_root="${CSTACK_TOOL_ROOT:-/workspace/.cstack-tools}"
+tool_root="${SETUP_TOOL_ROOT:-/workspace/.plugin-tools}"
 scripts="$repo_root/skills/poteto-mode/scripts"
 bun_version="$(node -p 'require(process.argv[1]).packageManager.replace(/^bun@/, "")' "$scripts/package.json")"
 if [[ ! "$bun_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -22,8 +22,9 @@ fi
 mkdir -p "$tool_root/bin"
 ln -sfn "$bun" "$tool_root/bin/bun"
 export PATH="$tool_root/bin:$PATH"
-export BUN_INSTALL_CACHE_DIR="${CSTACK_BUN_CACHE:-/workspace/.cache/bun}"
+export BUN_INSTALL_CACHE_DIR="${SETUP_BUN_CACHE:-/workspace/.cache/bun}"
 bun install --cwd "$scripts" --frozen-lockfile --ignore-scripts
 bun run --cwd "$scripts" typecheck
+bun run --cwd "$scripts" check:hosts
 bun run --cwd "$scripts" test
 printf 'Cloud setup verified with Bun %s. Keep %s on the environment PATH.\n' "$bun_version" "$tool_root/bin"

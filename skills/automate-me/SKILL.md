@@ -1,9 +1,10 @@
 ---
 name: automate-me
 description: Use for "automate me", "create/update/refresh my -mode skill", "turn/capture my preferences or working style into a skill", or wanting agents to follow how the user works. Drafts or revises a personal -mode skill via create-skill + unslop, optionally pulling fresh evidence from recent transcripts.
+disable-model-invocation: true
 ---
 
-Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
 
 
 # Automate me
@@ -16,7 +17,7 @@ This skill orchestrates three others: an inline mining pass (see step 1), the av
 
 ### 0. Check for an existing skill
 
-Look recursively for `.agents/skills/**/*-mode/SKILL.md` and `~/.agents/skills/*-mode/SKILL.md` matching the user's handle. Mode skills can live in a personal category directory (`.agents/skills/<handle>/`), not only at the top level. If one exists, confirm intent with the supported user-question tool (unless they already said "update my skill" or similar):
+Look recursively for `<project-skills>/**/*-mode/SKILL.md` and `<user-skills>/*-mode/SKILL.md` matching the user's handle. Mode skills can live in a personal category directory (`<project-skills>/<handle>/`), not only at the top level. If one exists, confirm intent with the supported user-question tool (unless they already said "update my skill" or similar):
 
 - Update the existing skill (default for repeat runs)
 - Start fresh (rare, ask why before doing it)
@@ -28,7 +29,7 @@ Update mode changes the rest of the flow:
 
 ### 1. Mine their history
 
-Locate the current project's authorized conversation history through supported Codex history tools. Export only the requested scope. Do not scan private host storage or other projects. When that capability is missing, use a user-provided export or a clearly labeled active-context digest.
+Locate the current project's authorized conversation history through the host's supported history tools. Export only the requested scope. Do not scan private host storage or other projects. When that capability is missing, use a user-provided export or a clearly labeled active-context digest.
 
 Survey recent agent conversations within that scope for recurring patterns. Run multiple parallel subagents across slices of history (e.g. last 2-4 weeks, split into 3 slices so each has enough material). Each slice mining subagent reads transcripts from the workspace-scoped path the parent provides, looks for the signals below, and returns a short structured list of patterns it saw with evidence pointers. Default signals worth hunting:
 
@@ -68,11 +69,11 @@ The **poteto-mode** skill shows the shape. Read it for granularity. Don't copy i
 
 Use the available `skill-creator` skill to author the skill. Placement:
 
-- Path: preserve an existing mode skill's category. For a new mode, use `.agents/skills/<handle>/<handle>-mode/SKILL.md` when the repo has an established personal category for that handle. Otherwise default to `.agents/skills/<handle>-mode/SKILL.md` in the project (or `~/.agents/skills/<handle>-mode/` if the user prefers a personal skill).
+- Path: preserve an existing mode skill's category. For a new mode, use `<project-skills>/<handle>/<handle>-mode/SKILL.md` when the repo has an established personal category for that handle. Otherwise default to `<project-skills>/<handle>-mode/SKILL.md` in the project (or `<user-skills>/<handle>-mode/` if the user prefers a personal skill).
 - Handle: the user's first name or chosen identifier.
 - Frontmatter `description`: trigger on their name + `/<handle>-mode` + "work in their style", not on generic keywords like "write code" or "review PR".
 - Frontmatter formatting: follow `skill-creator`'s YAML rules. Keep `description` as one YAML scalar. Quote it or use `description: >-` with indented continuation lines when punctuation or wrapping requires it.
-- Add `agents/openai.yaml` with `policy.allow_implicit_invocation: false` by default, plus supported interface metadata. Change discoverability only on request; implicit invocation does not establish sticky session persistence.
+- Set `disable-model-invocation: true` in the frontmatter by default, and add any discovery metadata the host note requires. Change discoverability only on request; implicit invocation does not establish sticky session persistence.
 
 ### 5. Iterate on prose
 

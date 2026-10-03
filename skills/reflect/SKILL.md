@@ -1,9 +1,10 @@
 ---
 name: reflect
 description: Spawn three parallel review subagents over the active transcript, surface learnings, and route each to a concrete edit on an existing skill. Use when the user says reflect.
+disable-model-invocation: true
 ---
 
-Read [the Codex runtime contract](../poteto-mode/references/codex-runtime.md) before executing this workflow.
+Read [the runtime contract](../poteto-mode/references/runtime.md) before executing this workflow.
 
 
 # Reflect
@@ -12,7 +13,7 @@ Mine the current conversation for durable learnings, then route them into skill 
 
 ## When to invoke
 
-Invoke when the user says "reflect" or "$cstack:reflect". Skip when the conversation is trivial, off-topic, or already covered by an existing skill the parent followed correctly. One-offs are not learnings.
+Invoke when the user says "reflect" or "reflect". Skip when the conversation is trivial, off-topic, or already covered by an existing skill the parent followed correctly. One-offs are not learnings.
 
 ## Process
 

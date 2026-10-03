@@ -1,5 +1,5 @@
 interface:
-  display_name: Figure It Out
-  short_description: 'Design an auditable playbook when no narrower one fits: a large migration, an ambitious multi-part change, or work a hum'
+  display_name: "Figure It Out"
+  short_description: "Design an auditable playbook when no narrower one fits: a large migration, an ambitious multi-part change, or work a..."
 policy:
   allow_implicit_invocation: false

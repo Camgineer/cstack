@@ -187,6 +187,20 @@ test("bundled Markdown links point to shipped resources", () => {
   expect(missing).toEqual([]);
 });
 
+test("every bundled skill stays in the agent's skill list", () => {
+  const skills = join(root, "skills");
+  const hidden: string[] = [];
+  for (const directory of readdirSync(skills)) {
+    const source = join(skills, directory, "SKILL.md");
+    if (!existsSync(source)) continue;
+    const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(readFileSync(source, "utf8"))?.[1];
+    expect(frontmatter).toBeDefined();
+    const fields = Bun.YAML.parse(frontmatter ?? "") as Record<string, unknown>;
+    if (fields["disable-model-invocation"] === true) hidden.push(directory);
+  }
+  expect(hidden).toEqual([]);
+});
+
 test("discovery refuses an unauthorized install before launching Codex or creating its home", () => {
   inTemporaryDirectory((directory) => {
     const codexHome = join(directory, "codex home");

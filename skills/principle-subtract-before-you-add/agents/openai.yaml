@@ -2,4 +2,4 @@ interface:
   display_name: "Principle Subtract Before You Add"
   short_description: "Apply when sequencing an addition, refactor, or rewrite. Remove dead code, redundant validators, and stub references..."
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

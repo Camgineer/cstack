@@ -2,4 +2,4 @@ interface:
   display_name: "Principle Minimize Reader Load"
   short_description: "Apply when reviewing or shaping code that's hard to trace. Count layers between question and answer, and hidden..."
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

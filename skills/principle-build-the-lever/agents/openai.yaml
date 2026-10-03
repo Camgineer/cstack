@@ -2,4 +2,4 @@ interface:
   display_name: "Principle Build the Lever"
   short_description: "Apply to any non-trivial work, not just bulk work: edits, migrations, analyses, checks. Build the tool that does it..."
 policy:
-  allow_implicit_invocation: false
+  allow_implicit_invocation: true

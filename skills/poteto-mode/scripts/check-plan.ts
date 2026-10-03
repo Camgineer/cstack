@@ -31,6 +31,9 @@ const HOW_TO_READ_MARKERS = [
 ];
 const PERF_ITEMS = ["Metric.", "Probe.", "Baseline.", "Rule."];
 const BOX = /^\s*- \[[ x]\] (.*)$/;
+const PLUGIN_NAME: string = JSON.parse(fs.readFileSync(new URL("../../../tools/metadata.json", import.meta.url), "utf8")).name;
+const PLUGIN_DIRS = [PLUGIN_NAME, "pstack"].map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+const CONSUMER_SKILL_PATH = new RegExp(`(?:^|[\\s\`"'(])(?:\\./)?(?:${PLUGIN_DIRS})/skills/`);
 
 const file = process.argv[2];
 if (!file) {
@@ -42,7 +45,7 @@ const raw = fs.readFileSync(file, "utf8").split(/\r?\n/);
 const problems: string[] = [];
 const fail = (line: number, message: string) => problems.push(`${file}:${line}: ${message}`);
 for (let i = 0; i < raw.length; i++) {
-	if (/(?:^|[\s`"'(])\/(?:goal|loop)(?=$|[\s`"'),;!?])|(?:^|[\s`"'(])(?:\.\/)?pstack\/skills\//.test(raw[i])) {
+	if (/(?:^|[\s`"'(])\/(?:goal|loop)(?=$|[\s`"'),;!?])/.test(raw[i]) || CONSUMER_SKILL_PATH.test(raw[i])) {
 		fail(i + 1, "unresolved host command or bundled resource path");
 	}
 }

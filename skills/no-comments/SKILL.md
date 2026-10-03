@@ -1,6 +1,6 @@
 ---
 name: no-comments
-description: "Spawn Comment Sicko, fix accepted findings, and offer encodings for claimed constraints."
+description: "Strip unneeded code comments from a diff or files before review: a Comment Sicko child flags them, then fix accepted findings and offer encodings for claimed constraints. Use when a workflow says to run no-comments or the user asks for it."
 disable-model-invocation: true
 ---
 

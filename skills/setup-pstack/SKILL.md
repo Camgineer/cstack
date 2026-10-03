@@ -3,9 +3,9 @@ name: setup-pstack
 description: Check which of this plugin's workflows the current harness can run, with its native tools, model choices, and verification capabilities, before using them in a project. Use for setup-pstack or plugin setup.
 ---
 
-# Set up PStack workflows
+# Set up the plugin's workflows
 
-Read [the runtime contract](../poteto-mode/references/runtime.md). Keep the upstream skill identifier. Setup establishes what this host can do; ordinary workflows require no generated configuration.
+Read [the runtime contract](../poteto-mode/references/runtime.md). Setup establishes what this host can do; ordinary workflows require no generated configuration.
 
 1. Identify the current harness and read its host note from the runtime contract. Identify the project, available skill discovery, native delegation/status tools, and authorized source-control or connector access. Inspect actual schemas before selecting fields. Use a supported readiness workflow if the environment is starting.
 2. Retain the user's current native model choices. For ordinary single-role work, inherit when no override is requested. If the user wants a specific model or a diverse panel, use an exposed model catalog and the actual delegation schema to establish supported model IDs and reasoning efforts. Preserve the workflow's seat count; report unavailable diversity and obtain the user's choice before reducing that requirement.

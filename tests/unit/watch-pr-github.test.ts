@@ -1,6 +1,10 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   ChecksUnavailable,
+  GhGitHubReader,
   WatcherQueryError,
   mapRollupNode,
   orderStack,
@@ -302,5 +306,27 @@ describe("context and stack discovery", () => {
       },
     ]);
     expect(ordered.map((item) => Number(item.number))).toEqual([41, 42, 43]);
+  });
+});
+
+describe("GhGitHubReader", () => {
+  it("reports a missing gh as a non-retryable query failure", async () => {
+    const emptyPath = await mkdtemp(join(tmpdir(), "watch-pr-path-"));
+    const originalPath = process.env.PATH;
+    process.env.PATH = emptyPath;
+    try {
+      const error = await new GhGitHubReader().currentPr(null).catch(
+        (caught: unknown) => caught
+      );
+      expect(error).toBeInstanceOf(WatcherQueryError);
+      expect((error as WatcherQueryError).failure).toEqual({
+        kind: "command-spawn",
+        retryable: false,
+        detail: "gh not found on PATH",
+      });
+    } finally {
+      process.env.PATH = originalPath;
+      await rm(emptyPath, { recursive: true, force: true });
+    }
   });
 });

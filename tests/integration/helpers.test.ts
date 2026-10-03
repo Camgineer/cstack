@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
@@ -46,7 +46,7 @@ test.each(["orch/orch.ts", "watch-pr/watch-pr"])(
   },
 );
 
-test("worktree audit preserves a path with spaces and requires chat-history review", () => {
+test("worktree audit preserves a path with spaces and checks merges against the remote default branch", () => {
   inTemporaryDirectory((directory) => {
     const repository = join(directory, "billing repository");
     const worktree = join(directory, "invoice export worktree");
@@ -61,9 +61,10 @@ test("worktree audit preserves a path with spaces and requires chat-history revi
       const result = spawnSync("git", ["-c", "core.hooksPath=/dev/null", "-C", repository, ...args], { env, encoding: "utf8", timeout: 10_000 });
       if (result.status !== 0) throw new Error(`fixture git ${args[0]} failed\n${result.stderr}`);
     }
-    git("init", "-b", "main");
+    git("init", "-b", "trunk");
     git("-c", "user.name=Fixture", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "fixture");
-    git("update-ref", "refs/remotes/origin/main", "HEAD");
+    git("update-ref", "refs/remotes/origin/trunk", "HEAD");
+    git("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/trunk");
     git("worktree", "add", "-b", "invoice-export", worktree);
     const bins = join(directory, "bin");
     mkdirSync(bins);
@@ -79,8 +80,33 @@ test("worktree audit preserves a path with spaces and requires chat-history revi
     const rows = result.stdout.trim().split("\n").map((line) => line.split("\t"));
     expect(rows).toHaveLength(2);
     expect(rows[1]).toEqual([
-      expect.any(String), expect.any(String), "YES", "clean", "no-remote", "-", "unavailable", "review-history", worktree,
+      expect.any(String), expect.any(String), "YES", "clean", "no-remote", "-", "review-history", worktree,
     ]);
     expect(existsSync(worktree)).toBe(true);
+  });
+});
+
+test("decision log keeps one header, one line per row, and guards formula cells", () => {
+  inTemporaryDirectory((directory) => {
+    const log = join(directory, "logs", "decisions.tsv");
+    const append = (...cells: string[]) => {
+      const result = spawnSync("bash", [resolve(import.meta.dir, "../../skills/show-me-your-work/scripts/log.sh"), log, ...cells], {
+        encoding: "utf8",
+        timeout: 10_000,
+      });
+      expect(result.stderr).toBe("");
+      expect(result.status).toBe(0);
+    };
+    append("build", "=HYPERLINK(\"x\")", "tab\there", "line\nbreak", "ok");
+    append("verify", "plain", "why", "evidence", "-1");
+
+    const lines = readFileSync(log, "utf8").split("\n");
+    expect(lines.pop()).toBe("");
+    expect(lines[0]).toBe("ts\tphase\tdecision\twhy\tevidence\tresult");
+    expect(lines).toHaveLength(3);
+    const rows = lines.slice(1).map((line) => line.split("\t"));
+    expect(rows.map((row) => row.length)).toEqual([6, 6]);
+    expect(rows[0]?.slice(1)).toEqual(["build", "'=HYPERLINK(\"x\")", "tab here", "line break", "ok"]);
+    expect(rows[1]?.slice(1)).toEqual(["verify", "plain", "why", "evidence", "'-1"]);
   });
 });

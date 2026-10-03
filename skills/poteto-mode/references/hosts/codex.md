@@ -13,4 +13,6 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 Skill directories. `<project-skills>` is `.agents/skills` in the project. `<user-skills>` is `~/.agents/skills`.
 
+Plugin root. Two levels above a loaded skill's `SKILL.md`, per the runtime contract.
+
 Invocation policy. Codex reads explicit-only policy from `agents/openai.yaml` beside a skill's `SKILL.md`, not from frontmatter. A project skill that sets `disable-model-invocation: true` also needs that file with `policy.allow_implicit_invocation: false`. The plugin generates its own copies from frontmatter, so edit the frontmatter in the plugin source and regenerate.

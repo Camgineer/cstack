@@ -35,7 +35,7 @@ Write one clear paragraph. If you're unsure about the intent, ask the user befor
 
 ## Step 3, Spawn Reviewers
 
-Launch the `interrogate reviewers` panel through native read-only delegation, in parallel within available capacity. Preserve the upstream three-seat default unless the user selected another size. Resolve supported model choices and unavailable diversity through the runtime contract first. Each reviewer gets the same template and rubric. Preserve aliases as seats, but do not call a same-model panel model-diverse. Use the native runtime contract for persona, model/effort, and sandbox fields; never guess rejected model slugs or silently replace a family. Name any missing lane and its impact.
+Launch the `interrogate reviewers` panel through native read-only delegation, in parallel within available capacity. Preserve the three-seat default unless the user selected another size. Resolve supported model choices and unavailable diversity through the runtime contract first. Each reviewer gets the same template and rubric. Preserve aliases as seats, but do not call a same-model panel model-diverse. Use the native runtime contract for persona, model/effort, and sandbox fields; never guess rejected model slugs or silently replace a family. Name any missing lane and its impact.
 
 Read `references/reviewer-prompt.md` and fill in the template with:
 1. The stated intent

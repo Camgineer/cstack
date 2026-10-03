@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Dirent } from "node:fs";
 import {
   access,
+  link,
   mkdir,
   open,
   readFile,
@@ -13,10 +14,12 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 
 const UNIT_HEADER = "id\ttrack\tstate\tbranch\tpr\tsha\tbrief";
 const LEDGER_HEADER = "pr\tsha\tverdict\tevidence\tverifier\tts";
 const LOCK_FILE = ".orch.lock";
+const LOCK_WAIT_MS = 5000;
 
 export type Verdict =
   | "live-ui-verified"
@@ -176,6 +179,7 @@ export interface AddStandingParams {
 
 export interface OpenStoreOptions {
   readonly force?: boolean;
+  readonly lockWaitMs?: number;
   readonly onLockStolen?: (holder: string) => void;
   readonly onStaleLock?: (holder: string) => void;
 }
@@ -384,47 +388,68 @@ async function acquireLock(
 ): Promise<() => Promise<void>> {
   const path = join(store, LOCK_FILE);
   const pid = String(process.pid);
+  const deadline = Date.now() + (options.lockWaitMs ?? LOCK_WAIT_MS);
   const create = async (): Promise<void> => {
     const handle = await open(path, "wx");
     await handle.writeFile(`${pid}\n`);
     await handle.close();
   };
-
-  const takeOver = async (): Promise<void> => {
-    await unlink(path);
+  const readHolder = async (): Promise<string | null> => {
     try {
-      await create();
-    } catch (retryError) {
-      if (errorCode(retryError) === "EEXIST") {
-        const retryHolder =
-          (await readFile(path, "utf8")).trim() || "unknown";
-        throw new UserError(`store lock held by pid ${retryHolder}`);
+      return (await readFile(path, "utf8")).trim() || "unknown";
+    } catch (error) {
+      return errorCode(error) === "ENOENT" ? null : "unknown";
+    }
+  };
+  // Rename claims the lock file atomically, so two processes that saw the
+  // same stale holder cannot both delete it; a loser restores what it moved.
+  const removeIfHeldBy = async (holder: string): Promise<boolean> => {
+    const claimed = `${path}.${pid}.${randomUUID()}.claim`;
+    try {
+      await rename(path, claimed);
+    } catch (error) {
+      if (errorCode(error) === "ENOENT") {
+        return false;
       }
-      throw retryError;
+      throw error;
+    }
+    try {
+      if (((await readFile(claimed, "utf8")).trim() || "unknown") === holder) {
+        return true;
+      }
+      await link(claimed, path).catch((error: unknown) => {
+        if (errorCode(error) !== "EEXIST") {
+          throw error;
+        }
+      });
+      return false;
+    } finally {
+      await rm(claimed, { force: true });
     }
   };
 
-  try {
-    await create();
-  } catch (error) {
-    if (errorCode(error) !== "EEXIST") {
-      throw error;
-    }
-    let holder = "unknown";
+  for (let delay = 10; ; delay = Math.min(delay * 2, 200)) {
     try {
-      holder = (await readFile(path, "utf8")).trim() || "unknown";
-    } catch {
-      holder = "unknown";
+      await create();
+      break;
+    } catch (error) {
+      if (errorCode(error) !== "EEXIST") {
+        throw error;
+      }
     }
-    if (holderIsDead(holder)) {
-      options.onStaleLock?.(holder);
-      await takeOver();
-    } else if (options.force) {
-      options.onLockStolen?.(holder);
-      await takeOver();
-    } else {
+    const holder = await readHolder();
+    if (holder === null) {
+      continue;
+    }
+    const stale = holderIsDead(holder);
+    if ((stale || options.force) && (await removeIfHeldBy(holder))) {
+      (stale ? options.onStaleLock : options.onLockStolen)?.(holder);
+      continue;
+    }
+    if (Date.now() >= deadline) {
       throw new UserError(`store lock held by pid ${holder}`);
     }
+    await sleep(delay + Math.random() * delay);
   }
 
   return async (): Promise<void> => {

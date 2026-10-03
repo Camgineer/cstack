@@ -12,3 +12,5 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **Continue later** | A Cursor automation the user authorized. Otherwise report the gap. |
 
 Skill directories. `<project-skills>` is `.cursor/skills` in the project. `<user-skills>` is `~/.cursor/skills`.
+
+Plugin root. Two levels above a loaded skill's `SKILL.md`, per the runtime contract.

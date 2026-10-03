@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -74,6 +75,27 @@ class Plans(unittest.TestCase):
         result = self.run_plan(self.plan)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("1 PR sections, 0 problems", result.stdout)
+
+    def test_both_autopilot_audits_read_installed_resources_from_a_consumer_repo(self):
+        with tempfile.TemporaryDirectory(prefix="autopilot resources ") as temporary:
+            folder = Path(temporary)
+            consumer = folder / "unrelated consumer"
+            consumer.mkdir()
+            plugin = folder / "loaded plugin"
+            for name in ("autopilot-full", "autopilot-stack"):
+                with self.subTest(playbook=name):
+                    relative = Path(f"skills/poteto-mode/playbooks/{name}.md")
+                    installed = plugin / relative
+                    installed.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(ROOT / relative, installed)
+                    text = installed.read_text()
+                    command = re.search(r'`(cat "<resolved-plugin-root>/[^"\n]+")`', text)
+                    self.assertIsNotNone(command, "audit must read its resolved installed resource")
+                    arguments = shlex.split(command.group(1).replace("<resolved-plugin-root>", str(plugin)))
+                    result = subprocess.run(arguments, cwd=consumer, capture_output=True,
+                                            text=True, check=True, timeout=10)
+                    self.assertEqual(result.stdout, text)
+                    self.assertNotIn("git show origin/main:skills/", text)
 
     def test_missing_objective_is_rejected(self):
         result = self.run_plan(self.plan.replace("Program objective.", "Objective omitted."))

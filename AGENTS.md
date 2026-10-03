@@ -11,3 +11,15 @@ This applies to replies, documentation, PR descriptions, commit messages, code c
 Before returning or saving the text, review it against the applicable guidance. Keep the full guidance in the linked skills and load it when writing work begins.
 
 Preserve agent inputs, license notices, and source provenance. Keep task reports and review evidence outside the repository or in the pull request.
+
+## Documentation scope
+
+Keep the root README as this repository's only human guide. Keep other instructional prose agent-facing, with a clear workflow or context pointer that reaches it. Classify files by their actual use; an agent verification index may still be named README.md. Preserve legal notices, provenance, and machine metadata.
+
+## PStack imports
+
+When importing an upstream update, compare the recorded PStack baseline, the target upstream revision, and current CStack. Adapt useful changes to CStack's native Codex workflows and Bun/TypeScript tooling. Prioritize CStack's behavior and architecture over upstream path or syntax compatibility. Verify affected workflows and prepare a reviewable PR that identifies imported changes, deliberate omissions, and unresolved issues. Keep merge and installation decisions within the user's authorization.
+
+## Test scope
+
+Keep tests that protect a concrete failure in supported behavior, using observable results at the relevant boundary. Prefer real CLI, filesystem, and Git fixtures where practical. Verify agent workflow quality through realistic task execution. Reconsider a test when it only repeats implementation details or checks document wording.

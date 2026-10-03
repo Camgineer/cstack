@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "isolatedModules": true,
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "esnext",
+    "types": [
+      "bun-types"
+    ],
+    "verbatimModuleSyntax": true
+  },
+  "include": [
+    "**/*.ts",
+    "../../../tests/**/*.ts"
+  ]
+}

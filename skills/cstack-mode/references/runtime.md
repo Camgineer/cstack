@@ -39,7 +39,7 @@ Use the user's current supported model choices when provided. Otherwise inherit 
 
 Keep the workflow's default three-seat panel unless the user selected another size. Before a diverse-model panel, establish supported choices for its seats and cross-judge. If the host cannot provide the requested diversity, report that and get the user's choice between a reduced panel and waiting. Independent prompts alone do not make a panel diverse. Treat a rejected model ID as a missing lane. Never guess provider slugs or change model families silently.
 
-The plugin needs no model configuration file, provider gateway, or setup script. Use `setup-pstack` to assess available capabilities when needed.
+The plugin needs no model configuration file, provider gateway, or setup script.
 
 ## Skills, resources, and writing
 

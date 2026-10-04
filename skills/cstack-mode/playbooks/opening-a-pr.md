@@ -2,7 +2,7 @@
 
 Invoked at the end of every other playbook.
 
-**Worktree.** Fetch the trunk, then work from a git worktree off the fetched trunk tip, not the local ref. Subagents inherit it. Multiple native subagent calls on the same branch each get their own worktree, or `git fetch && git reset --hard origin/<branch>` between them. Dirty branch with unrelated work: patch out, fresh worktree, apply. Snarled worktree: reset from main, redo minimally.
+**Worktree.** Fetch the trunk, then work from a git worktree off the fetched trunk tip, not the local ref. Subagents inherit it. Name its base SHA in each subagent's brief. A subagent's claim that something is absent holds only for that SHA, so recheck it against the current trunk before you act on it. Multiple native subagent calls on the same branch each get their own worktree, or `git fetch && git reset --hard origin/<branch>` between them. Dirty branch with unrelated work: patch out, fresh worktree, apply. Snarled worktree: reset from main, redo minimally.
 
 **Commits.** Commit liberally. Rebase into small, ordered commits before opening PRs, one purpose per commit. Each commit is a future PR: landable, ordered to tell the story. Amend when the fix belongs in a just-made commit. New commit when separable. Before regrouping commits that are already pushed, record `git rev-parse HEAD^{tree}`. Before the force-push, confirm the tree hash is unchanged. A different hash means the regroup changed content, so stop and restore the original branch.
 

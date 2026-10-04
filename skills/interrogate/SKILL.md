@@ -35,7 +35,7 @@ Write one clear paragraph. When a signed spec from the **align** skill covers th
 
 ## Step 3, Spawn Reviewers
 
-Launch the `interrogate reviewers` panel in parallel within available capacity, with each seat resolved from the `review` role per **Model roles** in the runtime contract. Native seats use read-only delegation. Each reviewer gets the same template and rubric. Name any missing lane and its impact, and call the panel model-diverse only when the contract allows it.
+Launch the `interrogate reviewers` panel in parallel within available capacity, with each seat resolved from the `review` role per **Model roles** in the runtime contract. Native seats use read-only delegation. Each reviewer gets the same template and rubric. Before you report a panel whose seats share one family, check every runner this session can reach for another family, including other agent CLIs and linked devices. Name any missing lane and its impact, and call the panel model-diverse only when the contract allows it.
 
 Read `references/reviewer-prompt.md` and fill in the template with:
 1. The stated intent

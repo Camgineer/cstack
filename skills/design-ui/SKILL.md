@@ -1,6 +1,6 @@
 ---
 name: design-ui
-description: Use before writing or changing how any UI looks, including a new page, component, form, or empty state, a restyle or polish, or a design review. Builds inside the project's design tokens, covers every state, and proves it with screenshots.
+description: Use before writing or changing how any UI looks, including a new page, component, form, or empty state, a restyle, or polish, and to critique a UI's design without changing it. Builds inside the project's design tokens, covers every state, and proves it with screenshots.
 metadata:
   source: "Ideas adapted, not copied, from hallmark by nutlope (https://github.com/nutlope/hallmark), MengTo/Skills (https://github.com/MengTo/Skills), layers by Jamie Mill (https://github.com/jamiemill/layers-skills), and design-plugin by 0xdesign (https://github.com/0xdesign/design-plugin). Each declares the MIT license."
 ---
@@ -67,6 +67,8 @@ Delete the temporary preview when you are done, unless the project keeps a galle
 Done when every state renders at every width with zero DOM or accessibility failures.
 
 ## 6. Critique blind
+
+When you have no **Delegate** capability, as inside a subagent, stop here. Return the screenshots, the system note, and the inventory to your parent for this step, and say you handed it off.
 
 Use the **Delegate** capability to start a reviewer that never saw your reasoning. Give it the screenshots, the system note, the inventory, the user's request, and [gates.md](references/gates.md). It returns findings that each cite a screenshot and an element, ranked:
 

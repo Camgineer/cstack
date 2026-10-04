@@ -16,6 +16,8 @@ function inRepositoryCopy(run: (directory: string) => void): void {
     writeFileSync(metadata, readFileSync(metadata, "utf8").replace(/"version": "[^"]*"/, '"version": "1.4.2"'));
     const git = (...args: string[]) => spawnSync("git", args, { cwd: directory, encoding: "utf8" });
     expect(git("init", "--quiet", "--initial-branch=main").status).toBe(0);
+    expect(git("config", "user.name", "Fixture").status).toBe(0);
+    expect(git("config", "user.email", "fixture@example.com").status).toBe(0);
     expect(git("add", ".").status).toBe(0);
     expect(git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.com", "commit", "--quiet", "--message", "base").status).toBe(0);
     expect(spawnSync(process.execPath, [join(directory, "tools/sync-hosts.ts")]).status).toBe(0);
@@ -27,6 +29,7 @@ function inRepositoryCopy(run: (directory: string) => void): void {
 
 function version(directory: string, command: string, title: string) {
   return spawnSync(process.execPath, [join(directory, "tools/version.ts"), command, "--base", "main", "--title", title], {
+    cwd: directory,
     encoding: "utf8",
     timeout: 20_000,
   });
@@ -70,5 +73,74 @@ test("a PR title outside the Conventional Commits types is rejected", () => {
     expect(shipped(directory)).toBe("1.4.2");
     expect(version(directory, "bump", "revert: undo the lanes (#12)").status).toBe(0);
     expect(shipped(directory)).toBe("1.4.3");
+  });
+});
+
+test("merge takes the base's version files, keeps both sides' other changes, and bumps over the base", () => {
+  inRepositoryCopy((directory) => {
+    const git = (...args: string[]) => spawnSync("git", ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.com", ...args], { cwd: directory, encoding: "utf8" });
+    const metadata = join(directory, "tools/metadata.json");
+    expect(git("add", "-A").status).toBe(0);
+    expect(git("commit", "--quiet", "--message", "synced").status).toBe(0);
+
+    expect(git("checkout", "--quiet", "-b", "lanes").status).toBe(0);
+    writeFileSync(join(directory, "skills/lanes.md"), "lanes\n");
+    writeFileSync(metadata, readFileSync(metadata, "utf8").replace(/"license": "[^"]*"/, '"license": "Apache-2.0"'));
+    expect(version(directory, "bump", "feat(swarm): add lanes").status).toBe(0);
+    expect(git("add", "-A").status).toBe(0);
+    expect(git("commit", "--quiet", "--message", "lanes").status).toBe(0);
+
+    expect(git("checkout", "--quiet", "main").status).toBe(0);
+    writeFileSync(metadata, readFileSync(metadata, "utf8").replace(/"description": "[^"]*"/, '"description": "A changed description."'));
+    expect(version(directory, "bump", "fix: change the description").status).toBe(0);
+    expect(git("add", "-A").status).toBe(0);
+    expect(git("commit", "--quiet", "--message", "description").status).toBe(0);
+
+    expect(git("checkout", "--quiet", "lanes").status).toBe(0);
+    const lanes = join(directory, "skills/lanes.md");
+    writeFileSync(lanes, "edited\n");
+    const dirty = version(directory, "merge", "feat(swarm): add lanes");
+    expect(dirty.status).toBe(1);
+    expect(dirty.stderr).toContain("Commit or stash your changes");
+    writeFileSync(lanes, "lanes\n");
+    writeFileSync(join(directory, "notes.txt"), "draft\n");
+    const merged = version(directory, "merge", "feat(swarm): add lanes");
+    expect(merged.stderr).toBe("");
+    expect(merged.status).toBe(0);
+    expect(shipped(directory)).toBe("1.5.0");
+    expect(readFileSync(metadata, "utf8")).toContain('"description": "A changed description."');
+    expect(readFileSync(metadata, "utf8")).toContain('"license": "Apache-2.0"');
+    expect(readFileSync(join(directory, "skills/lanes.md"), "utf8")).toBe("lanes\n");
+    expect(git("status", "--porcelain").stdout).toBe("?? notes.txt\n");
+    expect(git("rev-list", "--parents", "-n", "1", "HEAD").stdout.trim().split(" ")).toHaveLength(3);
+    expect(spawnSync(process.execPath, [join(directory, "tools/sync-hosts.ts"), "--check"]).status).toBe(0);
+  });
+});
+
+test("merge resolves the version files and stops on any other conflict", () => {
+  inRepositoryCopy((directory) => {
+    const git = (...args: string[]) => spawnSync("git", ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.com", ...args], { cwd: directory, encoding: "utf8" });
+    const shared = join(directory, "skills/shared.md");
+    writeFileSync(shared, "base\n");
+    expect(git("add", "-A").status).toBe(0);
+    expect(git("commit", "--quiet", "--message", "shared").status).toBe(0);
+
+    expect(git("checkout", "--quiet", "-b", "lanes").status).toBe(0);
+    writeFileSync(shared, "lanes\n");
+    expect(version(directory, "bump", "feat(swarm): add lanes").status).toBe(0);
+    expect(git("add", "-A").status).toBe(0);
+    expect(git("commit", "--quiet", "--message", "lanes").status).toBe(0);
+
+    expect(git("checkout", "--quiet", "main").status).toBe(0);
+    writeFileSync(shared, "main\n");
+    expect(version(directory, "bump", "fix: edit shared").status).toBe(0);
+    expect(git("add", "-A").status).toBe(0);
+    expect(git("commit", "--quiet", "--message", "main").status).toBe(0);
+
+    expect(git("checkout", "--quiet", "lanes").status).toBe(0);
+    const merged = version(directory, "merge", "feat(swarm): add lanes");
+    expect(merged.status).toBe(1);
+    expect(merged.stderr).toContain("skills/shared.md");
+    expect(git("diff", "--name-only", "--diff-filter=U").stdout.trim()).toBe("skills/shared.md");
   });
 });

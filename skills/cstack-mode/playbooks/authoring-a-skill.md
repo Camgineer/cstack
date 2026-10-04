@@ -3,7 +3,7 @@
 **You own the skill's voice.**
 
 1. Invoke `writing-for-agents` and read its `SKILL-MECHANICS.md`.
-2. Validate the skill: frontmatter has `name` and `description`, referenced files exist, cross-skill links resolve.
+2. Validate the skill: frontmatter has `name` and `description`, referenced files exist, cross-skill links resolve. When the edit changes when an agent stops, acts, or reports instead of fixing, read the conditions that skill and its sibling playbooks already set, and write each one the edit overrides as an explicit exception at that rule, pointing to the new rule.
 3. Eval the skill per **Eval**'s skill section: realistic tasks run with the skill and against a baseline, plus trigger evals when the description is new or changed. Bundle into `scripts/` any helper the run transcripts show every run writing for itself.
 4. Run **Opening a PR**.
 

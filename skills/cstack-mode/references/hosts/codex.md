@@ -19,4 +19,4 @@ Invocation policy. Codex reads explicit-only policy from `agents/openai.yaml` be
 
 Persistent mode. Codex runs the plugin's `hooks/hooks.json` once the user reviews and trusts the hooks. Until then, the mode lasts for the current session only. Typing the `cstack-mode` command turns the mode on for the project, and the SessionStart hook restores it at startup, resume, `/clear`, and compaction.
 
-Attribution. The current Codex configuration reference has no commit or PR attribution key, so the **Authorship** rule in `playbooks/opening-a-pr.md` is the whole control. An older build with the `codex_git_commit` feature reads `commit_attribution` from `~/.codex/config.toml`; set it to `""` there. Cloud tasks open PRs through the Codex connector, which no setting changes.
+Attribution. The current Codex configuration reference has no commit or PR attribution key, so the **Authorship** rule in `playbooks/opening-a-pr.md` is the whole control.

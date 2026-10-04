@@ -51,7 +51,7 @@ In Claude Code and Codex, the mode stays on for the project once you invoke it, 
 
 ## Keep yourself the only author
 
-The plugin's PR playbook writes commits, PRs, and comments with no AI attribution, and it sets the commit author to you. Each harness also adds its own attribution, which you turn off on your computer:
+The plugin's PR playbook writes commits, PRs, and comments with no AI attribution, and it checks that you are the commit author. Each harness also adds its own attribution, which you turn off on your computer:
 
 | Harness | Setting |
 | --- | --- |

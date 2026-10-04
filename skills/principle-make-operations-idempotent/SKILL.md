@@ -1,6 +1,6 @@
 ---
 name: principle-make-operations-idempotent
-description: "Apply when designing commands, lifecycle steps, or processing loops that run amid crashes, restarts, and retries. Converge to the same end state regardless of partial prior runs."
+description: "Apply when designing commands, lifecycle steps, or processing loops that run amid crashes, restarts, and retries, or when retrying an external side effect such as a key, secret, or webhook. Converge to the same end state regardless of partial prior runs."
 disable-model-invocation: true
 ---
 
@@ -18,6 +18,7 @@ Design operations so they converge to the correct state regardless of how many t
 - Content-based cleanup: compare by content equivalence, not creation order
 - Self-healing locks: use PID-based stale lock detection
 - Idempotent scheduling: failed work respawns cleanly, fresh input regenerated after each cycle
+- External side effects (keys, secrets, webhooks): before a retry, or after a person may have run the step, list the live state and report any duplicate. Removing a duplicate credential is an **Always pause** write in the `cstack-mode` skill
 
 **The test:**
 1. What happens if this runs twice in a row?

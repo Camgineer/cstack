@@ -94,5 +94,7 @@ On a GitHub repository, the retro gate makes the retro record a merge requiremen
 1. In its own PR, copy `gate/retro.yml` to `.github/workflows/retro.yml` and `gate/retro-gate.jq` to `.github/retro-gate.jq`.
 2. After that PR merges, ask a repository admin to add `Retro` to the default branch's required status checks. Only an admin can change that setting.
 
+The gate is the `Retro` commit status, not the `retro` workflow job. The job passes once it has posted the status, while the status stays pending until the record exists. Until `Retro` is a required check, a PR armed for auto-merge at ready can merge before its retro runs.
+
 The gate needs `gh` and `jq`, which GitHub-hosted runners include. On another forge, the retro record stays a comment with no gate.
 

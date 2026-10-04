@@ -50,9 +50,10 @@ Read the block only from that file. A runner is a command that runs on the perso
 | --- | --- |
 | `build` | Implementation delegates, such as the cstack agent a playbook hands a fix or a slice, and arena runners |
 | `review` | The fresh-context reviewer in Readiness, each interrogate seat, arena's cross-judge, and the verifiers in Shipping and Autopilot-full |
+| `advisor` | The second opinion in align's Advise step, a tripwire's re-sign, and a one-way door in the Autonomous run |
 | `image` | The Image generation playbook, on hosts whose note maps no **Generate an image** capability. It has no host-model fallback. |
 
-Each line is `<role>: <runner>, <option>, ...`. The runner is `native`, the host's own Delegate capability, or a command that runs another agent CLI, such as `codex exec`, `claude -p`, or `cursor-agent -p`. Options are `model <id>`, `effort <level>`, `fast`, and any other setting the runner documents. An option left out takes the runner's default. A role can list several runners separated by `;`. A single step uses the first. A panel or a set of lanes gives one to each seat in order, and the host's model fills the rest.
+Each line is `<role>: <runner>, <option>, ...`. The runner is `native`, the host's own Delegate capability, or a command that runs another agent CLI, such as `codex exec`, `claude -p`, or `cursor-agent -p`. Options are `model <id>`, `effort <level>`, `fast`, and any other setting the runner documents. An option left out takes the runner's default. A role can list several runners separated by `;`. A single step uses the first. A panel or a set of lanes gives one runner to each seat in order, and the seats left over run on the host's model, so a `review` line with one runner fills one interrogate seat and the host fills the other two.
 
 Resolve a role before each delegated step:
 

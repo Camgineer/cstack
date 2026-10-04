@@ -1,6 +1,8 @@
 ---
 name: reflect
 description: Run three parallel reviewers and a synthesizer over a session to find durable lessons, and route each to an edit on a skill, a principle, or the repo's agent guidance. Use for reflect, retro, or right after you mark your own PR ready.
+metadata:
+  source: "The tooling reviewer's environment lens adapts the retro categories from mattpocock/skills, https://github.com/mattpocock/skills"
 ---
 
 Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.

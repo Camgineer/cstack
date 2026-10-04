@@ -18,14 +18,22 @@ Examples of the pattern:
 - User describes a flaky test the agent could have queried via an observability MCP. Routing: the debugging skill should mention the observability MCP.
 - User links a chat thread the agent could have fetched via a chat MCP. Routing: the relevant skill should mention the chat MCP.
 
-## Lens addition: navigability
+## Lens addition: environment
 
-Flag every place the agent spent turns finding information the repo could have handed it: repeated searches for one fact, the wrong file read first, a doc that turned out stale, or a pointer in the agent guidance that led nowhere.
+Review the environment the agent worked in, not only the code it wrote. Flag every place the repo made the work slower or less safe:
 
-For each such place:
-- Principle: a sentence on what the agent needed and where it should have found it.
-- Evidence: the searches or reads it took, and what finally answered it.
-- Routing: `repo guidance: <path>` to add or sharpen a pointer in the agent guidance, or to fix or delete the stale doc. A repo path is fine here, because the guidance changes with the code it describes.
+- **Navigation.** Repeated searches for one fact, the wrong file read first, or a pointer in the agent guidance that led nowhere.
+- **Information access.** A doc that turned out stale, or a fact the agent could only get by asking the user.
+- **Guardrails.** A mistake that no check caught. The missing check is the finding.
+- **Mechanical rules in prose.** A rule a script, lint, or check could enforce, written as an instruction instead.
+- **Misplaced steering.** Guidance that sits where the agent reads it too late or too often, such as a one-workflow rule in the always-loaded agent guidance.
+- **Dead steering.** An instruction the session never followed or never needed.
+- **Tool economy.** Many calls where one command or script would do.
+
+For each:
+- Principle: a sentence on what the agent needed and where the environment should have given it.
+- Evidence: the calls it took, and what finally answered or caught it.
+- Routing: `repo guidance: <path>` to add, move, sharpen, or delete guidance or a stale doc. A missing check or a mechanical rule routes to Backlog per the **encode-lessons-in-structure** principle. A repo path is fine here, because the guidance changes with the code it describes.
 
 Read the active transcript at <ABSOLUTE_PATH> (or use the digest below if no path is given).
 

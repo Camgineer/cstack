@@ -10,12 +10,15 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **Invoke a skill** | `$<plugin>:<skill>`. Skills marked explicit-only in `agents/openai.yaml` stay out of the default selector, but their files remain readable. |
 | **History** | Thread and history tools when the session exposes them. Otherwise use a transcript or digest the user supplies. |
 | **Continue later** | A native automation or scheduled task the user authorized. Otherwise report the gap. |
+| **Generate an image** | The built-in `image_gen` tool, through the `$imagegen` skill. It saves under `~/.codex/generated_images/<session-id>/` and takes no output path, size, or quality, so copy the file into place and resize it. `codex exec` from another host reaches the same tool. |
 
 Skill directories. `<project-skills>` is `.agents/skills` in the project. `<user-skills>` is `~/.agents/skills`.
 
 Instructions file. Codex reads `AGENTS.md` at the project root at session start.
 
 Model roles. A `native` role passes its model and reasoning effort through the subagent tool's fields when this session's schema has them. Otherwise use a custom agent file in `~/.codex/agents/` or `.codex/agents/` that sets `model` and `model_reasoning_effort`.
+
+User instructions file. `~/.codex/AGENTS.md`, which Codex loads in every project.
 
 Plugin root. Two levels above a loaded skill's `SKILL.md`, per the runtime contract.
 

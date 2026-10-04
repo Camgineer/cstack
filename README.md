@@ -51,7 +51,7 @@ In Claude Code and Codex, the mode stays on for the project once you invoke it, 
 
 ## Learn from every PR
 
-When an agent reports a PR ready to merge, it runs a retro with the `reflect` skill. Lessons for your repository go to its `AGENTS.md`, and lessons for the plugin go to a draft for the plugin's repository. Each lesson lands in a draft PR that waits for your review. A PR with nothing to learn gets a `Retro: no lessons` comment.
+Before an agent marks a PR ready to merge, it runs a retro with the `reflect` skill. Lessons for your repository go to its `AGENTS.md`, and lessons for the plugin go to a draft for the plugin's repository. The lessons land in one PR that goes through the same review and merge rules as any other PR. A PR with nothing to learn gets a `Retro: no lessons` comment.
 
 On GitHub, you can make the retro a merge requirement. Ask an agent to install the retro gate, then add the `Retro` status check to your default branch's required checks.
 

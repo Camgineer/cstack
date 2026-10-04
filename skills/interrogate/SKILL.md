@@ -31,7 +31,7 @@ Before spawning reviewers, state the intent explicitly. Derive this from:
 - PR description if one exists
 - The code itself
 
-Write one clear paragraph. If you're unsure about the intent, ask the user before proceeding.
+Write one clear paragraph. When a signed spec from the **align** skill covers the change, append its acceptance criteria, Slices, and Out of scope sections verbatim, so reviewers apply the spec-conformance lens. If you're unsure about the intent, ask the user before proceeding.
 
 ## Step 3, Spawn Reviewers
 
@@ -94,6 +94,9 @@ Present the verdict in this structure:
 
 ### Dismissed
 [Rejected findings with brief rationale.]
+
+### Spec Conformance
+[Only when a signed spec covers the change. One row per acceptance criterion: AC, met / partial / missing, the code or evidence that decides it, and the quoted spec line. Then scope creep and wrong builds, each with its quoted spec line.]
 
 ### Agreement Map
 [Where did models agree, where did they diverge, and what does the pattern of agreement/disagreement tell us?]

@@ -8,7 +8,7 @@ Read [the runtime contract](../cstack-mode/references/runtime.md) before executi
 
 # Interrogate
 
-Spawn one reviewer per configured model to adversarially review code changes. Each model gets the same prompt and rubric. The adversarial signal comes from model diversity, not assigned personas.
+Spawn one reviewer per seat of the `review` role to adversarially review code changes. Each model gets the same prompt and rubric. The adversarial signal comes from model diversity, not assigned personas.
 
 The deliverable is a synthesized verdict. Do NOT auto-apply changes.
 
@@ -35,7 +35,7 @@ Write one clear paragraph. When a signed spec from the **align** skill covers th
 
 ## Step 3, Spawn Reviewers
 
-Launch the `interrogate reviewers` panel through native read-only delegation, in parallel within available capacity. Preserve the three-seat default unless the user selected another size. Resolve supported model choices and unavailable diversity through the runtime contract first. Each reviewer gets the same template and rubric. Preserve aliases as seats, but do not call a same-model panel model-diverse. Use the native runtime contract for persona, model/effort, and sandbox fields; never guess rejected model slugs or silently replace a family. Name any missing lane and its impact.
+Launch the `interrogate reviewers` panel in parallel within available capacity, with each seat resolved from the `review` role per **Model roles** in the runtime contract. Each reviewer gets the same template and rubric. Name any missing lane and its impact, and call the panel model-diverse only when the contract allows it.
 
 Read `references/reviewer-prompt.md` and fill in the template with:
 1. The stated intent

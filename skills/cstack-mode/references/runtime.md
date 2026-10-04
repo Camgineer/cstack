@@ -33,13 +33,33 @@ The bundled personas live in `agents/` at the plugin root. `agents/cstack-agent.
 
 Reuse a child only when the host reports it resumable. Read its status without waking or duplicating it. Each follow-up carries the current objective, constraints, and evidence pointers. The parent reviews results and resolves disagreements.
 
-## Models and panels
+## Model roles
 
-Use the user's current supported model choices when provided. Otherwise inherit the host's model for ordinary single-role work. Pass overrides only through exposed native fields or an existing supported profile. Model ID and reasoning effort are separate choices. Validate both against the available catalog and the tool schema. A requested model is not proof of served identity. Report identity only when host metadata establishes it.
+A role names the kind of work a delegated step does. The person picks where each role runs with a `Models:` block in the instructions you loaded, such as the project's `AGENTS.md` or the person's own instructions file:
 
-Keep the workflow's default three-seat panel unless the user selected another size. Before a diverse-model panel, establish supported choices for its seats and cross-judge. If the host cannot provide the requested diversity, report that and get the user's choice between a reduced panel and waiting. Independent prompts alone do not make a panel diverse. Treat a rejected model ID as a missing lane. Never guess provider slugs or change model families silently.
+```markdown
+Models:
+- review: codex exec, gpt-6.1-sol, effort high, fast
+- build: native, opus, effort xhigh
+```
 
-The plugin needs no model configuration file, provider gateway, or setup script.
+| Role | Steps that use it |
+| --- | --- |
+| `build` | Implementation delegates, such as the cstack agent a playbook hands a fix or a slice |
+| `review` | The fresh-context reviewer in Readiness, and each interrogate seat |
+
+Each line is `<role>: <runner>, <model>, <options>`. Every field after the runner is optional, and a missing field inherits the host's value. The runner is `native`, the host's own Delegate capability, or a command that runs another agent CLI, such as `codex exec`, `claude -p`, or `cursor-agent -p`. Options are `effort <level>`, `fast`, and any other setting the runner documents. A role can list several runners separated by `;`, and a panel gives one to each seat.
+
+Resolve a role before each delegated step:
+
+1. With no line for the role, delegate on the host's model, as the workflow did before roles existed.
+2. With `native`, delegate and pass the model and effort through the fields the host note names.
+3. With a command, run it non-interactively in the same working directory, with the brief a native delegate would get and the persona file's path when the step names one. Read the runner's `--help` for its print mode and its model, effort, and speed flags, and put a value it has no flag for in the prompt. Its final message is the delegate's result. Pass only the sandbox and approval flags the line names.
+4. When the runner fails, because the command is missing, signed out, or rejects the model, run the step on the host's model and name the missing lane in your report and the PR.
+
+Model ID and reasoning effort are separate choices. A requested model is not proof of served identity. Report identity only when host metadata or the runner's output establishes it. Never guess a provider slug.
+
+A panel keeps its default three seats unless the user selected another size. Its seats take the role's runners in order, and the host's model fills the rest. Call a panel model-diverse only when its seats resolve to different model families, and report a panel whose seats share one family. Independent prompts alone do not make a panel diverse.
 
 ## Skills, resources, and writing
 

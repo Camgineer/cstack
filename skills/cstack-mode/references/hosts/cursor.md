@@ -15,6 +15,8 @@ Skill directories. `<project-skills>` is `.cursor/skills` in the project. `<user
 
 Instructions file. Cursor reads `AGENTS.md` at the project root at session start.
 
+Model roles. A `native` role passes its model to the `Task` tool's model field when the schema has one, with options in brackets, as in `claude-opus-5[effort=high,fast=true]`. Otherwise use a subagent file in `.cursor/agents/` whose `model` field has the same form.
+
 Plugin root. Two levels above a loaded skill's `SKILL.md`, per the runtime contract.
 
 Persistent mode. The plugin ships no Cursor hooks, so `cstack-mode` lasts for the current chat. Re-invoke it in a new chat.

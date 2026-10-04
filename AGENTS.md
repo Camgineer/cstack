@@ -1,3 +1,7 @@
+# Working mode
+
+Invoke the `cstack-mode` skill as your first action in every session in this repository, before any other tool call, even for a quick question. Work under it for the rest of the session unless the user turns it off. New and cloud sessions start with the mode off, so don't wait for the plugin's hooks to turn it on.
+
 # Writing standards
 
 Before drafting or editing text, identify its audience and read and apply the required guidance:

@@ -15,7 +15,7 @@
     "Merged to-spec, to-tickets, and wayfinder into one alignment phase that ends in an operator-signed spec before autonomous work.",
     "The spec is grilled with the operator instead of synthesized without an interview, and adds a definition of done, ID'd acceptance criteria, a per-criterion verification plan, an autonomy envelope with tripwires, and a low-level design.",
     "Tracker publishing, triage labels, and the setup skill are dropped; the spec becomes the bottom draft PR's description and slices map to stacked PRs.",
-    "Wayfinder becomes map mode, stored in a file or tracker issue the operator picks, without labels or assignee claims.",
+    "Wayfinder becomes map mode, stored in a file the operator picks, without a tracker, labels, or assignee claims.",
     "Added depth tiers and a cold-implementer check, adapted from loop-me's definition of done.",
     "Model-invocable, per the plugin's rule for bundled skills.",
     "Harness tool names replaced with runtime-contract capabilities."

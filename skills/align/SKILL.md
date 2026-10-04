@@ -25,7 +25,7 @@ Propose a tier with a one-line reason drawn from blast radius and reversibility.
 
 | Tier | When | Spec sections |
 | --- | --- | --- |
-| Inline | A typo, a one-line fix with an obvious check | None. State the definition of done in one line and proceed. |
+| Inline | A typo, a one-line fix with an obvious check | None. State the definition of done in one line and proceed on the operator's yes. |
 | Light | Small, reversible, one surface | Problem, Definition of done, Acceptance criteria, Verification plan, Out of scope |
 | Full | A new module, a public interface, a one-way door, or work the operator steps away from | Every section of [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md) |
 | Map | Too big or too foggy for one session | [MAP.md](MAP.md), which ends in a Full spec |
@@ -34,7 +34,7 @@ Propose a tier with a one-line reason drawn from blast radius and reversibility.
 
 Run the **grill-with-docs** skill with the tier's spec sections as the design tree, in template order. Problem and definition of done are the root. Every later section hangs off them.
 
-- **Designs.** In the Full tier, run the **architect** skill with checkpoint. Its synthesized design and the runner-up shapes become the options for the high- and low-level design questions.
+- **Designs.** In the Full tier, run the **architect** skill with checkpoint, and stop at its checkpoint: no implementation and no commit. Its synthesized design and the runner-up shapes become the options for the high- and low-level design questions.
 - **Acceptance criteria.** Each one is behavioral, observable, and checkable on its own: "running `export --tag work` writes only rows tagged work", never "export works". Name interfaces and types, not file paths. Give each an ID: `AC-1`, `AC-2`.
 - **Verification.** Testing is a product decision, so put it to the operator. For each criterion agree the seam, the test, any eval, the live check on the real surface, and the evidence it leaves in the PR. Prefer existing seams and the highest one available; the ideal is one. Write no test at a seam the operator has not confirmed. Mark the criteria that must always hold; they become regression tests.
 - **Slices.** Cut the work into vertical tracer bullets: each a narrow, complete path through every layer, demoable alone, sized for one fresh context, with prefactoring first. Each slice is one atomic PR in a stack. Sequence a wide mechanical refactor as expand, migrate in batches, contract. Ask whether the granularity is right, whether each blocking edge truly gates, and what to merge or split.
@@ -53,6 +53,6 @@ Show the whole spec and ask for sign-off. Sign-off is the operator's explicit wo
 ## 6. Hand off
 
 1. Open the bottom PR of the stack as a draft right at sign-off, with the signed spec as its description, per `../cstack-mode/playbooks/opening-a-pr.md`. Push the first slice's first commit to make that possible. Each PR above it names the criteria it proves and links the spec. Every PR stays a draft until it is merge-ready.
-2. Run the slices through the **Autonomous run** playbook (`../cstack-mode/playbooks/autonomous-run.md`). Its exit condition is every acceptance criterion VERIFIED with its agreed evidence in the PR. In the **Feature** playbook, mark `how` and `architect` `skip: settled in spec`.
+2. Run the slices through the **Autonomous run** playbook (`../cstack-mode/playbooks/autonomous-run.md`). Its exit condition is every acceptance criterion VERIFIED with its agreed evidence in the PR. Each iteration runs the **Feature** playbook for one slice, with `how` and `architect` marked `skip: settled in spec`.
 3. Inside the envelope, decide, log the decision via the **show-me-your-work** skill, and report it in the PR.
 4. When a tripwire fires, stop the affected slice, run a Grill round on that branch only, and get the changed section signed. Then resume. Unaffected slices keep running.

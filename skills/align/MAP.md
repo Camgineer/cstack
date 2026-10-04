@@ -4,7 +4,7 @@ Use a map when the way to the destination is foggy and the effort is too big for
 
 ## The map
 
-The map is one document: a file at a path the operator picks, or an issue on their tracker. It is an index, not a store. A decision lives in its ticket, and the map gives a one-line gist and a link.
+The map is one file at a path the operator picks. It is an index, not a store. A decision lives in its ticket, and the map gives a one-line gist and a link.
 
 ```markdown
 # Map: <name>
@@ -32,7 +32,7 @@ Work ruled beyond the destination, each with its reason. It never comes back unl
 
 ## Tickets
 
-A ticket is one sharp question, sized for one session, with the tickets that block it. Write it as soon as you can state the question precisely, even if you cannot answer it yet. Until then it stays fog under **Not yet specified**. Refer to tickets by name, never by a bare number.
+A ticket is one sharp question, sized for one session, with the tickets that block it. Keep tickets as sections of the map file or as files beside it. Write it as soon as you can state the question precisely, even if you cannot answer it yet. Until then it stays fog under **Not yet specified**. Refer to tickets by name, never by a bare number.
 
 | Type | Who | Resolves by |
 | --- | --- | --- |

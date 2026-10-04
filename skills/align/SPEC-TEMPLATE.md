@@ -32,9 +32,9 @@ The architect sketch: types, signatures, the file tree, and the patterns each mo
 
 ## Verification plan
 
-| AC | Always holds | Seam | Test | Eval | Live check | Evidence in the PR |
-| --- | --- | --- | --- | --- | --- | --- |
-| AC-1 | yes or no | the confirmed seam | layer and fixtures, or n/a | the eval and its pass bar, or n/a | surface and control skill | screenshot, output, numbers, transcript |
+| AC | Always holds | Seam | Test | Eval | Live check | Review | Evidence in the PR |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| AC-1 | yes or no | the confirmed seam | layer and fixtures, or n/a | the eval and its pass bar, or n/a | surface and control skill | reviewer and lens, such as interrogate on spec conformance | screenshot, output, numbers, transcript |
 
 ## Slices
 

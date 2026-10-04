@@ -16,7 +16,7 @@ Open a todolist whose first item is to read the Principles section of the **csta
 
 ## Phase A: Frame
 
-Ground first, then commit. Don't start the run until you can state:
+With a signed spec from the **align** skill, take the definition of done, scope, and slices from it and start at Phase B. Otherwise ground first, then commit. Don't start the run until you can state:
 
 - The definition of done as a falsifiable predicate (the **prove-it-works** principle skill).
 - Scope, quantified: rough units and effort, plus the blockers grounding surfaced.

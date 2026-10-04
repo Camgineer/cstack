@@ -15,6 +15,8 @@ Skill directories. `<project-skills>` is `.agents/skills` in the project. `<user
 
 Instructions file. Codex reads `AGENTS.md` at the project root at session start.
 
+User instructions file. `~/.codex/AGENTS.md`, which Codex loads in every project.
+
 Plugin root. Two levels above a loaded skill's `SKILL.md`, per the runtime contract.
 
 Invocation policy. Codex reads explicit-only policy from `agents/openai.yaml` beside a skill's `SKILL.md`, not from frontmatter. A project skill that sets `disable-model-invocation: true` also needs that file with `policy.allow_implicit_invocation: false`. The plugin generates its own copies from frontmatter, so edit the frontmatter in the plugin source and regenerate.

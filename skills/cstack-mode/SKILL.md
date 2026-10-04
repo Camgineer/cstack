@@ -85,7 +85,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Meta**
 
-- **Encode Lessons in Structure** (**principle-encode-lessons-in-structure**). You catch yourself writing the same instruction a second time. Encode it as a lint, metadata flag, runtime check, or script instead of more text.
+- **Encode Lessons in Structure** (**principle-encode-lessons-in-structure**). Designing a module, or writing the same instruction a second time. Make bad code unrepresentable, with architecture, a type, a lint, a check, or a script instead of more text.
 
 ## Autonomy
 

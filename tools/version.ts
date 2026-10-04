@@ -13,7 +13,8 @@ const levelByType: ReadonlyMap<string, Level> = new Map([
   ...["fix", "docs", "refactor", "test", "chore", "perf", "ci", "build", "style", "revert"].map((type) => [type, "patch"] as const),
 ]);
 
-const root = resolve(import.meta.dir, "..");
+// The working directory's checkout, so a newer copy of this script can run against a branch that lacks it.
+const root = spawnSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).stdout.trim() || resolve(import.meta.dir, "..");
 const metadataPath = join(root, "tools/metadata.json");
 const versionField = /("version":\s*")([^"]*)(")/;
 const hostFiles = /^(\.claude-plugin\/(plugin|marketplace)\.json|\.codex-plugin\/plugin\.json|\.cursor-plugin\/plugin\.json|\.agents\/plugins\/marketplace\.json|skills\/[^/]+\/agents\/openai\.yaml)$/;
@@ -83,7 +84,12 @@ function resolveMetadata(): boolean {
 }
 
 function merge(base: string, expected: string): void {
-  if (git("status", "--porcelain").stdout !== "") throw new Error("Commit or stash your changes before you merge.");
+  if (git("status", "--porcelain", "--untracked-files=no").stdout !== "") throw new Error("Commit or stash your changes before you merge.");
+  const remote = /^([^/]+)\/(.+)$/.exec(base);
+  if (remote !== null && git("remote").stdout.split("\n").includes(remote[1]!)) {
+    const fetched = git("fetch", "--quiet", remote[1]!, remote[2]!);
+    if (fetched.status !== 0) throw new Error(`git fetch ${remote[1]} ${remote[2]} failed: ${fetched.stderr.trim()}`);
+  }
   const merging = git("merge", "--no-commit", "--no-ff", base);
   if (git("rev-parse", "-q", "--verify", "MERGE_HEAD").status !== 0) {
     if (merging.status !== 0) throw new Error(`git merge ${base} failed: ${merging.stderr.trim()}`);
@@ -110,7 +116,7 @@ function merge(base: string, expected: string): void {
     process.exit(1);
   }
   bump(expected);
-  git("add", "-A");
+  git("add", "-A", "--", "tools/metadata.json", ".claude-plugin", ".codex-plugin", ".cursor-plugin", ".agents", ":(glob)skills/*/agents/openai.yaml");
   const commit = git("commit", "--no-edit", "--quiet");
   if (commit.status !== 0) throw new Error(`could not commit the merge: ${commit.stderr.trim()}`);
   console.log(`Merged ${base} and committed.`);
@@ -136,6 +142,7 @@ function main(): void {
     }
     console.error(`Version is ${actual}, but a ${level} change over ${values.base} needs ${expected}.`);
     console.error('Run `bun tools/version.ts bump --base origin/<base branch> --title "<PR title>"` and commit the result.');
+    console.error('If the base moved, run `bun tools/version.ts merge --base origin/<base branch> --title "<PR title>"` instead.');
     process.exit(1);
   }
   if (command === "merge") {

@@ -27,6 +27,7 @@ function inRepositoryCopy(run: (directory: string) => void): void {
 
 function version(directory: string, command: string, title: string) {
   return spawnSync(process.execPath, [join(directory, "tools/version.ts"), command, "--base", "main", "--title", title], {
+    cwd: directory,
     encoding: "utf8",
     timeout: 20_000,
   });
@@ -94,11 +95,13 @@ test("merge takes the base's version files, keeps both sides' other changes, and
     expect(git("commit", "--quiet", "--message", "description").status).toBe(0);
 
     expect(git("checkout", "--quiet", "lanes").status).toBe(0);
-    writeFileSync(join(directory, "notes.txt"), "draft\n");
+    const lanes = join(directory, "skills/lanes.md");
+    writeFileSync(lanes, "edited\n");
     const dirty = version(directory, "merge", "feat(swarm): add lanes");
     expect(dirty.status).toBe(1);
     expect(dirty.stderr).toContain("Commit or stash your changes");
-    rmSync(join(directory, "notes.txt"));
+    writeFileSync(lanes, "lanes\n");
+    writeFileSync(join(directory, "notes.txt"), "draft\n");
     const merged = version(directory, "merge", "feat(swarm): add lanes");
     expect(merged.stderr).toBe("");
     expect(merged.status).toBe(0);
@@ -106,7 +109,7 @@ test("merge takes the base's version files, keeps both sides' other changes, and
     expect(readFileSync(metadata, "utf8")).toContain('"description": "A changed description."');
     expect(readFileSync(metadata, "utf8")).toContain('"license": "Apache-2.0"');
     expect(readFileSync(join(directory, "skills/lanes.md"), "utf8")).toBe("lanes\n");
-    expect(git("status", "--porcelain").stdout).toBe("");
+    expect(git("status", "--porcelain").stdout).toBe("?? notes.txt\n");
     expect(git("rev-list", "--parents", "-n", "1", "HEAD").stdout.trim().split(" ")).toHaveLength(3);
     expect(spawnSync(process.execPath, [join(directory, "tools/sync-hosts.ts"), "--check"]).status).toBe(0);
   });

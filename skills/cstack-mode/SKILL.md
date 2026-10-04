@@ -18,29 +18,29 @@ On hosts that run the plugin's hooks, the user's typed command for this skill al
 
 The Principles section below grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
 
-Remaining triggers:
+Remaining triggers. A trigger that names a skill means invoke that skill with the **Invoke a skill** capability when the condition holds, then follow it. The trigger is met only when the skill is loaded in this session. Knowing what it says is not running it. When you judge a matched skill unneeded, say so in the reply as `skip <skill>: <reason>`.
 
-- Nontrivial change, with the operator present to agree it before the build → the **align** skill before the matched playbook runs. Its signed spec settles that playbook's design and done steps.
-- Nontrivial change, architecture decision, or "are we sure?" → the **how** skill.
+- Nontrivial change, with the operator present to agree it before the build → invoke `align` before the matched playbook runs. Its signed spec settles that playbook's design and done steps.
+- Nontrivial change, architecture decision, or "are we sure?" → invoke `how` before you change anything.
 - About to use the **Ask** capability on a "which approach", "how should I", or "what should this do" fork → classify it before you ask. If the answer is a fact you could observe by running something (behavior, timing, layout, output, perf, even whether an eval separates), it is not the human's to answer. Sketch it via the Prototype playbook (`playbooks/prototype.md`) and let the result decide. If the task is a read-only Investigation whose deliverable is a cited answer, stay in it and answer from the evidence rather than building a sketch. Reserve the question for a genuine product or preference call no experiment can settle. Under a full-autonomy grant, decide a call that the grant covers, act on it, and report it, with no reply word and no offer. Under the grant, apply a default for a call that only the operator can make. Report the default with a full explanation and the one word that reverses it. Gates that the operator named and the Always-pause list in Autonomy still need the operator.
 - Any code → name the data shape first, and choose its organizing structure per **principle-model-the-domain**.
-- A new module, a new or reshaped public interface, or a design with more than one viable shape → the **architect** skill, parallel design exploration before implementing.
-- Parallel fan-out → the **swarm** skill for coverage matrices, races, gauntlets, and exploration partitions. Use **arena** for design or code bakeoffs with base selection and grafting.
-- Explaining, proposing, or putting a decision to the user → show it per **principle-show-dont-tell**, using the **show-me** skill. Grilling or stress-testing a plan with the user → the **grill-with-docs** skill.
-- Contested design → the **interrogate** skill (multi-model adversarial) before shipping.
+- A new module, a new or reshaped public interface, or a design with more than one viable shape → invoke `architect` for parallel design exploration before implementing.
+- Parallel fan-out → invoke `swarm` for coverage matrices, races, gauntlets, and exploration partitions. Invoke `arena` for design or code bakeoffs with base selection and grafting.
+- Explaining, proposing, or putting a decision to the user → show it per **principle-show-dont-tell**: invoke `show-me`. Grilling or stress-testing a plan with the user → invoke `grill-with-docs`.
+- Contested design → invoke `interrogate` (multi-model adversarial) before shipping.
 - Nontrivial multi-step → write the throughput checkpoint (Feature step 3).
-- Any prose surface → the **simple-as-prose** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the **writing-for-agents** skill.
-- Docs, RFCs, readmes, PR descriptions, or commit messages → the **technical-writing** skill (`technical-writing`).
-- Before commit → the **deslop** skill (`deslop`).
-- Before review → the **no-comments** skill (`no-comments`).
-- Shipping UI / IDE / CLI → the matching control skill: `control-cli` for CLIs and TUIs, `control-ui` for browser, Electron, and web UIs, or the project's own verification skill. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
-- Running a benchmark, measuring perf yourself, or reporting a speedup or regression you measured → the **benchmark-checklist** skill before you report or act on the number.
+- Any prose surface → invoke `simple-as-prose`. Your reply is a prose surface. Write it per **Writing the reply**. For agent-facing prose, also invoke `writing-for-agents`.
+- Docs, RFCs, readmes, PR descriptions, or commit messages → invoke `technical-writing`.
+- Before commit → invoke `deslop`.
+- Before review → invoke `no-comments`.
+- Shipping UI / IDE / CLI → invoke the matching control skill: `control-cli` for CLIs and TUIs, `control-ui` for browser, Electron, and web UIs, or the project's own verification skill. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
+- Running a benchmark, measuring perf yourself, or reporting a speedup or regression you measured → invoke `benchmark-checklist` before you report or act on the number.
 - Any PR-status request → the **Babysit** playbook (`playbooks/babysit.md`), rather than a similarly named host shortcut. That includes "babysit this", "get it green", "address the bugbot comments", and the commonest phrasing, "check on PR X" / "anything outstanding on X". Never triggered by merely opening a PR. Declare its mode before polling. The playbook's step 1 owns the request-to-mode mapping. Reaching for `drive` inside a phase agent stops that agent finishing its turn.
-- Asked to land or ship a green stack → the **Shipping** playbook (`playbooks/shipping.md`). Green is not safe. Nothing gets armed before an independent per-PR verdict, and only the contiguous verified run from the root lands.
+- Asked to land or ship a green stack → the **Shipping** playbook (`playbooks/shipping.md`). Green is not safe. Nothing in that stack gets armed before an independent per-PR verdict, and only the contiguous verified run from the root lands.
 - Bugbot or the agentic security review commented → skeptical posture. They catch real bugs and also file non-issues and nitpicks, so assess each on its merits and dismiss noise with a concrete reason instead of churning code. Triage fix / dismiss / ask per `references/bugbot-triage.md`.
-- The operator corrects the same agent mistake a second time → the **correct** skill, which fixes the repo instead of adding another instruction.
+- The operator corrects the same agent mistake a second time → invoke `correct`, which fixes the repo instead of adding another instruction.
 - Broken skill mid-task → fix it in its own PR. Don't block. Don't silently work around it.
-- Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "keep going until X") → a decision trail via the **show-me-your-work** skill. Commit it when stakes need an auditable record. Keep it local otherwise.
+- Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "keep going until X") → invoke `show-me-your-work` for a decision trail. Commit it when stakes need an auditable record. Keep it local otherwise.
 
 ## Principles
 
@@ -88,7 +88,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Autonomy
 
-**The KPI.** The most excellent, atomic PRs merged at the fastest pace. Spend operator time only on the critical thinking that is theirs to do, and do it early, before autonomous work starts. Everything else runs without them. Each PR opens as a draft at once and goes ready only when every check, eval, review, and verification is done.
+**The KPI.** The most excellent, atomic PRs merged at the fastest pace. Spend operator time only on the critical thinking that is theirs to do, and do it early, before autonomous work starts. Everything else runs without them. Each PR opens as a draft at once and goes ready, with auto-merge armed, only when every eval, review, and verification is done. Required checks gate the merge, per **Merging** in `playbooks/opening-a-pr.md`.
 
 **Just do it.** Use any MCP tool. Proceed with work authorized by the user and host. External messages, ticket writes, and eval launches need authority for that action and destination; the plugin grants none.
 

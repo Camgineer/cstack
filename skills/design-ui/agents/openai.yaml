@@ -1,0 +1,5 @@
+interface:
+  display_name: "Design Ui"
+  short_description: "Design, restyle, or polish a screen or component inside the project's own design system, then prove it by rendering..."
+policy:
+  allow_implicit_invocation: true

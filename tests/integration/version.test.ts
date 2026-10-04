@@ -117,6 +117,37 @@ test("merge takes the base's version files, keeps both sides' other changes, and
   });
 });
 
+test("merge bumps over the base it fetches, not a stale remote-tracking ref", () => {
+  inRepositoryCopy((directory) => {
+    const git = (...args: string[]) => spawnSync("git", ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.com", ...args], { cwd: directory, encoding: "utf8" });
+    expect(git("add", "-A").status).toBe(0);
+    expect(git("commit", "--quiet", "--message", "synced").status).toBe(0);
+    expect(git("remote", "add", "origin", directory).status).toBe(0);
+    expect(git("fetch", "--quiet", "origin", "main").status).toBe(0);
+
+    expect(git("checkout", "--quiet", "-b", "lanes").status).toBe(0);
+    writeFileSync(join(directory, "skills/lanes.md"), "lanes\n");
+    expect(version(directory, "bump", "fix(swarm): add lanes").status).toBe(0);
+    expect(git("add", "-A").status).toBe(0);
+    expect(git("commit", "--quiet", "--message", "lanes").status).toBe(0);
+
+    expect(git("checkout", "--quiet", "main").status).toBe(0);
+    expect(version(directory, "bump", "fix: change the description").status).toBe(0);
+    expect(git("add", "-A").status).toBe(0);
+    expect(git("commit", "--quiet", "--message", "description").status).toBe(0);
+
+    expect(git("checkout", "--quiet", "lanes").status).toBe(0);
+    const merged = spawnSync(process.execPath, [join(directory, "tools/version.ts"), "merge", "--base", "origin/main", "--title", "fix(swarm): add lanes"], {
+      cwd: directory,
+      encoding: "utf8",
+      timeout: 20_000,
+    });
+    expect(merged.stderr).toBe("");
+    expect(merged.status).toBe(0);
+    expect(shipped(directory)).toBe("1.4.4");
+  });
+});
+
 test("merge resolves the version files and stops on any other conflict", () => {
   inRepositoryCopy((directory) => {
     const git = (...args: string[]) => spawnSync("git", ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.com", ...args], { cwd: directory, encoding: "utf8" });

@@ -54,10 +54,12 @@ env_switch_note() {
   if on_by_env_switch; then printf ' %s=on in the environment turns it on in every project the user has not turned off. Unsetting it turns that off.' "$env_switch"; fi
 }
 
-# Cursor's sessionStart hook reads a flat additional_context field. Claude Code and Codex read hookSpecificOutput.additionalContext.
+# Cursor's sessionStart reads a flat additional_context field, and its beforeSubmitPrompt can only let the prompt continue.
+# Claude Code and Codex read hookSpecificOutput.additionalContext.
 emit() {
-  case "$1" in
-    cursor) printf '{"additional_context":%s}\n' "$(json_string "$3")" ;;
+  case "$1:$2" in
+    cursor:SessionStart) printf '{"additional_context":%s}\n' "$(json_string "$3")" ;;
+    cursor:*) printf '{"continue":true}\n' ;;
     *) printf '{"hookSpecificOutput":{"hookEventName":%s,"additionalContext":%s}}\n' "$(json_string "$2")" "$(json_string "$3")" ;;
   esac
 }
@@ -83,30 +85,34 @@ case "$command" in
     cwd=${CLAUDE_PROJECT_DIR:-${CURSOR_PROJECT_DIR:-$(json_field "$input" cwd)}}
     project=$(project_of "${cwd:-$(pwd)}")
     flag=$(flag_for "$project")
+    host=${2:-}
     if [ "$command" = session-start ]; then
-      if mode_is_on "$flag"; then emit "${2:-}" SessionStart "$(reminder "$project")"; fi
+      if mode_is_on "$flag"; then emit "$host" SessionStart "$(reminder "$project")"; fi
       exit 0
     fi
     # Only an explicit command toggles the mode: /<plugin>:<plugin>-mode, $<plugin>:<plugin>-mode, or /<plugin>-mode.
     rest=$(json_field "$input" prompt | sed -n "s/^[[:space:]]*[/\$]\\([A-Za-z0-9_.-]*:\\)\\{0,1\\}$mode\\(\\([[:space:]]\\|\\\\n\\).*\\)\\{0,1\\}\$/x\\2/p")
     case "$rest" in
-      "") exit 0 ;;
+      "")
+        if [ "$host" = cursor ]; then emit cursor UserPromptSubmit ""; fi
+        exit 0
+        ;;
       x) args= ;;
       *) args=$(printf '%s' "${rest#x}" | sed -e 's/\\n/ /g' -e 's/^[[:space:]]*//') ;;
     esac
     case "$args" in
       off | "off "* | "off."*)
         choose "$flag" off "$project"
-        emit "" UserPromptSubmit "$mode is now off for $project and stays off in later sessions until the user turns it on. Stop applying it."
+        emit "$host" UserPromptSubmit "$mode is now off for $project and stays off in later sessions until the user turns it on. Stop applying it."
         ;;
       *)
         choose "$flag" on "$project"
-        emit "" UserPromptSubmit "$mode is now on for $project and stays on in later sessions until the user turns it off. If the user asks to turn it off, run: sh '$root/hooks/mode.sh' off"
+        emit "$host" UserPromptSubmit "$mode is now on for $project and stays on in later sessions until the user turns it off. If the user asks to turn it off, run: sh '$root/hooks/mode.sh' off"
         ;;
     esac
     ;;
   *)
-    echo "usage: mode.sh on|off|status|session-start [cursor]|prompt" >&2
+    echo "usage: mode.sh on|off|status|session-start [cursor]|prompt [cursor]" >&2
     exit 2
     ;;
 esac

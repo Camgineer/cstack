@@ -46,6 +46,14 @@ function fireCursorStart(project: string, state: string, env: Record<string, str
   return output === "" ? "" : JSON.parse(output).additional_context;
 }
 
+// Cursor's beforeSubmitPrompt can only let the prompt through, so the hook's whole job there is to record the choice.
+function fireCursorPrompt(project: string, prompt: string, state: string, env: Record<string, string> = {}): void {
+  const command = cursorHooks.hooks.beforeSubmitPrompt?.[0]?.command;
+  if (command === undefined) throw new Error("cursor.json registers no beforeSubmitPrompt hook");
+  const output = run(command, { hook_event_name: "beforeSubmitPrompt", prompt, attachments: [] }, { HOME: state, XDG_STATE_HOME: state, CURSOR_PLUGIN_ROOT: root, CURSOR_PROJECT_DIR: project, ...env });
+  expect(JSON.parse(output)).toEqual({ continue: true });
+}
+
 function context(output: string): string {
   return output === "" ? "" : JSON.parse(output).hookSpecificOutput.additionalContext;
 }
@@ -121,6 +129,20 @@ describe("persistent mode hooks", () => {
       cli(["on"], project, state);
       expect(context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state))).toContain(`${mode} is on`);
       expect(cli(["status"], project, state)).toContain("is on");
+    });
+  });
+
+  test("a command typed in Cursor keeps its choice in later chats", () => {
+    withProject((project, state) => {
+      const on = { [variable]: "on" };
+      fireCursorPrompt(project, `please use ${mode}`, state, on);
+      expect(fireCursorStart(project, state, on)).toContain(`${mode} is on`);
+
+      fireCursorPrompt(project, `/${mode} off`, state, on);
+      expect(fireCursorStart(project, state, on)).toBe("");
+
+      fireCursorPrompt(project, `/${mode}`, state);
+      expect(fireCursorStart(project, state)).toContain(`${mode} is on`);
     });
   });
 

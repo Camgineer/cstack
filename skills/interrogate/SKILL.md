@@ -31,7 +31,7 @@ Before spawning reviewers, state the intent explicitly. Derive this from:
 - PR description if one exists
 - The code itself
 
-Write one clear paragraph. If you're unsure about the intent, ask the user before proceeding.
+Write one clear paragraph. When a signed spec from the **align** skill covers the change, append its acceptance criteria and its Out of scope section verbatim, so reviewers apply the spec-conformance lens. If you're unsure about the intent, ask the user before proceeding.
 
 ## Step 3, Spawn Reviewers
 

@@ -16,6 +16,10 @@ Does the code actually do what the intent says it should?
 
 When you find a potential bug, trace the execution path. Don't just flag "this could be nil". Show the call chain that makes it nil.
 
+## Spec Conformance
+
+Apply this lens when the intent includes a signed spec from the align skill. For each acceptance criterion, report it as met, partial, or missing, and name the code or evidence that decides it. Report scope creep: any change no criterion or listed slice calls for, or that the spec puts out of scope. Report wrong builds: code that meets a criterion's words but not its behavior. Quote the spec line with every finding.
+
 ## Root Causes vs. Symptoms
 
 Is the code fixing the actual problem or papering over a symptom?

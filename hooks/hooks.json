@@ -10,6 +10,12 @@
       {
         "hooks": [{ "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/mode.sh\" prompt", "timeout": 10 }]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [{ "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/read-own.sh\"", "timeout": 10 }]
+      }
     ]
   }
 }

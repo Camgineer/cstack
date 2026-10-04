@@ -30,7 +30,7 @@ Skip Phase A only when the work is genuinely greenfield with no surrounding syst
 
 ## Phase B: Sketch
 
-Run the **arena** skill with the design-sketch task and the Phase A grounding artifacts. Pass `references/runner-prompt.md` as each runner's prompt. Each candidate produces a design package shaped per `references/rationale-template.md`.
+Run the **arena** skill with the design-sketch task and the Phase A grounding artifacts. Pass `references/runner-prompt.md` as each runner's prompt, and give each runner a different design constraint from its list. Each candidate produces a design package shaped per `references/rationale-template.md`.
 
 Use `architect runners` as the panel role rather than `arena runners`. Preserve the three-seat default and follow Arena Phase A for supported model choices and missing diversity.
 

@@ -13,7 +13,7 @@ json_string() {
 }
 
 json_field() {
-  printf '%s' "$1" | tr '\n' ' ' | sed -n "s/.*\"$2\"[[:space:]]*:[[:space:]]*\"\\(\\([^\"\\\\]\\|\\\\.\\)*\\)\".*/\\1/p"
+  printf '%s' "$1" | tr '\n' ' ' | sed -E -n "s/.*\"$2\"[[:space:]]*:[[:space:]]*\"(([^\"\\\\]|\\\\.)*)\".*/\\1/p"
 }
 
 project_of() {
@@ -55,7 +55,7 @@ case "$command" in
       exit 0
     fi
     # Only an explicit command toggles the mode: /<plugin>:<plugin>-mode, $<plugin>:<plugin>-mode, or /<plugin>-mode.
-    rest=$(json_field "$input" prompt | sed -n "s/^[[:space:]]*[/\$]\\([A-Za-z0-9_.-]*:\\)\\{0,1\\}$mode\\(\\([[:space:]]\\|\\\\n\\).*\\)\\{0,1\\}\$/x\\2/p")
+    rest=$(json_field "$input" prompt | sed -E -n "s/^[[:space:]]*[/\$]([A-Za-z0-9_.-]*:)?$mode(([[:space:]]|\\\\n).*)?\$/x\\2/p")
     case "$rest" in
       "") exit 0 ;;
       x) args= ;;

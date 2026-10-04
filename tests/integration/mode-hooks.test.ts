@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -33,14 +33,16 @@ function run(command: string, payload: Record<string, unknown>, env: Record<stri
 function fireHooksJson(event: string, payload: Record<string, unknown>, state: string, env: Record<string, string> = {}): string {
   const command = hooks.hooks[event]?.[0]?.hooks[0]?.command;
   if (command === undefined) throw new Error(`hooks.json registers no ${event} hook`);
-  return run(command, { hook_event_name: event, ...payload }, { HOME: state, XDG_STATE_HOME: state, CLAUDE_PLUGIN_ROOT: root, ...env });
+  const output = run(command, { hook_event_name: event, ...payload }, { HOME: state, XDG_STATE_HOME: state, CLAUDE_PLUGIN_ROOT: root, ...env });
+  if (output !== "") expect(JSON.parse(output).hookSpecificOutput.hookEventName).toBe(event);
+  return output;
 }
 
-// Cursor's sessionStart input has no cwd. It sets CLAUDE_PROJECT_DIR as a compatibility alias for the project dir.
+// Cursor's sessionStart input has no cwd. Cursor names the project in CURSOR_PROJECT_DIR and its alias CLAUDE_PROJECT_DIR.
 function fireCursorStart(project: string, state: string, env: Record<string, string> = {}): string {
   const command = cursorHooks.hooks.sessionStart?.[0]?.command;
   if (command === undefined) throw new Error("cursor.json registers no sessionStart hook");
-  const output = run(command, { hook_event_name: "sessionStart", session_id: "s", workspace_roots: [project] }, { HOME: state, XDG_STATE_HOME: state, CURSOR_PLUGIN_ROOT: root, CLAUDE_PROJECT_DIR: project, ...env });
+  const output = run(command, { hook_event_name: "sessionStart", session_id: "s", workspace_roots: [project] }, { HOME: state, XDG_STATE_HOME: state, CURSOR_PLUGIN_ROOT: root, CURSOR_PROJECT_DIR: project, ...env });
   return output === "" ? "" : JSON.parse(output).additional_context;
 }
 
@@ -48,8 +50,8 @@ function context(output: string): string {
   return output === "" ? "" : JSON.parse(output).hookSpecificOutput.additionalContext;
 }
 
-function cli(args: string[], cwd: string, state: string): string {
-  const result = spawnSync("sh", [join(root, "hooks/mode.sh"), ...args], { cwd, env: { PATH: process.env.PATH, HOME: state, XDG_STATE_HOME: state }, encoding: "utf8" });
+function cli(args: string[], cwd: string, state: string, env: Record<string, string> = {}): string {
+  const result = spawnSync("sh", [join(root, "hooks/mode.sh"), ...args], { cwd, env: { PATH: process.env.PATH, HOME: state, XDG_STATE_HOME: state, ...env }, encoding: "utf8" });
   expect(result.status).toBe(0);
   return result.stdout;
 }
@@ -96,13 +98,29 @@ describe("persistent mode hooks", () => {
       const on = { [variable]: "on" };
       const claude = context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state, on));
       expect(claude).toContain(`Invoke the ${pluginName}:${mode} skill now`);
-      expect(claude).toContain(`unset ${variable}`);
+      expect(claude).toContain(`${variable}=on in the environment turns it on in every project the user has not turned off`);
       expect(fireCursorStart(project, state, on)).toBe(claude);
 
       for (const value of ["", "off", "1", "ON"]) {
         expect(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state, { [variable]: value })).toBe("");
         expect(fireCursorStart(project, state, { [variable]: value })).toBe("");
       }
+    });
+  });
+
+  test(`the user's choice for a project beats ${variable} in both directions, across compaction`, () => {
+    withProject((project, state) => {
+      const on = { [variable]: "on" };
+      expect(context(fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `/${mode} off` }, state, on))).toContain("stays off in later sessions");
+      for (const source of ["compact", "resume", "startup"]) {
+        expect(fireHooksJson("SessionStart", { cwd: project, source }, state, on)).toBe("");
+      }
+      expect(fireCursorStart(project, state, on)).toBe("");
+      expect(cli(["status"], project, state, on)).toContain("is off");
+
+      cli(["on"], project, state);
+      expect(context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state))).toContain(`${mode} is on`);
+      expect(cli(["status"], project, state)).toContain("is on");
     });
   });
 
@@ -114,11 +132,14 @@ describe("persistent mode hooks", () => {
     });
   });
 
-  test(`turning the mode off while ${variable}=on says the variable brings it back`, () => {
+  test("a project turned on before off choices were recorded stays on", () => {
     withProject((project, state) => {
-      const off = context(fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `/${mode} off` }, state, { [variable]: "on" }));
-      expect(off).toContain("now off");
-      expect(off).toContain(`${variable}=on in the environment turns it back on in new sessions`);
+      cli(["on"], project, state);
+      const flagDir = join(state, pluginName, mode);
+      const [flag] = readdirSync(flagDir);
+      if (flag === undefined) throw new Error("mode.sh on wrote no flag");
+      writeFileSync(join(flagDir, flag), `${project}\n`);
+      expect(context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state))).toContain(`${mode} is on`);
     });
   });
 });

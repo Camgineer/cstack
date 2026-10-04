@@ -2,7 +2,7 @@
   "version": 1,
   "hooks": {
     "sessionStart": [
-      { "command": "sh \"${CURSOR_PLUGIN_ROOT}/hooks/mode.sh\" session-start", "timeout": 10 }
+      { "command": "sh \"${CURSOR_PLUGIN_ROOT}/hooks/mode.sh\" session-start cursor", "timeout": 10 }
     ]
   }
 }

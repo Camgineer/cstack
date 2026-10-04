@@ -18,6 +18,8 @@ Skill directories. `<project-skills>` is `.claude/skills` in the project. `<user
 
 Instructions file. Claude Code reads `CLAUDE.md` at the project root at session start, not `AGENTS.md`. A `CLAUDE.md` line `@AGENTS.md` imports `AGENTS.md`, so one file can serve every host.
 
+User instructions file. `~/.claude/CLAUDE.md`, which Claude Code loads in every project.
+
 Model roles. A `native` role passes its model to the `Agent` tool's `model` field, which takes only the aliases its schema lists, such as `opus`. That tool has no effort or speed field. A full model ID or an effort therefore needs a subagent definition whose frontmatter sets `model` and `effort`, which Claude Code loads only at session start, or the `claude -p` runner, which takes `--model` and `--effort`. Neither carries `fast`. Report each setting that was not applied.
 
 Plugin root. A loaded skill reports its base directory. The plugin root is two levels above a skill's `SKILL.md`.

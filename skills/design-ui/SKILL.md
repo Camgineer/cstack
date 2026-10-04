@@ -1,8 +1,8 @@
 ---
 name: design-ui
-description: Design, restyle, or polish a screen or component inside the project's own design system, then prove it by rendering every state. Use for design-ui, building or polishing UI, or critiquing a UI's design.
+description: Use before writing or changing how any UI looks, including a new page, component, form, or empty state, a restyle or polish, or a design review. Builds inside the project's design tokens, covers every state, and proves it with screenshots.
 metadata:
-  source: "Ideas adapted, not copied, from hallmark by nutlope (https://github.com/nutlope/hallmark), MengTo/Skills (https://github.com/MengTo/Skills), layers by Jamie Mill (https://github.com/jamiemill/layers-skills), and design-plugin by 0xdesign (https://github.com/0xdesign/design-plugin), all MIT."
+  source: "Ideas adapted, not copied, from hallmark by nutlope (https://github.com/nutlope/hallmark), MengTo/Skills (https://github.com/MengTo/Skills), layers by Jamie Mill (https://github.com/jamiemill/layers-skills), and design-plugin by 0xdesign (https://github.com/0xdesign/design-plugin). Each declares the MIT license."
 ---
 
 Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
@@ -39,6 +39,8 @@ Done when every affordance names a destination and every state has a decision. A
 
 Build against the system note and the inventory. Read [gates.md](references/gates.md) before writing UI code, and build to it.
 
+When you change a shared token or component style, the existing screens that use it change too. Render them in step 5 and name the change in the reply.
+
 When the layout or interaction model is open, run the **arena** skill with each runner moving one named axis (hierarchy, layout, density, or interaction model) against the same fixture data, then graft.
 
 ## 4. Lock the system with a check
@@ -56,8 +58,8 @@ Build a preview that shows every state from step 2 at once: the project's Storyb
 Drive it with the **control-ui** skill:
 
 - Screenshot at 375, 768, and 1280 pixels wide, and in dark mode when the project supports it.
-- Check the DOM at each width: no horizontal scroll, no clipped or overflowing text, and every touch target at least 44 by 44 CSS pixels.
-- Check contrast and accessibility with the project's tool, or axe when none exists.
+- Check the DOM at each width: no horizontal scroll, no clipped or overflowing text, every touch target at least 44 by 44 CSS pixels, and text contrast at least 4.5:1. When the project has Playwright, or it is installed globally, run `node scripts/ui-check.mjs <url> <out-dir>` from the project root, with the path resolved from this skill's directory. It screenshots each width, prints every failure, and exits non-zero when it finds one.
+- Run the project's accessibility tool too when it has one.
 - Open and look at every screenshot yourself. Caption each one with what it proves ("375px browser viewport", not "mobile").
 
 Delete the temporary preview when you are done, unless the project keeps a gallery.

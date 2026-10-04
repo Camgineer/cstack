@@ -60,19 +60,20 @@ Build to these gates and judge against them. Each gate names how it is checked: 
 
 ## Scan
 
-Run from the repository root with the base branch in place of `<base>`, and the tokens file in place of `<tokens-file>`. Run `git add -N` on new files first so the diff lists them. Every hit outside the tokens file needs a token or a reason.
+Run from the repository root with the base branch in place of `<base>`, and the tokens file in place of `<tokens-file>`. Run `git add -N` on new files first so the diff lists them. The scan reads only the lines the change adds. Every hit needs a token or a reason.
 
 ```sh
-git diff --name-only --diff-filter=AM <base> -- '*.css' '*.scss' '*.less' '*.html' '*.jsx' '*.tsx' '*.vue' '*.svelte' \
-  | grep -v '<tokens-file>' \
-  | xargs -r rg -n --pcre2 \
+git diff -U0 <base> -- '*.css' '*.scss' '*.less' '*.html' '*.jsx' '*.tsx' '*.vue' '*.svelte' \
+  | awk '/^\+\+\+ /{f=substr($0,7);next} /^@@/{split($3,a,/[+,]/);n=a[2];next} /^\+/{print f":"n":"substr($0,2);n++}' \
+  | grep -v '^<tokens-file>:' \
+  | rg --pcre2 \
     -e '#[0-9a-fA-F]{3,8}\b' \
     -e '\b(rgba?|hsla?|oklch|oklab|lab|lch|hwb)\(' \
-    -e 'font-family\s*:' \
-    -e '(margin|padding|gap|inset|top|right|bottom|left|width|height)[\w-]*\s*:[^;]*\b[1-9]\d*(\.\d+)?(px|rem|em)\b' \
+    -e '\b(font-family|font-size|border-radius|box-shadow)\s*:\s*+(?!var\(|inherit)' \
+    -e '(^|[\s;{:])(margin|padding|gap|inset|top|right|bottom|left)(-[a-z]+)?\s*:[^;]*\b[1-9]\d*(\.\d+)?(px|rem|em)\b' \
     -e '\b[a-z-]+-\[[^\]]+\]' \
     -e 'transition(-property)?\s*:\s*all\b|\btransition-all\b' \
-    -e ':hover' 
+    -e ':hover'
 ```
 
-The `:hover` pattern lists every hover rule so you can confirm each one sits behind `@media (hover: hover)`. The `-[...]` pattern catches Tailwind arbitrary values such as `p-[13px]` and `bg-[#123456]`.
+The `:hover` pattern lists every added hover rule so you can confirm each one sits behind `@media (hover: hover)`. The `-[...]` pattern catches Tailwind arbitrary values such as `p-[13px]` and `bg-[#123456]`.

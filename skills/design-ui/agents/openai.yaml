@@ -1,0 +1,5 @@
+interface:
+  display_name: "Design Ui"
+  short_description: "Use before writing or changing how any UI looks, including a new page, component, form, or empty state, a restyle or..."
+policy:
+  allow_implicit_invocation: true

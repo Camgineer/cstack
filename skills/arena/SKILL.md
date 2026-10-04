@@ -27,7 +27,7 @@ The N candidates will receive the same prompt, so the prompt is the contract.
 
 1. State the artifact each candidate is producing.
 2. Derive the rubric. State what success looks like for *this* task, then turn it into 3-6 concrete gradeable criteria. The rubric is the picker's tool in Phase D. Candidates only see the task.
-3. Pick supported models for the `arena runners` panel through the runtime contract. Preserve the three-seat default and resolve any required diversity before launching. `auto` or `inherit-parent` preserves a seat but cannot establish model diversity. For rejected entries, report the missing seat and obtain a supported selection rather than guessing a family fallback. Spawn more when the arena covers multiple design directions. Same model N times is appropriate when the work is generation-bound rather than judgment-sensitive.
+3. Resolve the `arena runners` panel from the `build` role per **Model roles** in the runtime contract. Preserve the three-seat default and resolve any required diversity before launching. `auto` or `inherit-parent` preserves a seat but cannot establish model diversity. For rejected entries, report the missing seat and obtain a supported selection rather than guessing a family fallback. Spawn more when the arena covers multiple design directions. Same model N times is appropriate when the work is generation-bound rather than judgment-sensitive.
 4. Assign output paths. Each candidate writes to its own location (a git worktree where possible, otherwise `/tmp/arena-<slug>/candidate-<n>/`), per the **separate-before-serializing-shared-state** principle skill.
 
 ## Phase B: Fan out
@@ -40,7 +40,7 @@ If a candidate fails to produce output, proceed with N-1 and note the dropout in
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, choose a supported model for the `arena cross-judge pool` role, preferring a different model family from the parent's when the host exposes that identity. Resolve unavailable diversity through the runtime contract. Spawn one read-only judge with the rubric and candidates by path label. It scores each criterion and recommends a base with rationale, in parallel with the parent's Phase D reading. Do not spawn it while candidates are writing. Report when cross-family independence cannot be established.
+After all Phase B candidates complete, resolve the cross-judge from the `review` role per **Model roles** in the runtime contract. With no `review` line, prefer a different model family from the parent's when the host exposes that identity. Spawn one read-only judge with the rubric and candidates by path label. It scores each criterion and recommends a base with rationale, in parallel with the parent's Phase D reading. Do not spawn it while candidates are writing. Report when cross-family independence cannot be established.
 
 ## Phase D: Pick a base
 

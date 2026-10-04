@@ -119,3 +119,51 @@ An issue that holds a question.
     );
   });
 });
+
+test("flags an alias that contains another term's name", () => {
+  const billing = `${glossary}\n**Payment**:\nMoney received for an invoice.\n`;
+  inRepository({ "GLOSSARY.md": billing, "notes.md": "Send a payment request.\n" }, (directory) => {
+    const result = check(directory);
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('notes.md:1:8: "payment request" is an avoided alias. Use "Invoice" (GLOSSARY.md:9).\n');
+  });
+});
+
+test("skips URLs, reference links, front matter, and HTML comments", () => {
+  const doc = "---\ntags: [purchase]\n---\nSee https://shop.example.com/purchase now.\n\n[spec]: ./docs/purchase.md\n<!-- purchase -->\n<!--\nbill\n-->\nAn order.\n";
+  inRepository({ "GLOSSARY.md": glossary, "notes.md": doc }, (directory) => {
+    const result = check(directory);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe("No avoided glossary aliases in 1 file.\n");
+  });
+});
+
+test("finds the glossary of a project in a subdirectory and reports paths from there", () => {
+  inRepository({ "app/GLOSSARY.md": glossary, "app/docs/notes.md": "A purchase.\n", "other.md": "A purchase.\n" }, (directory) => {
+    const result = check(join(directory, "app"));
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('docs/notes.md:1:3: "purchase" is an avoided alias. Use "Order" (GLOSSARY.md:5).\n');
+  });
+});
+
+test("follows a map link that has an anchor", () => {
+  const map = "# Glossary Map\n\n- [Ordering](./ordering/GLOSSARY.md#language): orders\n";
+  inRepository({ "GLOSSARY-MAP.md": map, "ordering/GLOSSARY.md": glossary, "notes.md": "A purchase.\n" }, (directory) => {
+    const result = check(directory);
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('notes.md:1:3: "purchase" is an avoided alias. Use "Order" (ordering/GLOSSARY.md:5).\n');
+  });
+});
+
+test("with --base, checks the added lines of a renamed file", () => {
+  inRepository({ "GLOSSARY.md": glossary, "old.md": "One.\nTwo.\nThree.\nFour.\n" }, (directory) => {
+    const git = (...args: string[]) => spawnSync("git", args, { cwd: directory, encoding: "utf8" });
+    git("checkout", "-q", "-b", "change");
+    git("mv", "old.md", "new.md");
+    writeFileSync(join(directory, "new.md"), "One.\nTwo.\nThree.\nFour.\nA new purchase.\n");
+    git("commit", "-qam", "move and edit");
+    const result = check(directory, "--base", "main");
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('new.md:5:7: "purchase" is an avoided alias. Use "Order" (GLOSSARY.md:5).\n');
+  });
+});

@@ -11,7 +11,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **History** | No portable history tool. Use a transcript or digest the user supplies. |
 | **Continue later** | A scheduling tool such as `ScheduleWakeup` or `CronCreate` when the tool list includes one. Otherwise report the gap. |
 
-GitHub API. In a Claude Code cloud session, `gh` GraphQL calls, including `gh pr view --json` and `gh api graphql`, return HTTP 403. Read PR state through REST with `gh api repos/<owner>/<repo>/pulls/<number>` and its `/reviews`, `/comments`, and `commits/<sha>/status` routes, or through a GitHub MCP tool when one is listed.
+GitHub API. In a Claude Code cloud session, every `gh` command that uses GraphQL returns HTTP 403. That includes `gh pr view`, `gh pr list`, `gh pr ready`, `gh pr merge`, and `gh api graphql`, so `scripts/watch-pr/watch-pr` fails too. Read PR state through REST with `gh api repos/<owner>/<repo>/pulls/<number>` and its `/reviews` and `/comments` routes. Read checks from both `commits/<sha>/check-runs` and `commits/<sha>/status`. For review threads, ready, draft, and auto-merge, use the routes the 403 message names, or a GitHub MCP tool when one is listed. Poll with the **Continue later** capability instead of the watcher.
 
 Skill directories. `<project-skills>` is `.claude/skills` in the project. `<user-skills>` is `~/.claude/skills`.
 

@@ -68,7 +68,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 - **Type System Discipline** (**principle-type-system-discipline**). Designing types or a signature in any typed language. Make illegal states unrepresentable, brand primitives, parse external data at boundaries.
 - **Make Operations Idempotent** (**principle-make-operations-idempotent**). Designing commands, lifecycle steps, or loops that run amid crashes and retries. Converge to the same end state.
 - **Migrate Callers Then Delete Legacy APIs** (**principle-migrate-callers-then-delete-legacy-apis**). Introducing a new internal API while old callers exist. Migrate and delete in one wave.
-- **Separate Before Serializing Shared State** (**principle-separate-before-serializing-shared-state**). Concurrent actors might write the same file, branch, key, or object, or every PR bumps the same field and conflicts on it. Eliminate the sharing first, and offer that option before you build a serializer such as a conflict resolver.
+- **Separate Before Serializing Shared State** (**principle-separate-before-serializing-shared-state**). Concurrent actors might write the same file, branch, key, or object, or every PR bumps the same field and conflicts on it. Eliminate the sharing first, and propose removing the shared field to the operator before you build a serializer such as a conflict resolver.
 
 **Verification**
 

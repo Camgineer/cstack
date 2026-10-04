@@ -1,6 +1,6 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -10,6 +10,19 @@ const mode = `${pluginName}-mode`;
 const variable = mode.toUpperCase().replaceAll("-", "_");
 const hooks: { hooks: Record<string, { hooks: { command: string }[] }[]> } = JSON.parse(readFileSync(join(root, "hooks/hooks.json"), "utf8"));
 const cursorHooks: { hooks: Record<string, { command: string }[]> } = JSON.parse(readFileSync(join(root, "hooks/cursor.json"), "utf8"));
+
+// macOS ships a POSIX sed without GNU extensions such as `\|` in basic regexes. Where GNU sed is installed,
+// run the hooks against its --posix mode so a GNU-only pattern fails here instead of on a user's Mac.
+const posixBin = mkdtempSync(join(tmpdir(), "posix sed "));
+const gnuSed = spawnSync("sh", ["-c", "command -v sed"], { encoding: "utf8" }).stdout.trim();
+const isGnuSed = spawnSync(gnuSed, ["--version"], { encoding: "utf8" }).stdout?.includes("GNU") ?? false;
+if (isGnuSed) {
+  if (spawnSync(gnuSed, ["--posix", "-n", "p"], { input: "" }).status !== 0) throw new Error(`${gnuSed} --posix failed, so the hooks would run on GNU-only behavior`);
+  writeFileSync(join(posixBin, "sed"), `#!/bin/sh\nexec '${gnuSed}' --posix "$@"\n`);
+  chmodSync(join(posixBin, "sed"), 0o755);
+}
+const PATH = `${posixBin}:${process.env.PATH}`;
+afterAll(() => rmSync(posixBin, { recursive: true, force: true }));
 
 function withProject(run: (project: string, state: string) => void): void {
   const scratch = mkdtempSync(join(tmpdir(), "mode hooks "));
@@ -24,7 +37,7 @@ function withProject(run: (project: string, state: string) => void): void {
 }
 
 function run(command: string, payload: Record<string, unknown>, env: Record<string, string>): string {
-  const result = spawnSync("sh", ["-c", command], { input: JSON.stringify(payload), env: { PATH: process.env.PATH, ...env }, encoding: "utf8" });
+  const result = spawnSync("sh", ["-c", command], { input: JSON.stringify(payload), env: { PATH, ...env }, encoding: "utf8" });
   expect(result.status).toBe(0);
   expect(result.stderr).toBe("");
   return result.stdout;
@@ -59,7 +72,7 @@ function context(output: string): string {
 }
 
 function cli(args: string[], cwd: string, state: string, env: Record<string, string> = {}): string {
-  const result = spawnSync("sh", [join(root, "hooks/mode.sh"), ...args], { cwd, env: { PATH: process.env.PATH, HOME: state, XDG_STATE_HOME: state, ...env }, encoding: "utf8" });
+  const result = spawnSync("sh", [join(root, "hooks/mode.sh"), ...args], { cwd, env: { PATH, HOME: state, XDG_STATE_HOME: state, ...env }, encoding: "utf8" });
   expect(result.status).toBe(0);
   return result.stdout;
 }

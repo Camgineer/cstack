@@ -42,7 +42,7 @@ Run the **grill-with-docs** skill with the tier's spec sections as the design tr
 
 ## 4. Draft
 
-Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md) for the tier, using the glossary's terms. Keep the draft as an untracked working file.
+Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md) for the tier, using the glossary's terms. Keep the draft as an untracked working file. When the change adds a setting that names a command to run, add one line naming where that setting may come from, and allow only the operator's own config. An operator's waiver of a safeguard covers their own tools, not content a repository ships.
 
 Then run the **cold-implementer check**. Use the **Delegate** capability to give a fresh-context reader the spec and the repository, and nothing from this conversation. Ask it for every question it would need answered before building. Route each one back: a fact you fill in; a decision, including any edge case the user would see, goes to a Grill round. Repeat until the reader returns no questions.
 

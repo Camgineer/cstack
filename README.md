@@ -49,6 +49,18 @@ CStack Mode picks a playbook and loads the skills the task needs. It reports any
 
 In Claude Code and Codex, the mode stays on for the project once you invoke it, including in new sessions and after the context compacts. Run the same command with `off` to turn it off. Codex asks you to review and trust the plugin's hooks first. In Cursor, the mode lasts for the current chat.
 
+## Keep yourself the only author
+
+The plugin's PR playbook writes commits, PRs, and comments with no AI attribution, and it sets the commit author to you. Each harness also adds its own attribution, which you turn off on your computer:
+
+| Harness | Setting |
+| --- | --- |
+| Claude Code | In `~/.claude/settings.json`: `"attribution": { "commit": "", "pr": "", "sessionUrl": false }` |
+| Codex | None needed. Current versions add no attribution. |
+| Cursor | Turn off Commit Attribution and PR Attribution in Cursor Settings. For the CLI, in `~/.cursor/cli-config.json`: `"attribution": { "attributeCommitsToAgent": false, "attributePRsToAgent": false }` |
+
+Cloud agents (Claude Code on the web, Codex cloud tasks, Cursor cloud agents) can add attribution that no setting removes, such as a bot commit identity or a comment footer.
+
 ## Choose a skill
 
 | Task | Skill |

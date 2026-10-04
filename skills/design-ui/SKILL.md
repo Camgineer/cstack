@@ -1,6 +1,6 @@
 ---
 name: design-ui
-description: Use before writing or changing how any UI looks, including a new page, component, form, or empty state, a restyle or polish, or a design review. Builds inside the project's design tokens, covers every state, and proves it with screenshots.
+description: Use before writing or changing how any UI looks, including a new page, component, form, or empty state, a restyle, or polish, and to critique a UI's design without changing it. Builds inside the project's design tokens, covers every state, and proves it with screenshots.
 metadata:
   source: "Ideas adapted, not copied, from hallmark by nutlope (https://github.com/nutlope/hallmark), MengTo/Skills (https://github.com/MengTo/Skills), layers by Jamie Mill (https://github.com/jamiemill/layers-skills), and design-plugin by 0xdesign (https://github.com/0xdesign/design-plugin). Each declares the MIT license."
 ---

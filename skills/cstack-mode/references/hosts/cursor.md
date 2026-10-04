@@ -25,3 +25,5 @@ Plugin root. Two levels above a loaded skill's `SKILL.md`, per the runtime contr
 Persistent mode. The plugin ships no Cursor hooks, so `cstack-mode` lasts for the current chat. Re-invoke it in a new chat.
 
 Attribution. Cursor adds a "Made with Cursor" trailer to agent commits and a footer to agent PRs. In the IDE, turn off Commit Attribution and PR Attribution in Cursor Settings. For the CLI, set `"attribution": { "attributeCommitsToAgent": false, "attributePRsToAgent": false }` in `~/.cursor/cli-config.json`. Cloud agents sign their commits as Cursor Agent, which no setting changes. Apply the **Authorship** rule in `playbooks/opening-a-pr.md` on every surface.
+
+Headless runs. `cursor-agent` runs no hook until it is signed in, so a cloud container cannot prove a Cursor hook. Run the check on a signed-in device, with a project `.cursor/hooks.json` whose commands point at the branch's hooks, and with `--trust` and a model the account's plan allows. [The hooks docs](https://cursor.com/docs/agent/hooks) list each event's input and output.

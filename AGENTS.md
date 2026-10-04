@@ -34,7 +34,7 @@ Keep sources that need one vendor's APIs in `contrib/`, which no manifest loads.
 
 Every PR bumps the plugin version exactly one step over its base branch. The PR title's type sets the step: `feat` bumps the minor version, and every other type bumps the patch version. Bump the major version only when the user asks for it, by adding `!` after the title's type or scope, as in `feat(cstack-mode)!: rename the mode`.
 
-Run `bun tools/version.ts bump --base origin/<base-branch> --title "<PR title>"` and commit the result. Rerun it after you change the title or merge a base that moved the version. CI runs the matching `check` on every PR. After a merge passes CI on main, CI tags the new version and publishes its GitHub release, so never create tags or releases by hand.
+Run `bun tools/version.ts bump --base origin/<base-branch> --title "<PR title>"` and commit the result. Rerun it after you change the title. To bring in a base that moved, run `bun tools/version.ts merge --base origin/<base-branch> --title "<PR title>"` instead of `git merge`. It resolves the version and generated host files, bumps over the new base, and commits the merge. It stops and lists any other conflict for you to resolve, after which you rerun `bump` and commit. A git merge driver cannot do this, because GitHub detects conflicts on its own servers. CI runs the matching `check` on every PR. After a merge passes CI on main, CI tags the new version and publishes its GitHub release, so never create tags or releases by hand.
 
 ## Documentation scope
 

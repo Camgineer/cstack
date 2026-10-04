@@ -103,7 +103,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Use the complete bundled `agents/cstack-agent.md` persona prompt, or an existing matching native profile, for implementation delegates inside a playbook step.** The cstack agent must read this skill and its Principles index. Routed workflows (`how`, `why`, `interrogate`, `reflect`, `swarm`) keep their own specialist prompts for diverse review; do not override those with the cstack agent.
 
-**Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Resolve model and effort through the runtime contract: inherit the host model unless the user chose one. Preserve the workflow's independent review coverage and verify any claimed model diversity.
+**Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Resolve model and effort through the step's role in the runtime contract: the host model unless the person's `Models:` block names one. Preserve the workflow's independent review coverage and verify any claimed model diversity.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. Use supported status and resumption tools, and include the current constraints on every follow-up. A second opinion is the same prompt against a different model. Agreement is high-signal.
 

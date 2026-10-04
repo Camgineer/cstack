@@ -68,6 +68,8 @@ Done when every state renders at every width with zero DOM or accessibility fail
 
 ## 6. Critique blind
 
+When you have no **Delegate** capability, as inside a subagent, stop here. Return the screenshots, the system note, and the inventory to your parent for this step, and say you handed it off.
+
 Use the **Delegate** capability to start a reviewer that never saw your reasoning. Give it the screenshots, the system note, the inventory, the user's request, and [gates.md](references/gates.md). It returns findings that each cite a screenshot and an element, ranked:
 
 - **P0.** Broken: clipped text, failed contrast, a missing state, an unreachable control.

@@ -22,7 +22,7 @@ This plugin runs in Claude Code, Codex, and Cursor from one core. Keep `skills/`
 
 Edit plugin metadata in `tools/metadata.json` and invocation policy in `SKILL.md` frontmatter. Then run `bun run --cwd skills/cstack-mode/scripts sync:hosts` to regenerate every host manifest and each `agents/openai.yaml`. CI fails when generated files drift.
 
-Keep the project name in the README title, `tools/metadata.json`, and the entry-point names: the `<plugin>-mode` skill and its `<plugin>-agent` persona. Everywhere else, write "the plugin" or `<plugin>`. A rename edits `tools/metadata.json`, then renames the `<plugin>-mode` and `<plugin>-agent` paths and their references.
+Keep the project name in the README title, `tools/metadata.json`, and the entry-point names: the `<plugin>-mode` skill and its `<plugin>-agent` persona. Everywhere else, write "the plugin" or `<plugin>`. A rename edits `tools/metadata.json`, then renames the `<plugin>-mode` and `<plugin>-agent` paths and their references. A rename also renames the `<PLUGIN>_MODE` environment variable that the mode hook reads, which breaks every user's shell profile and cloud setting, so the release notes must say so.
 
 Keep the repository user-agnostic. Leave out the names, accounts, repositories, and preferences of anyone who uses or maintains it. That context belongs in the user's own memory, never in the toolkit. Preserve license notices and source provenance.
 

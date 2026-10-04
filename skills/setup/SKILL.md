@@ -5,7 +5,7 @@ description: Prepare a person's harness and a project for this plugin, fixing ea
 
 # Set up the plugin
 
-Read [the runtime contract](../cstack-mode/references/runtime.md) and the host note for this harness. The plugin needs no model or provider configuration, so setup covers only what a person and a project must change once.
+Read [the runtime contract](../cstack-mode/references/runtime.md) and the host note for this harness. Setup covers what a person and a project must change once.
 
 Work through each item. Fix it when the fix is a file change in the project or in the person's own host settings. Show each change with the value it replaces, and use the **Ask** capability to get the person's yes before you write outside the project. When an item needs a setting only the person can reach, give them the exact setting and where it lives. Leave project edits uncommitted for the person to review.
 
@@ -19,7 +19,8 @@ Work through each item. Fix it when the fix is a file change in the project or i
    ```
 
    The hooks keep the mode on only on a machine where the person typed its command, and some hosts run no hooks, so every other session relies on this line.
-5. **Dependencies.** Check the tools some workflows need and name each one that is missing: Bun with the plugin's locked helper dependencies for the bookkeeping helpers, `gh` for the PR watcher, and Graphite for the Orchestrate stack frontier. Leave installs to the person.
-6. **Verification.** When the project has no scripted way to prove its UI, CLI, or service behavior, offer the **create-verification-skill** skill once.
+5. **Models.** Read **Model roles** in the runtime contract. Ask the person once which runner, model, effort, and speed each role should use, with the host's model as the default for every role, and list the agent CLIs found on the PATH as runner options. Check each CLI runner they name: run a one-line prompt through it non-interactively, with the model flag from its `--help`, and report an error, a sign-in prompt, or a rejected model as a failure to fix before writing. When any role differs from the default, write a `Models:` block with one line per set role to the user instructions file named in the host note, after their yes, because model choices follow the person across projects. When the host note says the host has no such file, follow what it says instead. When the session runs in an environment that resets on start, tell them a user-level file does not survive the reset.
+6. **Dependencies.** Check the tools some workflows need and name each one that is missing: Bun with the plugin's locked helper dependencies for the bookkeeping helpers, `gh` for the PR watcher, and Graphite for the Orchestrate stack frontier. Leave installs to the person.
+7. **Verification.** When the project has no scripted way to prove its UI, CLI, or service behavior, offer the **create-verification-skill** skill once.
 
 Report a table with one row per item and these columns: state before, change you made, action left for the person, and state after. Setup is done when every row is fixed, already set, or names an action for the person.

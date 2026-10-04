@@ -35,3 +35,6 @@ jobs:
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: '"${{ runner.temp }}/plugin-tools/bin/bun" tools/version.ts check --base HEAD^1 --title "$TITLE"'
+      - name: Check the merged version bump against the previous commit
+        if: github.event_name == 'push'
+        run: '"${{ runner.temp }}/plugin-tools/bin/bun" tools/version.ts check --base HEAD^1 --title "$(git log -1 --format=%s)"'

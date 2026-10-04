@@ -7,15 +7,10 @@ import { parseArgs } from "node:util";
 type Level = "major" | "minor" | "patch";
 type Version = readonly [major: number, minor: number, patch: number];
 
-const levelByType: Readonly<Record<string, Level>> = {
-  feat: "minor",
-  fix: "patch",
-  docs: "patch",
-  refactor: "patch",
-  test: "patch",
-  chore: "patch",
-  perf: "patch",
-};
+const levelByType: ReadonlyMap<string, Level> = new Map([
+  ["feat", "minor"],
+  ...["fix", "docs", "refactor", "test", "chore", "perf", "ci", "build", "style", "revert"].map((type) => [type, "patch"] as const),
+]);
 
 const root = resolve(import.meta.dir, "..");
 const metadataPath = join(root, "tools/metadata.json");
@@ -23,9 +18,9 @@ const versionField = /("version":\s*")([^"]*)(")/;
 
 function levelOf(title: string): Level {
   const match = /^(\w+)(?:\([^)]*\))?(!)?: \S/.exec(title);
-  const level = match?.[1] === undefined ? undefined : levelByType[match[1]];
+  const level = match?.[1] === undefined ? undefined : levelByType.get(match[1]);
   if (match === null || level === undefined) {
-    throw new Error(`PR title "${title}" must be "type(scope): subject" with a type of ${Object.keys(levelByType).join(", ")}`);
+    throw new Error(`PR title "${title}" must be "type(scope): subject" with a type of ${[...levelByType.keys()].join(", ")}`);
   }
   return match[2] === "!" ? "major" : level;
 }
@@ -74,7 +69,7 @@ function main(): void {
       return;
     }
     console.error(`Version is ${actual}, but a ${level} change over ${values.base} needs ${expected}.`);
-    console.error(`Run \`bun tools/version.ts bump --base ${values.base} --title "<PR title>"\` and commit the result.`);
+    console.error('Run `bun tools/version.ts bump --base origin/<base branch> --title "<PR title>"` and commit the result.');
     process.exit(1);
   }
 

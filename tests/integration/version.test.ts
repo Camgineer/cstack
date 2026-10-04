@@ -15,9 +15,9 @@ function inRepositoryCopy(run: (directory: string) => void): void {
     const metadata = join(directory, "tools/metadata.json");
     writeFileSync(metadata, readFileSync(metadata, "utf8").replace(/"version": "[^"]*"/, '"version": "1.4.2"'));
     const git = (...args: string[]) => spawnSync("git", args, { cwd: directory, encoding: "utf8" });
-    git("init", "--quiet", "--initial-branch=main");
-    git("add", ".");
-    git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.com", "commit", "--quiet", "--message", "base");
+    expect(git("init", "--quiet", "--initial-branch=main").status).toBe(0);
+    expect(git("add", ".").status).toBe(0);
+    expect(git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.com", "commit", "--quiet", "--message", "base").status).toBe(0);
     expect(spawnSync(process.execPath, [join(directory, "tools/sync-hosts.ts")]).status).toBe(0);
     run(directory);
   } finally {
@@ -62,9 +62,13 @@ test("an unbumped change fails the check, and bump sets the level its PR title n
 
 test("a PR title outside the Conventional Commits types is rejected", () => {
   inRepositoryCopy((directory) => {
-    const result = version(directory, "bump", "Update the readme");
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('PR title "Update the readme" must be "type(scope): subject"');
+    for (const title of ["Update the readme", "constructor: inherit a type"]) {
+      const result = version(directory, "bump", title);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(`PR title "${title}" must be "type(scope): subject"`);
+    }
     expect(shipped(directory)).toBe("1.4.2");
+    expect(version(directory, "bump", "revert: undo the lanes (#12)").status).toBe(0);
+    expect(shipped(directory)).toBe("1.4.3");
   });
 });

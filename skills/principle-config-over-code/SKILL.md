@@ -9,7 +9,7 @@ Read [the runtime contract](../cstack-mode/references/runtime.md) before executi
 
 # Config Over Code
 
-A value belongs in config when someone could want to change it to change behavior without changing the logic. That covers thresholds, timings, limits, speeds, costs, weights, lists, tables, and user-facing text. Put as many values there as realistically fit. Literals that fix the code's own structure stay in code, such as indices, internal buffer sizes, exit codes, format strings, and protocol and math constants.
+A value belongs in config when someone could want to change it to change behavior without changing the logic. That covers thresholds, timings, limits, speeds, costs, weights, lists, tables, and user-facing text. Put as many values there as realistically fit. Literals that fix the code's own structure stay in code, such as indices, internal buffer sizes, exit codes, format strings, and protocol and math constants. The rule holds wherever behavior is set: app settings, deployment values such as chart or manifest values, and feature flags.
 
 **Why:** Good behavior comes from trying many variants. A value buried in code costs an edit, a rebuild, and a restart per try, so people try few. A value in config costs one save, so people try many. Config also shows in one place what the program can be tuned to do.
 

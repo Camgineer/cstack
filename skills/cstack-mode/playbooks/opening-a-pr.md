@@ -44,7 +44,7 @@ After these sections, attach videos or screenshots when they prove a claim. Do n
 - Every review-bot finding is triaged per `../references/bugbot-triage.md`. When a review bot or a check skips drafts, mark the PR ready once every other item holds. Then wait for that bot's or check's first pass on the ready PR, and triage it before you report the PR merge-ready.
 - A reviewer other than the author reviewed the diff, and its proven findings are fixed. Use the **Delegate** capability for a fresh-context reviewer. When Delegate is missing, keep the draft and report this item as blocked.
 - The load-bearing behavior is proven on the real surface the change touches, per the **prove-it-works** principle skill. For a docs-only or instruction-only change, the proof is a realistic run of the changed workflow, or `n/a: <reason>` recorded in **Verification**.
-- The PR description is complete per **Descriptions**.
+- The PR description matches the final diff per **Descriptions**. Recheck it after every fix wave.
 - Every commit author, commit message, and the PR title and body meet **Authorship**.
 - No question or pending decision for the human is open. When the change settles or moots a question you put to the human, answer or close it and link the PR.
 

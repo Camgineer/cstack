@@ -12,6 +12,8 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **Continue later** | A scheduling tool such as `ScheduleWakeup` or `CronCreate` when the tool list includes one. Otherwise report the gap. |
 | **Generate an image** | None. An `image` line naming a CLI runner, such as `codex exec`, provides it. |
 
+GitHub API. In a Claude Code cloud session, every `gh` command that uses GraphQL returns HTTP 403. That includes `gh pr view`, `gh pr list`, `gh pr ready`, `gh pr merge`, and `gh api graphql`, so `scripts/watch-pr/watch-pr` fails too. Read PR state through REST with `gh api repos/<owner>/<repo>/pulls/<number>` and its `/reviews` and `/comments` routes. Read checks from both `commits/<sha>/check-runs` and `commits/<sha>/status`. For review threads, ready, draft, and auto-merge, use the routes the 403 message names, or a GitHub MCP tool when one is listed. Poll with the **Continue later** capability instead of the watcher.
+
 Skill directories. `<project-skills>` is `.claude/skills` in the project. `<user-skills>` is `~/.claude/skills`.
 
 Instructions file. Claude Code reads `CLAUDE.md` at the project root at session start, not `AGENTS.md`. A `CLAUDE.md` line `@AGENTS.md` imports `AGENTS.md`, so one file can serve every host.

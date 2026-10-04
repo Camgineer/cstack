@@ -25,4 +25,6 @@ The check: before you keep a test, ask whether it would still pass if every func
 
 **The fix:** call the subject inside the test body with one concrete input and assert the literal output or the observable effect, `expect(slugify("Hello, World!")).toBe("hello-world")`. For an absence, assert the presence on the other input in the same test. For a constant, test the mechanism that reads it with one input instead of restating the value. For a mock, assert the payload it received or the state after the call, not that it was called. When no such assertion exists, delete the test.
 
+**Symmetric inputs.** When the subject takes two sides, such as ours and theirs, old and new, or base and head, give each side a distinct value that shows up in the result, so a test fails when the code swaps them.
+
 **Keep** a test of a relation across a table's rows (a key present in two tables, a parent that exists), and a compile-time check in a `*.test-d.ts` file.

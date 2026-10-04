@@ -31,8 +31,8 @@ jobs:
           SETUP_TOOL_ROOT: ${{ runner.temp }}/plugin-tools
           SETUP_BUN_CACHE: ${{ runner.temp }}/bun-cache
         run: bash tools/setup.sh
-      - name: Check that the PR title names a release level
+      - name: Check that the PR title names a release level and leaves the version alone
         if: github.event_name == 'pull_request'
         env:
           TITLE: ${{ github.event.pull_request.title }}
-        run: '"${{ runner.temp }}/plugin-tools/bin/bun" tools/version.ts title --title "$TITLE"'
+        run: '"${{ runner.temp }}/plugin-tools/bin/bun" tools/version.ts check --base HEAD^1 --title "$TITLE"'

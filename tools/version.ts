@@ -74,20 +74,32 @@ function release(): void {
   console.log(`Version set to ${text} for ${subjects.length} change(s) since ${released}.`);
 }
 
-function checkTitle(title: string): void {
+function versionAt(ref: string): string {
+  const version = versionField.exec(git("show", `${ref}:tools/metadata.json`))?.[2];
+  if (version === undefined) throw new Error(`tools/metadata.json at ${ref} needs a "version"`);
+  return version;
+}
+
+// A PR leaves the version alone and names its release level in its title.
+function check(base: string, title: string): void {
   const level = levelOf(title);
   if (level === undefined) {
     throw new Error(`PR title "${title}" must be "type(scope): subject" with a type of ${[...levelByType.keys()].join(", ")}`);
+  }
+  const ours = versionField.exec(readFileSync(metadataPath, "utf8"))?.[2];
+  const theirs = versionAt(base);
+  if (ours !== theirs) {
+    throw new Error(`The PR changes the version from ${theirs} to ${ours}. The release sets it after the merge, so restore ${theirs} and rerun \`sync:hosts\`.`);
   }
   console.log(`Merging "${title}" releases a ${level} version.`);
 }
 
 function main(): void {
-  const { positionals, values } = parseArgs({ allowPositionals: true, options: { title: { type: "string" } } });
+  const { positionals, values } = parseArgs({ allowPositionals: true, options: { base: { type: "string" }, title: { type: "string" } } });
   const [command] = positionals;
   if (command === "release") return release();
-  if (command === "title" && values.title !== undefined) return checkTitle(values.title);
-  throw new Error('usage: version.ts release | version.ts title --title "<PR title>"');
+  if (command === "check" && values.base !== undefined && values.title !== undefined) return check(values.base, values.title);
+  throw new Error('usage: version.ts release | version.ts check --base <git ref> --title "<PR title>"');
 }
 
 try {

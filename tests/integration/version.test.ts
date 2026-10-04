@@ -83,14 +83,21 @@ test("release changes nothing when no change landed since the tag, or when no ta
   });
 });
 
-test("title accepts Conventional Commits PR titles and rejects the rest", () => {
-  inRepositoryCopy((directory) => {
-    expect(version(directory, "title", "--title", "revert: undo the lanes").stdout).toContain("releases a patch version");
-    expect(version(directory, "title", "--title", "feat(swarm)!: drop lanes").stdout).toContain("releases a major version");
+test("check accepts a Conventional Commits title over an unchanged version, and rejects other titles and version edits", () => {
+  inRepositoryCopy((directory, git) => {
+    expect(version(directory, "check", "--base", "HEAD", "--title", "revert: undo the lanes").stdout).toContain("releases a patch version");
+    expect(version(directory, "check", "--base", "HEAD", "--title", "feat(swarm)!: drop lanes").stdout).toContain("releases a major version");
     for (const title of ["Update the readme", "constructor: inherit a type"]) {
-      const result = version(directory, "title", "--title", title);
+      const result = version(directory, "check", "--base", "HEAD", "--title", title);
       expect(result.status).toBe(1);
       expect(result.stderr).toContain(`PR title "${title}" must be "type(scope): subject"`);
     }
+
+    const metadata = join(directory, "tools/metadata.json");
+    writeFileSync(metadata, readFileSync(metadata, "utf8").replace(/"version": "[^"]*"/, '"version": "1.5.0"'));
+    const bumped = version(directory, "check", "--base", "HEAD", "--title", "feat(swarm): add lanes");
+    expect(bumped.status).toBe(1);
+    expect(bumped.stderr).toContain("The PR changes the version from 1.4.2 to 1.5.0.");
+    expect(git("status", "--porcelain").stdout).toBe(" M tools/metadata.json\n");
   });
 });

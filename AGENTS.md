@@ -36,7 +36,7 @@ This repository is the plugin's source and also one of its users. Build every ne
 
 ## Versioning
 
-Never change the plugin version in a PR. The release sets it after the merge. The PR title's type sets the step: `feat` bumps the minor version, and every other type bumps the patch version. Bump the major version only when the user asks for it, by adding `!` after the title's type or scope, as in `feat(cstack-mode)!: rename the mode`. CI checks that every PR title names one of these types.
+Never change the plugin version in a PR. The release sets it after the merge. The PR title's type sets the step: `feat` bumps the minor version, and every other type bumps the patch version. Bump the major version only when the user asks for it, by adding `!` after the title's type or scope, as in `feat(cstack-mode)!: rename the mode`. CI checks that every PR title names one of these types and that no PR changes the version. A branch that bumped the version under the old rule restores the base's version files: `git checkout origin/<base-branch> -- tools/metadata.json`, then `sync:hosts`.
 
 After a merge passes CI on main, the release workflow runs `bun tools/version.ts release`. It bumps once for each change merged since the latest `v*` tag, commits `chore(release): vX.Y.Z` to main with a deploy key that bypasses the ruleset, and publishes the GitHub release. Never create version commits, tags, or releases by hand. After any merge of main, re-read each skill or playbook the merge changed that you are following, since it may have changed how you work.
 

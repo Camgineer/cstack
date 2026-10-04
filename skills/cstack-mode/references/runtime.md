@@ -46,15 +46,15 @@ Models:
 | Role | Steps that use it |
 | --- | --- |
 | `build` | Implementation delegates, such as the cstack agent a playbook hands a fix or a slice |
-| `review` | The fresh-context reviewer in Readiness, and each interrogate seat |
+| `review` | The fresh-context reviewer in Readiness, each interrogate seat, and the verifiers in Shipping and Autopilot-full |
 
-Each line is `<role>: <runner>, <model>, <options>`. Every field after the runner is optional, and a missing field inherits the host's value. The runner is `native`, the host's own Delegate capability, or a command that runs another agent CLI, such as `codex exec`, `claude -p`, or `cursor-agent -p`. Options are `effort <level>`, `fast`, and any other setting the runner documents. A role can list several runners separated by `;`, and a panel gives one to each seat.
+Each line is `<role>: <runner>, <model>, <options>`. Every field after the runner is optional, and a missing field takes the runner's default. The runner is `native`, the host's own Delegate capability, or a command that runs another agent CLI, such as `codex exec`, `claude -p`, or `cursor-agent -p`. Options are `effort <level>`, `fast`, and any other setting the runner documents. A role can list several runners separated by `;`, and a panel gives one to each seat.
 
 Resolve a role before each delegated step:
 
 1. With no line for the role, delegate on the host's model, as the workflow did before roles existed.
 2. With `native`, delegate and pass the model and effort through the fields the host note names.
-3. With a command, run it non-interactively in the same working directory, with the brief a native delegate would get and the persona file's path when the step names one. Read the runner's `--help` for its print mode and its model, effort, and speed flags, and put a value it has no flag for in the prompt. Its final message is the delegate's result. Pass only the sandbox and approval flags the line names.
+3. With a command, run it non-interactively in the same working directory, with the brief a native delegate would get and the persona file's path when the step names one. Read the runner's `--help` for its print mode and its model, effort, and speed flags, and put a value it has no flag for in the prompt. Give it the permissions the step needs, such as file edits for a `build` step, plus any sandbox or approval flag the line names. Its final message is the delegate's result.
 4. When the runner fails, because the command is missing, signed out, or rejects the model, run the step on the host's model and name the missing lane in your report and the PR.
 
 Model ID and reasoning effort are separate choices. A requested model is not proof of served identity. Report identity only when host metadata or the runner's output establishes it. Never guess a provider slug.

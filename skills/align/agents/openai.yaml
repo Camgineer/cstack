@@ -1,0 +1,5 @@
+interface:
+  display_name: "Align"
+  short_description: "Reach full agreement with the operator on a change before autonomous work starts, ending in a signed spec with..."
+policy:
+  allow_implicit_invocation: true

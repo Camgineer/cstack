@@ -1,0 +1,23 @@
+{
+  "repository": "https://github.com/mattpocock/skills",
+  "commit": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60",
+  "paths": [
+    "skills/engineering/to-spec",
+    "skills/engineering/to-tickets",
+    "skills/engineering/wayfinder"
+  ],
+  "source_sha256": {
+    "skills/engineering/to-spec/SKILL.md": "43ad9cf318e5e7d3d1fa360253a37021796dc87a0c2e595ad262661a10f85088",
+    "skills/engineering/to-tickets/SKILL.md": "5c9fba69845c2519b9b35b9af42ae5142c21f8ca15ac2123dc2722002c8058ae",
+    "skills/engineering/wayfinder/SKILL.md": "fee6e1d0c50f0e736b4ef8a599060c959afae904c9a97d82c97f049fcc3aa0f1"
+  },
+  "adaptations": [
+    "Merged to-spec, to-tickets, and wayfinder into one alignment phase that ends in an operator-signed spec before autonomous work.",
+    "The spec is grilled with the operator instead of synthesized without an interview, and adds a definition of done, ID'd acceptance criteria, a per-criterion verification plan, an autonomy envelope with tripwires, and a low-level design.",
+    "Tracker publishing, triage labels, and the setup skill are dropped; the spec becomes the bottom draft PR's description and slices map to stacked PRs.",
+    "Wayfinder becomes map mode, stored in a file or tracker issue the operator picks, without labels or assignee claims.",
+    "Added depth tiers and a cold-implementer check, adapted from loop-me's definition of done.",
+    "Model-invocable, per the plugin's rule for bundled skills.",
+    "Harness tool names replaced with runtime-contract capabilities."
+  ]
+}

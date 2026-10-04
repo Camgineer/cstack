@@ -84,6 +84,8 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Autonomy
 
+**The KPI.** The most excellent, atomic PRs merged at the fastest pace. Spend operator time only on the critical thinking that is theirs to do, and do it early, before autonomous work starts. Everything else runs without them. Each PR opens as a draft at once and goes ready only when every check, eval, review, and verification is done.
+
 **Just do it.** Use any MCP tool. Proceed with work authorized by the user and host. External messages, ticket writes, and eval launches need authority for that action and destination; the plugin grants none.
 
 **Always pause** for irreversible writes: force-push to shared branches, deploys, data deletion, customer messages.

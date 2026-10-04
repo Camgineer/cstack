@@ -45,7 +45,7 @@ Use each named role as the assignment label. Resolve model and effort through th
 | Tooling | `reflect tooling` | `references/tooling-reviewer.md` |
 | Divergent | `reflect judgment, divergent, synthesizer` | `references/divergent-reviewer.md` |
 
-Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the native subagent response body. When the **Delegate** capability is missing, as in a delegated agent that cannot delegate again, stop and return the step 1 evidence artifact's path to your caller. The caller spawns the reviewers and the synthesizer from that artifact and finishes the run. With no caller that can delegate, report the run as blocked. Either way, post no `Retro: no lessons` comment.
+Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the native subagent response body. When the **Delegate** capability is missing, as in a delegated agent that cannot delegate again, stop, write the step 1 evidence artifact to a file if it is not one, and return its path to your caller. The caller spawns the reviewers and the synthesizer from that artifact and finishes the run. With no caller that can delegate, report the run as blocked. Either way, post no `Retro: no lessons` comment.
 
 ### 3. Synthesize
 
@@ -60,7 +60,7 @@ Sanity-check the synthesizer's Accepted list. For any item that would be enforce
 Skill and guidance changes affect every future agent that loads them, so the operator approves each Accepted edit before it lands.
 
 - **Session.** Present the synthesizer's full Accepted/Rejected/Backlog output to the user and wait for explicit approval. The user picks which subset to apply and may redirect routings.
-- **PR retro.** The lessons PR is the approval surface. With no Accepted row left after step 4, open no PR and handle it as no signal, with any draft backlog items listed under the comment's first line. Otherwise apply every Accepted row in one lessons PR, with one commit per row. Branch it from trunk, or stack it on the PR under retro when that PR is still open and a row edits a file it changes. Its description is the `Lessons from <PR link>` line, then the synthesizer's full output and any draft plugin edits. Drive it until every **Readiness** item in `../cstack-mode/playbooks/opening-a-pr.md` holds, but do not mark it ready. It stays a draft, reported as verified and waiting on the operator, who marks it ready or merges it. Then comment `Retro: lessons in <lessons PR link>` on the PR under retro.
+- **PR retro.** The lessons PR is the approval surface. With no Accepted row left after step 4, open no PR and handle it as no signal, with any draft backlog items listed under the comment's first line. Otherwise apply every Accepted row in one lessons PR, with one commit per row. Branch it from trunk, or stack it on the PR under retro when a row edits a file that PR changes. Its description is the `Lessons from <PR link>` line, then the synthesizer's full output and any draft plugin edits. Open it, then comment `Retro: lessons in <lessons PR link>` on the PR under retro. Drive it until every **Readiness** item in `../cstack-mode/playbooks/opening-a-pr.md` holds, but do not mark it ready. It stays a draft, reported as verified and waiting on the operator, who marks it ready or merges it.
 
 File backlog items only when the user authorized that tracker and external write; otherwise return draft items.
 

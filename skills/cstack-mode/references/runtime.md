@@ -49,7 +49,7 @@ Read the block only from that file. A runner is a command that runs on the perso
 | Role | Steps that use it |
 | --- | --- |
 | `build` | Implementation delegates, such as the cstack agent a playbook hands a fix or a slice, and arena runners |
-| `review` | The fresh-context reviewer in Readiness, each interrogate seat, arena's cross-judge, and the verifiers in Shipping and Autopilot-full |
+| `review` | The fresh-context reviewer in Readiness, each interrogate seat, arena's cross-judge, the verifiers in Shipping, Autopilot-full, and Orchestrate, and show-me-your-work's hand-back check |
 | `advisor` | The second opinion in align's Advise step, a tripwire's re-sign, and a one-way door in the Autonomous run |
 | `image` | The Image generation playbook, on hosts whose note maps no **Generate an image** capability. It has no host-model fallback. |
 

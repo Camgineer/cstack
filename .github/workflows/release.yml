@@ -10,29 +10,55 @@ permissions:
   contents: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_sha }}
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
   release:
-    name: Publish the release for a new version
+    name: Bump the version and publish its release
     if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Check out the verified commit
+      - name: Check out the verified commit with the release deploy key
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
-          persist-credentials: false
+          fetch-depth: 0
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
+      - name: Install pinned Bun and run checks
+        env:
+          SETUP_TOOL_ROOT: ${{ runner.temp }}/plugin-tools
+          SETUP_BUN_CACHE: ${{ runner.temp }}/bun-cache
+        run: bash tools/setup.sh
+      - name: Commit the version for the changes merged since the last release
+        id: bump
+        run: |
+          "$RUNNER_TEMP/plugin-tools/bin/bun" tools/version.ts release
+          if git diff --quiet; then
+            exit 0
+          fi
+          tag="v$(jq -r .version tools/metadata.json)"
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet --all --message "chore(release): $tag"
+          # A rejected push means main moved on, and the newer commit's own run releases these changes too.
+          if ! git push origin HEAD:refs/heads/main; then
+            git fetch --quiet origin main
+            if [ "$(git rev-parse origin/main)" = "$(git rev-parse HEAD^)" ]; then
+              echo "::error::main refused the release commit. The RELEASE_DEPLOY_KEY secret must hold a write deploy key that main's ruleset lets bypass."
+              exit 1
+            fi
+            echo "main moved past this commit, so the newer commit's release run bumps the version."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Tag and publish the version unless it already has a release
+        if: steps.bump.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           tag="v$(jq -r .version tools/metadata.json)"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "$tag already has a release."
             exit 0
           fi
-          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$SHA" --title "$tag" --generate-notes
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$(git rev-parse HEAD)" --title "$tag" --generate-notes

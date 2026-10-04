@@ -17,6 +17,7 @@
   "include": [
     "**/*.ts",
     "../../../tests/**/*.ts",
-    "../../../tools/**/*.ts"
+    "../../../tools/**/*.ts",
+    "../../domain-modeling/scripts/**/*.ts"
   ]
 }

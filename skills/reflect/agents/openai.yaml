@@ -1,5 +1,5 @@
 interface:
   display_name: "Reflect"
-  short_description: "Spawn three parallel review subagents over the active transcript, surface learnings, and route each to a concrete..."
+  short_description: "Run three parallel reviewers and a synthesizer over a session to find durable lessons, and route each to an edit on..."
 policy:
   allow_implicit_invocation: true

@@ -6,6 +6,8 @@ Apply [writing-for-agents](SKILL.md) to the instruction body. This reference cov
 
 Keep `name` and `description` in `SKILL.md` frontmatter. The description names the task and the conditions for using the skill. Keep required instructions in the body; link branch-specific references where the agent needs them. Keep the body free of harness tool names. Name a capability from the runtime contract instead, and let the host notes map it.
 
+When agents skip the skill and act directly, lead the description with the moment it applies, as in "Use before writing or changing ...".
+
 Hosts select a skill by its description by default. Set `disable-model-invocation: true` in the frontmatter when the skill must be explicit-only. Keep its description for the selector. Omit the key when the model should select the skill by task.
 
 In this plugin, the frontmatter is the single source for invocation policy. Codex reads `agents/openai.yaml` instead, and `bun run sync:hosts` generates that file from the frontmatter. Edit the frontmatter and regenerate. Never edit the YAML by hand.

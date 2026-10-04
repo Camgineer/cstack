@@ -18,7 +18,7 @@ On hosts that run the plugin's hooks, the user's typed command for this skill al
 
 The Principles section below grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
 
-Remaining triggers. A trigger that names a skill means invoke that skill with the **Invoke a skill** capability when the condition holds, then follow it. Knowing what the skill says is not running it.
+Remaining triggers. A trigger that names a skill means invoke that skill with the **Invoke a skill** capability when the condition holds, then follow it. The trigger is met only when the skill is loaded in this session. Knowing what it says is not running it. When you judge a matched skill unneeded, say so in the reply as `skip <skill>: <reason>`.
 
 - Nontrivial change, with the operator present to agree it before the build → invoke `align` before the matched playbook runs. Its signed spec settles that playbook's design and done steps.
 - Nontrivial change, architecture decision, or "are we sure?" → invoke `how` before you change anything.

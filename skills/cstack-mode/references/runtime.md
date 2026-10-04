@@ -19,9 +19,10 @@ Each workflow uses these capabilities by name. Use the native tool the host note
 | **Delegate** | Spawn a subagent with a brief, a role, and a scope. Check its status, wait for it, and resume it. |
 | **Ask** | Put a structured question with options to the user. |
 | **Plan** | Keep a visible todolist of the workflow's steps. |
-| **Invoke a skill** | Load a bundled skill by name. A cross-skill reference such as "the **how** skill" means read and apply that skill and its prerequisites. |
+| **Invoke a skill** | Load a bundled skill by name with the host's skill mechanism, then follow it. A workflow step that names a skill ("invoke `how`", "the **how** skill") is a call to make at that step, not background reading. The step is done only when the skill is loaded, or when the reply records `skip <skill>: <reason>`. A `principle-*` skill is the exception: read its `SKILL.md` file. |
 | **History** | Read authorized past conversations for the current project. |
 | **Continue later** | Wake the work again after the current task ends. |
+| **Generate an image** | Make an image file from a prompt with the host's built-in image tool. |
 
 When a capability is missing, say which workflow step it blocks. Keep going with the steps that do not need it. Never claim a check ran when its capability was missing.
 
@@ -33,13 +34,37 @@ The bundled personas live in `agents/` at the plugin root. `agents/cstack-agent.
 
 Reuse a child only when the host reports it resumable. Read its status without waking or duplicating it. Each follow-up carries the current objective, constraints, and evidence pointers. The parent reviews results and resolves disagreements.
 
-## Models and panels
+## Model roles
 
-Use the user's current supported model choices when provided. Otherwise inherit the host's model for ordinary single-role work. Pass overrides only through exposed native fields or an existing supported profile. Model ID and reasoning effort are separate choices. Validate both against the available catalog and the tool schema. A requested model is not proof of served identity. Report identity only when host metadata establishes it.
+A role names the kind of work a delegated step does. The person picks where each role runs with a `Models:` block in their own instructions file, the one that applies to every project they work in. A project can set its own models in a `Models:` block in its instructions files:
 
-Keep the workflow's default three-seat panel unless the user selected another size. Before a diverse-model panel, establish supported choices for its seats and cross-judge. If the host cannot provide the requested diversity, report that and get the user's choice between a reduced panel and waiting. Independent prompts alone do not make a panel diverse. Treat a rejected model ID as a missing lane. Never guess provider slugs or change model families silently.
+```markdown
+Models:
+- review: codex exec, model <id>, effort high, fast
+- build: native, model <id>, effort xhigh
+```
 
-The plugin needs no model configuration file, provider gateway, or setup script. Use `setup-pstack` to assess available capabilities when needed.
+A command runner runs on the person's machine, so only the person's own file may name one. A project's block may hold only `native` lines. For each role, a project's `native` line wins, then the person's line, then the host's model. Ignore a project line that names a command, and report it.
+
+| Role | Steps that use it |
+| --- | --- |
+| `build` | Implementation delegates, such as the cstack agent a playbook hands a fix or a slice, and arena runners |
+| `review` | The fresh-context reviewer in Readiness, each interrogate seat, arena's cross-judge, the verifiers in Shipping, Autopilot-full, and Orchestrate, and show-me-your-work's hand-back check |
+| `advisor` | The second opinion in align's Advise step, a tripwire's re-sign, and a one-way door in the Autonomous run |
+| `image` | The Image generation playbook, on hosts whose note maps no **Generate an image** capability. It has no host-model fallback. |
+
+Each line is `<role>: <runner>, <option>, ...`. The runner is `native`, the host's own Delegate capability, or a command that runs another agent CLI, such as `codex exec`, `claude -p`, or `cursor-agent -p`. Options are `model <id>`, `effort <level>`, `fast`, and any other setting the runner documents. An option left out takes the runner's default. A role can list several runners separated by `;`. A single step uses the first. A panel or a set of lanes gives one runner to each seat in order, and the seats left over run on the host's model, so a `review` line with one runner fills one interrogate seat and the host fills the other two.
+
+Resolve a role before each delegated step:
+
+1. With no line for the role, delegate on the host's model, as the workflow did before roles existed.
+2. With `native`, delegate and pass the model and effort through the fields the host note names. Report any option the host cannot apply.
+3. With a command, run it non-interactively in the step's working directory or assigned worktree. Write the brief a native delegate would get to a file, with the full text of the persona file when the step names one, and pass it by path or on stdin, never inline on the command line. Close stdin when the brief does not use it. The brief states the step's scope, such as review only for a `review` step, and tells the runner to do the work itself without resolving roles again. Read the runner's `--help` for its print mode and its model, effort, and speed flags, and put a value it has no flag for in the brief. Pass the sandbox and approval flags the line names, plus the write access the step needs, such as file edits for a `build` step. Its final message is the delegate's result.
+4. The runner failed when it is missing, signed out, rejects the model, is denied by host permissions or an approval prompt, waits for input, ends without a final message, or lacks a tool the step needs. A failed runner is a missing lane, never a pass. Discard any edits it left, run the step on the host's model, and name the missing lane in your report and in the PR's evidence.
+
+Model ID and reasoning effort are separate choices. A requested model is not proof of served identity. Report identity only when host metadata or the runner's output establishes it. Never guess a provider slug.
+
+A panel keeps its default three seats unless the user selected another size. A panel with no role, such as swarm workers or architect runners, uses the host's model unless the user names models for that run. Call a panel model-diverse only when its seats resolve to different model families, and report a panel whose seats share one family. Independent prompts alone do not make a panel diverse. When the user asks for diversity the host and roles cannot provide, report that and get their choice between a reduced panel and waiting. Treat a rejected model ID as a missing lane.
 
 ## Skills, resources, and writing
 

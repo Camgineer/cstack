@@ -30,11 +30,15 @@ Set `disable-model-invocation: true` on every `principle-*` skill and on no othe
 
 Keep sources that need one vendor's APIs in `contrib/`, which no manifest loads.
 
+## Dogfooding
+
+This repository is the plugin's source and also one of its users. Build every new mechanism, such as a check, gate, or script, to ship with the plugin, unless it only guards this repository's own release or metadata. Then install it here the same way a user would. When a decision offers a mechanism, state whether each option reaches every user of the plugin or only this repository.
+
 ## Versioning
 
-Every PR bumps the plugin version exactly one step over its base branch. The PR title's type sets the step: `feat` bumps the minor version, and every other type bumps the patch version. Bump the major version only when the user asks for it, by adding `!` after the title's type or scope, as in `feat(cstack-mode)!: rename the mode`.
+Never change the plugin version in a PR. The release sets it after the merge. The PR title's type sets the step: `feat` bumps the minor version, and every other type bumps the patch version. Bump the major version only when the user asks for it, by adding `!` after the title's type or scope, as in `feat(cstack-mode)!: rename the mode`. CI checks that every PR title names one of these types and that no PR changes the version. A branch that bumped the version under the old rule restores the base's version files: `git checkout origin/<base-branch> -- tools/metadata.json`, then `sync:hosts`.
 
-Run `bun tools/version.ts bump --base origin/<base-branch> --title "<PR title>"` and commit the result. Rerun it after you change the title or merge a base that moved the version. CI runs the matching `check` on every PR. After a merge passes CI on main, CI tags the new version and publishes its GitHub release, so never create tags or releases by hand.
+After a merge passes CI on main, the release workflow runs `bun tools/version.ts release`. It bumps once for each change merged since the latest `v*` tag, commits `chore(release): vX.Y.Z` to main with a deploy key that bypasses the ruleset, and publishes the GitHub release. The bypass is the ruleset's `DeployKey` bypass actor, which covers every deploy key, so rotating the key needs no ruleset change. To rotate the key, add a new write deploy key, store its private half in the `RELEASE_DEPLOY_KEY` secret, and delete the old key. Never create version commits, tags, or releases by hand. After any merge of main, re-read each skill or playbook the merge changed that you are following, since it may have changed how you work.
 
 ## Documentation scope
 

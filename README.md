@@ -30,7 +30,7 @@ On a new computer, run the same commands. Every skill, playbook, and persona com
 
 ## Get started
 
-Run `setup-pstack` once to check which workflows your harness supports. Then run `cstack-mode` for an engineering task. Each harness has its own command form.
+Run `setup` once in each repository. It turns off AI attribution where your harness allows, fixes the commit identity, and makes the mode start in every session. Then run `cstack-mode` for an engineering task. Each harness has its own command form.
 
 | Harness | Command |
 | --- | --- |
@@ -48,6 +48,12 @@ and verify the exported amounts. Prepare a PR for review.
 CStack Mode picks a playbook and loads the skills the task needs. It reports any tool or model the workflow needs that your harness lacks.
 
 In Claude Code and Codex, the mode stays on for the project once you invoke it, including in new sessions and after the context compacts. Run the same command with `off` to turn it off. Codex asks you to review and trust the plugin's hooks first. In Cursor, the mode lasts for the current chat.
+
+## Learn from every PR
+
+Before an agent marks a PR ready to merge, it runs a retro with the `reflect` skill. Lessons for your repository go to its `AGENTS.md`, and lessons for the plugin go to a draft for the plugin's repository. The lessons land in one PR that goes through the same review and merge rules as any other PR. A PR with nothing to learn gets a `Retro: no lessons` comment.
+
+On GitHub, you can make the retro a merge requirement. Ask an agent to install the retro gate, then add the `Retro` status check to your default branch's required checks.
 
 ## Keep yourself the only author
 
@@ -74,11 +80,14 @@ Cloud agents (Claude Code on the web, Codex cloud tasks, Cursor cloud agents) ca
 | Show a design or change as code, diffs, or diagrams | `show-me` |
 | Review a change | `interrogate` |
 | Build with a failing test first | `tdd` |
+| Design or polish a UI and prove every state renders | `design-ui` |
 | Drive a UI or CLI to verify a change | `control-ui`, `control-cli` |
+| Check a benchmark result before you trust it | `benchmark-checklist` |
 | Coordinate independent tasks | `swarm` |
 | Write clear prose for people | `simple-as-prose` |
 | Write prompts, skills, and agent instructions | `writing-for-agents` |
-| Capture lessons from completed work | `reflect` |
+| Capture lessons from a session or a PR you just finished | `reflect` |
+| Stop agents repeating the same mistake | `correct` |
 
 The [skill directory](skills/) has the full catalog. Playbooks, principles, persona prompts, and references are instructions the agent loads as needed. This README is the repository's only human guide.
 
@@ -110,7 +119,7 @@ flowchart LR
 | `tools/metadata.json` | The single source for the plugin's name, version, and description. |
 | `contrib/` | Optional sources that need one vendor's automation APIs. No manifest loads them. |
 
-To change the version, edit `tools/metadata.json` and regenerate. To rename the plugin, also rename the `<name>-mode` skill and the `<name>-agent` persona to match, then regenerate. The agent's skill list shows every workflow skill. The `principle-*` skills set `disable-model-invocation: true`, which keeps them off that list. `cstack-mode` reads them when a step needs one. CI fails if a principle is visible or any other skill is hidden.
+The release workflow sets the version after each merge to main. To rename the plugin, also rename the `<name>-mode` skill and the `<name>-agent` persona to match, then regenerate. The agent's skill list shows every workflow skill. The `principle-*` skills set `disable-model-invocation: true`, which keeps them off that list. `cstack-mode` reads them when a step needs one. CI fails if a principle is visible or any other skill is hidden.
 
 ```bash
 bun run --cwd skills/cstack-mode/scripts sync:hosts
@@ -155,7 +164,7 @@ The flag guards the command; it does not grant permission. Verify host-specific 
 
 PStack updates arrive through reviewed, agent-assisted imports. An agent compares upstream changes with the recorded baseline, adapts useful changes to the harness-neutral core, and verifies the result in a PR. The plugin can change upstream structure and behavior to suit its own design.
 
-The imported baseline is PStack 0.15.5 at `cursor/plugins@fae2c6ed95821bd85f614a73e4842e13229fa5e5`. The original import remains in Git history at `c31f7ace991843f5576398ad025969465251192c`.
+The imported baseline is PStack 0.15.9 at `cursor/plugins@e43c7ee26e0038c6c1fa8380dd34ce86ff94cb2a`. The update from 0.15.5 took `correct`, `benchmark-checklist`, `principle-explain-the-number`, and the agent-friendly `architect` red flags. It left out the performance mantras, the PR heading rewrite, `/goal` and `/loop` scheduling, fresh subagents by default, the rule against reply tokens, the zod-first boundary parsing in `typescript-best-practices`, and the removal of source lines from `technical-writing`. The original import of 0.15.5 remains in Git history at `c31f7ace991843f5576398ad025969465251192c`.
 
 ## License
 

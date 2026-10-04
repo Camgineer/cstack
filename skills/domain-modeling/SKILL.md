@@ -69,6 +69,12 @@ When a term is resolved, update `GLOSSARY.md` right there. Don't batch these up:
 
 `GLOSSARY.md` should be totally devoid of implementation details. Do not treat `GLOSSARY.md` as a spec, a scratch pad, or a repository for implementation decisions. It is a glossary and nothing else.
 
+### Check the language
+
+After you add aliases under `_Avoid_`, run `bun scripts/check-glossary.ts` from the project root, with the path resolved from this skill's directory. It finds `GLOSSARY.md`, the older `CONTEXT.md`, or a map of contexts, and prints each avoided alias in the project's Markdown with its file, line, and the term to use. Change each hit to the glossary term, unless the text quotes the old word on purpose.
+
+When the project has no CI step for it, offer one. The project's CI can't see this plugin, so copy the script into the project with a line naming its source. Run it with `--base origin/<default-branch>` on a full-history checkout, so a change fails only on the aliases it adds.
+
 ### Offer ADRs sparingly
 
 Only offer to create an ADR when all three are true:

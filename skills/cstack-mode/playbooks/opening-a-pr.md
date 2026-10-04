@@ -20,7 +20,7 @@ Use these sections in order. Drop a section when it has nothing to say.
 - `## Blast Radius`. In one to three sentences, name who or what the change touches and why the change is safe or risky. State the continuing cost if main stays red without the fix.
 - `## Verification`. Name each real run path and its outcome. For a performance change, report one primary number with its unit in `before → after` form. Link the arena or swarm directory for the remaining evidence. Do not include sample-size methodology, swarm recitals, or metric tables.
 
-**Spec PRs.** When the **align** skill produced a signed spec, the bottom PR's description is that spec, and the 40-line limit gives way to it. Every PR in the stack ends with an `## Evidence` table in place of `## Verification`: one row per acceptance criterion it proves, every kind of proof that criterion's verification row names, and a verdict. Link or inline each proof so a reviewer can judge the PR from the table alone, before or after the merge.
+**Spec PRs.** When the **align** skill produced a signed spec, the bottom PR's description is that spec, and the 40-line limit gives way to it. Every PR in the stack ends with an `## Evidence` table in place of `## Verification`: one row per acceptance criterion it proves, every kind of proof that criterion's verification row names, and a verdict. Link or inline each proof so a reviewer can judge the PR from the table alone, before or after the merge. A PR that proves no criterion, such as a prefactor, keeps `## Verification`.
 
 ```markdown
 | AC | Test | Eval | Live check | Review | Verdict |

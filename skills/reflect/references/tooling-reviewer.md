@@ -18,6 +18,15 @@ Examples of the pattern:
 - User describes a flaky test the agent could have queried via an observability MCP. Routing: the debugging skill should mention the observability MCP.
 - User links a chat thread the agent could have fetched via a chat MCP. Routing: the relevant skill should mention the chat MCP.
 
+## Lens addition: navigability
+
+Flag every place the agent spent turns finding information the repo could have handed it: repeated searches for one fact, the wrong file read first, a doc that turned out stale, or a pointer in the agent guidance that led nowhere.
+
+For each such place:
+- Principle: a sentence on what the agent needed and where it should have found it.
+- Evidence: the searches or reads it took, and what finally answered it.
+- Routing: `repo guidance: <path>` to add or sharpen a pointer in the agent guidance, or to fix or delete the stale doc. A repo path is fine here, because the guidance changes with the code it describes.
+
 Read the active transcript at <ABSOLUTE_PATH> (or use the digest below if no path is given).
 
 Scan for:
@@ -30,7 +39,7 @@ Scan for:
 
 ## Scope to skills and tools the session actually used
 
-Findings must point to skills, tools, or MCPs invoked in this transcript. Speculative routings to skills the parent never opened do not count. To check whether a skill was used, scan the transcript for:
+Findings must point to skills, tools, or MCPs invoked in this transcript, or to repo guidance and docs the session read or searched for. Speculative routings to skills the parent never opened do not count. To check whether a skill was used, scan the transcript for:
 
 - File reads of any `SKILL.md` file (workspace `<project-skills>/`, user-level `<user-skills>/`, or plugin-installed paths under `the installed plugin root`)
 - native subagent prompts that name a skill path
@@ -46,7 +55,7 @@ If a skill was neither invoked nor a missed-trigger candidate, drop it.
 List each durable learning you find. For each:
 - Principle: one sentence naming the convention or technical fact. Concrete enough that a future agent recognizes when it applies.
 - Evidence: the exact moment in the transcript (turn number or short quote, including the command or flag).
-- Routing: most relevant existing skill (give the `SKILL.md` path as it appears in the transcript), OR `tune description: <skill path>` when the skill should have triggered but didn't, OR "new skill: <kebab-name>".
+- Routing: most relevant existing skill (give the `SKILL.md` path as it appears in the transcript), OR `tune description: <skill path>` when the skill should have triggered but didn't, OR "new skill: <kebab-name>", OR `repo guidance: <path>` when the lesson holds only for this repository.
 
 Skip trivial things (typos, retries). Skip anything already obvious from the existing skill the parent followed. Skip implementation details that drift: specific SHAs, current file paths, version numbers, exact byte counts. Convention generalizes. Pinned details don't.
 

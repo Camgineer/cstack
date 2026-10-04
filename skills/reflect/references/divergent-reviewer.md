@@ -18,7 +18,7 @@ Scan for:
 
 ## Scope to skills and tools the session actually used
 
-Findings must point to skills, tools, or MCPs invoked in this transcript. Speculative routings to skills the parent never opened do not count. To check whether a skill was used, scan the transcript for:
+Findings must point to skills, tools, or MCPs invoked in this transcript, or to repo guidance and docs the session read or searched for. Speculative routings to skills the parent never opened do not count. To check whether a skill was used, scan the transcript for:
 
 - File reads of any `SKILL.md` file (workspace `<project-skills>/`, user-level `<user-skills>/`, or plugin-installed paths under `the installed plugin root`)
 - native subagent prompts that name a skill path
@@ -34,7 +34,7 @@ The "skill should have been invoked but wasn't" bullet above is the canonical mi
 List each durable learning you find. For each:
 - Principle: one sentence naming the contrarian or second-order observation. Don't restate the obvious learning. Name the one beneath it.
 - Evidence: the exact moment in the transcript (turn number or short quote, including what was said AND what wasn't).
-- Routing: most relevant existing skill (give the `SKILL.md` path as it appears in the transcript), OR `tune description: <skill path>` when the skill should have triggered but didn't, OR "new skill: <kebab-name>".
+- Routing: most relevant existing skill (give the `SKILL.md` path as it appears in the transcript), OR `tune description: <skill path>` when the skill should have triggered but didn't, OR "new skill: <kebab-name>", OR `repo guidance: <path>` when the lesson holds only for this repository.
 
 Skip trivial things. Skip anything already obvious from the existing skill the parent followed. Skip implementation details that drift: specific SHAs, current file paths, version numbers, exact byte counts. Only surface principles and patterns that survive code drift.
 

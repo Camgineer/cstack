@@ -44,6 +44,12 @@ test("a lessons PR under a host's attribution comment and byline needs no retro"
   expect(gate({ body, comments: [] }).state).toBe("success");
 });
 
+test("a lessons line that renders hidden or as code still waits", () => {
+  for (const body of ["<!--\nLessons from https://github.com/o/r/pull/6", "    Lessons from https://github.com/o/r/pull/6"]) {
+    expect(gate({ body, comments: [] }).state).toBe("pending");
+  }
+});
+
 test("a lessons line below the opening lines still waits", () => {
   const body = "## Why\n\nOne\n\nTwo\n\nLessons from https://github.com/o/r/pull/6";
   expect(gate({ body, comments: [] }).state).toBe("pending");

@@ -45,7 +45,7 @@ Use each named role as the assignment label. Resolve model and effort through th
 | Tooling | `reflect tooling` | `references/tooling-reviewer.md` |
 | Divergent | `reflect judgment, divergent, synthesizer` | `references/divergent-reviewer.md` |
 
-Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the native subagent response body. When the **Delegate** capability is missing, report the run as blocked and stop, and post no `Retro: no lessons` comment.
+Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the native subagent response body. When the **Delegate** capability is missing, as in a delegated agent that cannot delegate again, stop and return the step 1 evidence artifact's path to your caller. The caller spawns the reviewers and the synthesizer from that artifact and finishes the run. With no caller that can delegate, report the run as blocked. Either way, post no `Retro: no lessons` comment.
 
 ### 3. Synthesize
 

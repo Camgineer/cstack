@@ -75,6 +75,7 @@ Cloud agents (Claude Code on the web, Codex cloud tasks, Cursor cloud agents) ca
 | Review a change | `interrogate` |
 | Build with a failing test first | `tdd` |
 | Drive a UI or CLI to verify a change | `control-ui`, `control-cli` |
+| Check a benchmark result before you trust it | `benchmark-checklist` |
 | Coordinate independent tasks | `swarm` |
 | Write clear prose for people | `simple-as-prose` |
 | Write prompts, skills, and agent instructions | `writing-for-agents` |

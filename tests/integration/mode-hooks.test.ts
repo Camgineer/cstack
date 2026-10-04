@@ -135,8 +135,8 @@ describe("persistent mode hooks", () => {
   test("a command typed in Cursor keeps its choice in later chats", () => {
     withProject((project, state) => {
       const on = { [variable]: "on" };
-      fireCursorPrompt(project, `please use ${mode}`, state, on);
-      expect(fireCursorStart(project, state, on)).toContain(`${mode} is on`);
+      fireCursorPrompt(project, `please use ${mode}`, state);
+      expect(fireCursorStart(project, state)).toBe("");
 
       fireCursorPrompt(project, `/${mode} off`, state, on);
       expect(fireCursorStart(project, state, on)).toBe("");

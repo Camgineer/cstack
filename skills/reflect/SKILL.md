@@ -57,10 +57,10 @@ Sanity-check the synthesizer's Accepted list. For any item that would be enforce
 
 ### 5. Apply
 
-Skill and guidance changes affect every future agent that loads them, so the operator approves each Accepted edit before it lands.
+Skill and guidance changes affect every future agent that loads them. In Session scope the operator approves each edit. In PR retro the lessons PR's review and Readiness gate them.
 
 - **Session.** Present the synthesizer's full Accepted/Rejected/Backlog output to the user and wait for explicit approval. The user picks which subset to apply and may redirect routings.
-- **PR retro.** The lessons PR is the approval surface. With no Accepted row left after step 4, open no PR and handle it as no signal, with any draft backlog items listed under the comment's first line. Otherwise apply every Accepted row in one lessons PR, with one commit per row. Branch it from trunk, or stack it on the PR under retro when a row edits a file that PR changes. Its description is the `Lessons from <PR link>` line, then the synthesizer's full output and any draft plugin edits. Open it, then comment `Retro: lessons in <lessons PR link>` on the PR under retro. Drive it until every **Readiness** item in `../cstack-mode/playbooks/opening-a-pr.md` holds, but do not mark it ready. It stays a draft, reported as verified and waiting on the operator, who marks it ready or merges it.
+- **PR retro.** With no Accepted row left after step 4, open no PR and handle it as no signal, with any draft backlog items listed under the comment's first line. Otherwise apply every Accepted row in one lessons PR, with one commit per row. Branch it from trunk. Its description is the `Lessons from <PR link>` line, then the synthesizer's full output and any draft plugin edits. Open it, then comment `Retro: lessons in <lessons PR link>` on the PR under retro. Drive it through **Readiness** and **Merging** in `../cstack-mode/playbooks/opening-a-pr.md` like any other PR, including its fresh-context review.
 
 File backlog items only when the user authorized that tracker and external write; otherwise return draft items.
 

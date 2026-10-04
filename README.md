@@ -80,7 +80,7 @@ Cloud agents (Claude Code on the web, Codex cloud tasks, Cursor cloud agents) ca
 | Coordinate independent tasks | `swarm` |
 | Write clear prose for people | `simple-as-prose` |
 | Write prompts, skills, and agent instructions | `writing-for-agents` |
-| Capture lessons from completed work | `reflect` |
+| Capture lessons from a session or a PR you just finished | `reflect` |
 | Stop agents repeating the same mistake | `correct` |
 
 The [skill directory](skills/) has the full catalog. Playbooks, principles, persona prompts, and references are instructions the agent loads as needed. This README is the repository's only human guide.

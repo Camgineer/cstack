@@ -13,6 +13,8 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 Skill directories. `<project-skills>` is `.claude/skills` in the project. `<user-skills>` is `~/.claude/skills`.
 
+Instructions file. Claude Code reads `CLAUDE.md` at the project root at session start, not `AGENTS.md`. A `CLAUDE.md` line `@AGENTS.md` imports `AGENTS.md`, so one file can serve every host.
+
 Plugin root. A loaded skill reports its base directory. The plugin root is two levels above a skill's `SKILL.md`.
 
 Plugin files. Under default permissions, Claude Code asks before it reads a file outside the project, and a non-interactive run refuses the read. The plugin's PreToolUse hook allows the file-read tool on any file that resolves inside the plugin root, so skills read their references and principles without a prompt. The user's deny rules still win. A refused read of a plugin file means the hooks did not load, so report that instead of working from memory.

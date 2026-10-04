@@ -1,5 +1,0 @@
-interface:
-  display_name: "Setup Pstack"
-  short_description: "Check which of this plugin's workflows the current harness can run, with its native tools, model choices, and..."
-policy:
-  allow_implicit_invocation: true

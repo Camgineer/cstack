@@ -30,7 +30,7 @@ On a new computer, run the same commands. Every skill, playbook, and persona com
 
 ## Get started
 
-Run `setup-pstack` once to check which workflows your harness supports. Then run `cstack-mode` for an engineering task. Each harness has its own command form.
+Run `setup` once in each repository. It turns off AI attribution where your harness allows, fixes the commit identity, and makes the mode start in every session. Then run `cstack-mode` for an engineering task. Each harness has its own command form.
 
 | Harness | Command |
 | --- | --- |
@@ -48,6 +48,12 @@ and verify the exported amounts. Prepare a PR for review.
 CStack Mode picks a playbook and loads the skills the task needs. It reports any tool or model the workflow needs that your harness lacks.
 
 In Claude Code and Codex, the mode stays on for the project once you invoke it, including in new sessions and after the context compacts. Run the same command with `off` to turn it off. Codex asks you to review and trust the plugin's hooks first. In Cursor, the mode lasts for the current chat.
+
+## Learn from every PR
+
+When an agent reports a PR ready to merge, it runs a retro with the `reflect` skill. Lessons for your repository go to its `AGENTS.md`, and lessons for the plugin go to a draft for the plugin's repository. Each lesson lands in a draft PR that waits for your review. A PR with nothing to learn gets a `Retro: no lessons` comment.
+
+On GitHub, you can make the retro a merge requirement. Ask an agent to install the retro gate, then add the `Retro` status check to your default branch's required checks.
 
 ## Keep yourself the only author
 
@@ -74,6 +80,7 @@ Cloud agents (Claude Code on the web, Codex cloud tasks, Cursor cloud agents) ca
 | Show a design or change as code, diffs, or diagrams | `show-me` |
 | Review a change | `interrogate` |
 | Build with a failing test first | `tdd` |
+| Design or polish a UI and prove every state renders | `design-ui` |
 | Drive a UI or CLI to verify a change | `control-ui`, `control-cli` |
 | Check a benchmark result before you trust it | `benchmark-checklist` |
 | Coordinate independent tasks | `swarm` |

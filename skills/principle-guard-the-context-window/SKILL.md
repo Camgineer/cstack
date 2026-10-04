@@ -16,4 +16,5 @@ The context window is finite and non-renewable within a session. Every token sho
 **Pattern:**
 - **Isolate large payloads.** Route verbose outputs, screenshots, and large documents to subagents. The main context gets summaries, not raw data.
 - **Keep frequently used content inline.** Templates and references used on every invocation belong in the skill file, not in separate files that cost a read each time.
+- **Read in full what you act on as complete.** A listing you will treat as the whole set, such as conflicted files or failing tests, gets counted or filtered (`git diff --name-only --diff-filter=U`), never cut with `head`.
 - **Size phases and cap scope.** Limit files per phase, set turn budgets, account for mechanism costs.

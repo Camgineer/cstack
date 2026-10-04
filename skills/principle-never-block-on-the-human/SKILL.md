@@ -21,3 +21,4 @@ The human supervises asynchronously. Agents must stay unblocked. Make reasonable
 - **Irreversible actions** (force-push, delete production data, send external messages) still require confirmation.
 - **Reversible actions** (write code, edit notes, split tasks) should proceed without blocking.
 - **Product direction** comes from the human. *Execution* should not block.
+- **Alignment comes first, in one batch.** Put product, design, and verification decisions to the human through the **align** skill before the loop starts. After sign-off, ask again only when a tripwire in the signed spec fires.

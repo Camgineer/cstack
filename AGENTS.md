@@ -18,11 +18,11 @@ Preserve agent inputs, license notices, and source provenance. Keep task reports
 
 ## Harness neutrality
 
-This plugin runs in Claude Code, Codex, and Cursor from one core. Keep `skills/` and `agents/` free of harness tool names, host paths, and host-only syntax. Name a capability from the [runtime contract](skills/cstack-mode/references/runtime.md) instead. Put each host's tool mapping in its host note under `skills/cstack-mode/references/hosts/`.
+This plugin runs in Claude Code, Codex, and Cursor from one core. Keep `skills/` and `agents/` free of harness tool names, host paths, and host-only syntax. Name a capability from the [runtime contract](skills/cstack-mode/references/runtime.md) instead. Put each host's tool mapping in its host note under `skills/cstack-mode/references/hosts/`. A host note's claim about what a host can or cannot do is a snapshot. Check it against the host's current docs before you design around it, above all a "cannot" or "has no" claim, and link the doc page that each claim you add or change rests on.
 
 Edit plugin metadata in `tools/metadata.json` and invocation policy in `SKILL.md` frontmatter. Then run `bun run --cwd skills/cstack-mode/scripts sync:hosts` to regenerate every host manifest and each `agents/openai.yaml`. CI fails when generated files drift.
 
-Keep the project name in the README title, `tools/metadata.json`, and the entry-point names: the `<plugin>-mode` skill and its `<plugin>-agent` persona. Everywhere else, write "the plugin" or `<plugin>`. A rename edits `tools/metadata.json`, then renames the `<plugin>-mode` and `<plugin>-agent` paths and their references.
+Keep the project name in the README title, `tools/metadata.json`, and the entry-point names: the `<plugin>-mode` skill and its `<plugin>-agent` persona. Everywhere else, write "the plugin" or `<plugin>`. A rename edits `tools/metadata.json`, then renames the `<plugin>-mode` and `<plugin>-agent` paths and their references. A rename also renames the `<PLUGIN>_MODE` environment variable that the mode hook reads, which breaks every user's shell profile and cloud setting. Name that break in the PR title and description, and ask the user whether to mark the title with `!`.
 
 Keep the repository user-agnostic. Leave out the names, accounts, repositories, and preferences of anyone who uses or maintains it. That context belongs in the user's own memory, never in the toolkit. Preserve license notices and source provenance.
 
@@ -50,4 +50,4 @@ When importing an upstream update, compare the recorded PStack baseline, the tar
 
 ## Test scope
 
-Keep tests that protect a concrete failure in supported behavior, using observable results at the relevant boundary. Prefer real CLI, filesystem, and Git fixtures where practical. Verify agent workflow quality through realistic task execution. Reconsider a test when it only repeats implementation details or checks document wording.
+Keep tests that protect a concrete failure in supported behavior, using observable results at the relevant boundary. Prefer real CLI, filesystem, and Git fixtures where practical. Verify agent workflow quality through realistic task execution. Reconsider a test when it only repeats implementation details or checks document wording. To prove a change to Codex hook behavior, extend the Codex harness in `tests/e2e/` and run `test:e2e` once the user authorizes it, rather than building a one-off probe.

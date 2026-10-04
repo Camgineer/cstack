@@ -11,6 +11,8 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **History** | No portable history tool. Use a transcript or digest the user supplies. |
 | **Continue later** | A scheduling tool such as `ScheduleWakeup` or `CronCreate` when the tool list includes one. Otherwise report the gap. |
 
+GitHub API. In a Claude Code cloud session, `gh` GraphQL calls, including `gh pr view --json` and `gh api graphql`, return HTTP 403. Read PR state through REST with `gh api repos/<owner>/<repo>/pulls/<number>` and its `/reviews`, `/comments`, and `commits/<sha>/status` routes, or through a GitHub MCP tool when one is listed.
+
 Skill directories. `<project-skills>` is `.claude/skills` in the project. `<user-skills>` is `~/.claude/skills`.
 
 Instructions file. Claude Code reads `CLAUDE.md` at the project root at session start, not `AGENTS.md`. A `CLAUDE.md` line `@AGENTS.md` imports `AGENTS.md`, so one file can serve every host.

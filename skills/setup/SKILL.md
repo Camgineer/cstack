@@ -19,7 +19,8 @@ Work through each item. Fix it when the fix is a file change in the project or i
    ```
 
    The hooks keep the mode on only on a machine where the person typed its command, and some hosts run no hooks, so every other session relies on this line.
-5. **Dependencies.** Check the tools some workflows need and name each one that is missing: Bun with the plugin's locked helper dependencies for the bookkeeping helpers, `gh` for the PR watcher, and Graphite for the Orchestrate stack frontier. Leave installs to the person.
-6. **Verification.** When the project has no scripted way to prove its UI, CLI, or service behavior, offer the **create-verification-skill** skill once.
+5. **Merging.** Read the base branch's required checks, its allowed merge methods, and whether the repository allows auto-merge, with the commands in **Merging** in [opening-a-pr](../cstack-mode/playbooks/opening-a-pr.md). Ask the person once whether agents should arm auto-merge when they mark a PR ready, and with which method when the base allows more than one. When the answer differs from that rule's default, add one `Merging:` line to `AGENTS.md`, such as `Merging: manual` or `Merging: auto, rebase`. When the base requires no status checks or the repository has auto-merge off, report that agents wait for every check, or leave the merge to the person, and name the forge setting that changes it.
+6. **Dependencies.** Check the tools some workflows need and name each one that is missing: Bun with the plugin's locked helper dependencies for the bookkeeping helpers, `gh` for the PR watcher, and Graphite for the Orchestrate stack frontier. Leave installs to the person.
+7. **Verification.** When the project has no scripted way to prove its UI, CLI, or service behavior, offer the **create-verification-skill** skill once.
 
 Report a table with one row per item and these columns: state before, change you made, action left for the person, and state after. Setup is done when every row is fixed, already set, or names an action for the person.

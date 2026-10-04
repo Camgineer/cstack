@@ -20,7 +20,7 @@
 4. **Spawn N parallel candidates** on different models per the **arena** skill's Phase B. Each works in its own sanitized dir. Same prompt to each.
 5. **Spawn one blinded judge** on a different model family per the **arena** skill's Phase C. Judge sees outputs by sanitized label and the rubric, never a model name.
 6. **Verify the chain from transcripts, not self-report.** Read each candidate's actual tool history through the host's supported history tools or an authorized export. If unavailable, mark chain-following unverified. Do not inspect private host transcript storage. Look at which files each candidate actually opened. Grade chain-following from the files it really read plus the shape of the code, never from the candidate's own claims.
-7. **Read every candidate output yourself** end to end. Compare to the judge's verdict. Disagreement means a model is biased or the rubric is ambiguous. Synthesize.
+7. **Read every candidate output yourself** end to end. Compare to the judge's verdict. Disagreement means a model is biased or the rubric is ambiguous. Synthesize. Before you recommend promotion, read **principle-explain-the-number**: report each arm's run count and spread, and call a gap inside run-to-run noise no result.
 
 **Evaluating a skill.** Run the steps above with these additions:
 

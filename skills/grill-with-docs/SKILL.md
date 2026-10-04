@@ -20,7 +20,9 @@ Run two companion skills for the whole session, every round:
 
 ## Rounds
 
-Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask _now_ without guessing at answers you haven't heard yet. Ask the whole frontier in one round: number each question, show it, and give your recommended answer. Then wait for the user's answers before the next round.
+Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask _now_ without guessing at answers you haven't heard yet. Ask the whole frontier in one round. Number each question and lead with your recommendation. Then list every other option you can back with a real reason, each with its reason. Cut any option you cannot back. The count follows the question, and one strong option is a complete answer. Then wait for the user's answers before the next round.
+
+Show each option at the highest fidelity you can produce fastest: code, a diff, a table, a Mermaid diagram, or a mockup. When only running something settles the choice, sketch it per the Prototype playbook (`../cstack-mode/playbooks/prototype.md`) and show the result.
 
 Format a round like so:
 
@@ -31,7 +33,8 @@ Format a round like so:
 <the show-me view: code, diff, tree, or diagram of the options>
 ```
 
-➡️ <your recommended answer>
+➡️ **<recommended option>**: <why it wins>
+- **<other option>**: <why it is still worth weighing>
 
 ---
 
@@ -53,6 +56,10 @@ An assumption with evidence status none gets its test before its design. Recomme
 ## Facts versus decisions
 
 Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (code, files, tools, history), delegate a read-only investigator to find it, or look it up yourself. Ask the user only for what you cannot look up. Don't block on it: a running investigation is an unsettled prerequisite, so only the questions downstream of it wait; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
+
+## Absent decider
+
+When a decision belongs to someone outside the session, grill the send, not the subject. Ask the user who it goes to, what that person knows, and what the user needs back. Then write a questionnaire for that person: a one-paragraph context, then single-idea questions ordered most important first, each with an answer stub beneath it. Add a one-line why only where a question could be misread. Keep the dependent questions off the frontier until the answers come back.
 
 ## Done
 

@@ -80,6 +80,7 @@ Cloud agents (Claude Code on the web, Codex cloud tasks, Cursor cloud agents) ca
 | Show a design or change as code, diffs, or diagrams | `show-me` |
 | Review a change | `interrogate` |
 | Build with a failing test first | `tdd` |
+| Design or polish a UI and prove every state renders | `design-ui` |
 | Drive a UI or CLI to verify a change | `control-ui`, `control-cli` |
 | Check a benchmark result before you trust it | `benchmark-checklist` |
 | Coordinate independent tasks | `swarm` |

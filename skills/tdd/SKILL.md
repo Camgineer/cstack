@@ -21,6 +21,10 @@ Do not force a test when it would be impractical. If the available test would re
 5. **Fix the bug.** Make the smallest production change that satisfies the intended behavior while preserving nearby contracts.
 6. **Rerun the regression test.** Confirm the test now passes.
 
+## Test-First Features
+
+When the user asks for a feature built test-first, work in vertical slices: one failing test, the least code that passes it, then the next test. Each test is a tracer bullet that reacts to what the last cycle taught you. Writing every test before any code tests an imagined shape rather than the behavior users see.
+
 ## If a Failing Test Is Impractical
 
 Use the closest executable regression check instead: a targeted script, manual reproduction command, browser automation, snapshot comparison, log assertion, or focused integration check.

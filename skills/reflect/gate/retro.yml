@@ -1,0 +1,40 @@
+name: Retro
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  issue_comment:
+    types: [created, edited, deleted]
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+
+concurrency:
+  group: retro-${{ github.event.pull_request.number || github.event.issue.number }}
+
+jobs:
+  retro:
+    if: github.event_name == 'pull_request' || github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check out the gate filter
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/retro-gate.jq
+          sparse-checkout-cone-mode: false
+      - name: Report whether the PR has its retro record
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: |
+          pr=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER")
+          comments=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$NUMBER/comments" | jq -s 'add // [] | map(.body)')
+          status=$(jq -n --argjson pr "$pr" --argjson comments "$comments" '{body: $pr.body, comments: $comments}' | jq -f .github/retro-gate.jq)
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$(jq -r .head.sha <<<"$pr")" \
+            -f context=Retro \
+            -f state="$(jq -r .state <<<"$status")" \
+            -f description="$(jq -r .description <<<"$status")"

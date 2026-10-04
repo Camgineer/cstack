@@ -19,7 +19,7 @@ Each workflow uses these capabilities by name. Use the native tool the host note
 | **Delegate** | Spawn a subagent with a brief, a role, and a scope. Check its status, wait for it, and resume it. |
 | **Ask** | Put a structured question with options to the user. |
 | **Plan** | Keep a visible todolist of the workflow's steps. |
-| **Invoke a skill** | Load a bundled skill by name. A cross-skill reference such as "the **how** skill" means read and apply that skill and its prerequisites. |
+| **Invoke a skill** | Load a bundled skill by name with the host's skill mechanism, then follow it. A workflow step that names a skill ("invoke `how`", "the **how** skill") is a call to make at that step, not background reading. The step is done only when the skill is loaded, or when the reply records `skip <skill>: <reason>`. A `principle-*` skill is the exception: read its `SKILL.md` file. |
 | **History** | Read authorized past conversations for the current project. |
 | **Continue later** | Wake the work again after the current task ends. |
 
@@ -39,7 +39,7 @@ Use the user's current supported model choices when provided. Otherwise inherit 
 
 Keep the workflow's default three-seat panel unless the user selected another size. Before a diverse-model panel, establish supported choices for its seats and cross-judge. If the host cannot provide the requested diversity, report that and get the user's choice between a reduced panel and waiting. Independent prompts alone do not make a panel diverse. Treat a rejected model ID as a missing lane. Never guess provider slugs or change model families silently.
 
-The plugin needs no model configuration file, provider gateway, or setup script. Use `setup-pstack` to assess available capabilities when needed.
+The plugin needs no model configuration file, provider gateway, or setup script.
 
 ## Skills, resources, and writing
 

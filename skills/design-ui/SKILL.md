@@ -41,11 +41,11 @@ Build against the system note and the inventory. Read [gates.md](references/gate
 
 When you change a shared token or component style, the existing screens that use it change too. Render them in step 5 and name the change in the reply.
 
-When the layout or interaction model is open, run the **arena** skill with each runner moving one named axis (hierarchy, layout, density, or interaction model) against the same fixture data, then graft.
+When the layout or interaction model is open, invoke `arena` with each runner moving one named axis (hierarchy, layout, density, or interaction model) against the same fixture data, then graft.
 
 ## 4. Lock the system with a check
 
-Make going around the tokens fail a check, per the **principle-encode-lessons-in-structure** skill. Prefer the project's own linter (a stylelint or ESLint rule, or a theme config that only exposes the tokens). Otherwise run the scan in [gates.md](references/gates.md#scan) over the changed files and fix every hit.
+Make going around the tokens fail a check, per `principle-encode-lessons-in-structure`. Prefer the project's own linter (a stylelint or ESLint rule, or a theme config that only exposes the tokens). Otherwise run the scan in [gates.md](references/gates.md#scan) over the changed files and fix every hit.
 
 Add a new lint dependency or CI step only when the user asked for one. Otherwise report the scan result and offer the rule.
 
@@ -55,7 +55,7 @@ Done when the check or scan reports zero raw values in the changed files outside
 
 Build a preview that shows every state from step 2 at once: the project's Storybook or component gallery if it has one, or a temporary route or page. Force hover, focus, and active with classes or the harness's state emulation, and use fixtures for loading, empty, and error.
 
-Drive it with the **control-ui** skill:
+Invoke `control-ui` and drive the preview with it:
 
 - Screenshot at 375, 768, and 1280 pixels wide, and in dark mode when the project supports it.
 - Check the DOM at each width: no horizontal scroll, no clipped or overflowing text, every touch target at least 44 by 44 CSS pixels, and text contrast at least 4.5:1. When the project has Playwright, or it is installed globally, run `node scripts/ui-check.mjs <url> <out-dir>` from the project root, with the path resolved from this skill's directory. It screenshots each width, prints every failure, and exits non-zero when it finds one.

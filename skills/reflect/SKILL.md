@@ -31,7 +31,7 @@ Use the host's supported thread/history tools to identify the active conversatio
 
 In PR retro, read the building session through the **History** capability when it is not the active one. Then add the PR's record to the artifact. Read it through the forge: each review thread and how it ended, each red check and the commit that fixed it, and each reverted or abandoned commit. With no building session, label the artifact as PR record only and name the missing history.
 
-Then, in PR retro, check the evidence for a signal. A signal is a human correction, a red check, a proven review finding, an abandoned approach, or information the session searched for more than once. With no signal, comment `Retro: no lessons` on the PR, report the same line, and stop.
+Then, in PR retro, check the evidence for a signal. A signal is a human correction, a red check, a proven review finding, an abandoned approach, or information the session searched for more than once. With no signal, comment `Retro: no lessons` on the PR, report the same line, and stop. That comment, or the `Retro: lessons in <lessons PR link>` comment from step 5, is the PR's retro record, and the retro gate below reads it.
 
 ### 2. Spawn three reviewers in parallel
 
@@ -60,7 +60,7 @@ Sanity-check the synthesizer's Accepted list. For any item that would be enforce
 Skill and guidance changes affect every future agent that loads them, so the operator approves each Accepted edit before it lands.
 
 - **Session.** Present the synthesizer's full Accepted/Rejected/Backlog output to the user and wait for explicit approval. The user picks which subset to apply and may redirect routings.
-- **PR retro.** The lessons PR is the approval surface. With no Accepted row left after step 4, open no PR and handle it as no signal, with any draft backlog items listed under the comment's first line. Otherwise apply every Accepted row in one lessons PR, with one commit per row. Branch it from trunk, or stack it on the PR under retro when that PR is still open and a row edits a file it changes. Its description is the `Lessons from <PR link>` line, then the synthesizer's full output and any draft plugin edits. Drive it until every **Readiness** item in `../cstack-mode/playbooks/opening-a-pr.md` holds, but do not mark it ready. It stays a draft, reported as verified and waiting on the operator, who marks it ready or merges it.
+- **PR retro.** The lessons PR is the approval surface. With no Accepted row left after step 4, open no PR and handle it as no signal, with any draft backlog items listed under the comment's first line. Otherwise apply every Accepted row in one lessons PR, with one commit per row. Branch it from trunk, or stack it on the PR under retro when that PR is still open and a row edits a file it changes. Its description is the `Lessons from <PR link>` line, then the synthesizer's full output and any draft plugin edits. Drive it until every **Readiness** item in `../cstack-mode/playbooks/opening-a-pr.md` holds, but do not mark it ready. It stays a draft, reported as verified and waiting on the operator, who marks it ready or merges it. Then comment `Retro: lessons in <lessons PR link>` on the PR under retro.
 
 File backlog items only when the user authorized that tracker and external write; otherwise return draft items.
 
@@ -86,3 +86,13 @@ Short list, no preamble:
 - New skills created: `<skill path>`. One line each (rare).
 - Backlog filed to the authorized tracker: `<issue title>` (`<tags>`). One line each.
 - Dropped: one line per rejected finding + reason from the synthesizer.
+
+## Retro gate
+
+On a GitHub repository, the retro gate makes the retro record a merge requirement. Its `Retro` status stays pending until the PR has a retro record, and a lessons PR passes on its own. Install it only when the user asks, because it changes the repository's CI:
+
+1. In its own PR, copy `gate/retro.yml` to `.github/workflows/retro.yml` and `gate/retro-gate.jq` to `.github/retro-gate.jq`.
+2. After that PR merges, ask a repository admin to add `Retro` to the default branch's required status checks. Only an admin can change that setting.
+
+The gate needs `gh` and `jq`, which GitHub-hosted runners include. On another forge, the retro record stays a comment with no gate.
+

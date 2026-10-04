@@ -49,6 +49,12 @@ CStack Mode picks a playbook and loads the skills the task needs. It reports any
 
 In Claude Code and Codex, the mode stays on for the project once you invoke it, including in new sessions and after the context compacts. Run the same command with `off` to turn it off. Codex asks you to review and trust the plugin's hooks first. In Cursor, the mode lasts for the current chat.
 
+## Learn from every PR
+
+When an agent reports a PR ready to merge, it runs a retro with the `reflect` skill. Lessons for your repository go to its `AGENTS.md`, and lessons for the plugin go to a draft for the plugin's repository. Each lesson lands in a draft PR that waits for your review. A PR with nothing to learn gets a `Retro: no lessons` comment.
+
+On GitHub, you can make the retro a merge requirement. Ask an agent to install the retro gate, then add the `Retro` status check to your default branch's required checks.
+
 ## Keep yourself the only author
 
 The plugin's PR playbook writes commits, PRs, and comments with no AI attribution, and it checks that you are the commit author. Each harness also adds its own attribution, which you turn off on your computer:

@@ -24,6 +24,6 @@ Plugin root. Two levels above a loaded skill's `SKILL.md`, per the runtime contr
 
 Invocation policy. Codex reads explicit-only policy from `agents/openai.yaml` beside a skill's `SKILL.md`, not from frontmatter. A project skill that sets `disable-model-invocation: true` also needs that file with `policy.allow_implicit_invocation: false`. The plugin generates its own copies from frontmatter, so edit the frontmatter in the plugin source and regenerate.
 
-Persistent mode. Codex runs the plugin's `hooks/hooks.json` once the user reviews and trusts the hooks. Until then, the mode lasts for the current session only. Typing the `cstack-mode` command turns the mode on for the project, and the SessionStart hook restores it at startup, resume, `/clear`, and compaction.
+Persistent mode. Codex runs the plugin's `hooks/hooks.json` once the user reviews and trusts the hooks. Until then, the mode lasts for the current session only. Typing the `cstack-mode` command turns the mode on for the project, and the SessionStart hook restores it at startup, resume, `/clear`, and compaction. When the environment variable `CSTACK_MODE` is `on`, the SessionStart hook turns the mode on in every project, with no typed command. The host must start with the variable in its environment, such as from a shell profile or a cloud environment's settings.
 
 Attribution. The current Codex configuration reference has no commit or PR attribution key, so the **Authorship** rule in `playbooks/opening-a-pr.md` is the whole control.

@@ -13,7 +13,9 @@ const hooks: { hooks: Record<string, { hooks: { command: string }[] }[]> } = JSO
 // run the hooks against its --posix mode so a GNU-only pattern fails here instead of on a user's Mac.
 const posixBin = mkdtempSync(join(tmpdir(), "posix sed "));
 const gnuSed = spawnSync("sh", ["-c", "command -v sed"], { encoding: "utf8" }).stdout.trim();
-if (spawnSync(gnuSed, ["--posix", "-n", "p"], { input: "" }).status === 0) {
+const isGnuSed = spawnSync(gnuSed, ["--version"], { encoding: "utf8" }).stdout?.includes("GNU") ?? false;
+if (isGnuSed) {
+  if (spawnSync(gnuSed, ["--posix", "-n", "p"], { input: "" }).status !== 0) throw new Error(`${gnuSed} --posix failed, so the hooks would run on GNU-only behavior`);
   writeFileSync(join(posixBin, "sed"), `#!/bin/sh\nexec '${gnuSed}' --posix "$@"\n`);
   chmodSync(join(posixBin, "sed"), 0o755);
 }

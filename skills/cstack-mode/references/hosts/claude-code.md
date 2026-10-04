@@ -4,11 +4,11 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 | Capability | Native route |
 | --- | --- |
-| **Delegate** | The `Agent` tool. The bundled personas register as plugin subagents named `<plugin>:cstack-agent` and `<plugin>:comment-sicko`; pass that name as the subagent type. Use `run_in_background` for parallel lanes and `SendMessage` to resume a child when those are listed. |
+| **Delegate** | The `Agent` tool. The bundled personas register as plugin subagents named `<plugin>:cstack-agent` and `<plugin>:comment-sicko`; pass that name as the subagent type. Use `run_in_background` for parallel lanes and `SendMessage` to resume a child when those are listed. A subagent has no `Agent` tool, so only the top-level session can delegate. |
 | **Ask** | `AskUserQuestion`. |
 | **Plan** | The task tools (`TaskCreate`, `TaskUpdate`), or `TodoWrite` where the task tools are absent. Use `EnterPlanMode` only when the user asked for plan mode. |
 | **Invoke a skill** | The `Skill` tool with `<plugin>:<skill>`. Users type `/<plugin>:<skill>`. The `Skill` tool refuses a skill that sets `disable-model-invocation`, such as a user's explicit-only skill. Read that skill's `SKILL.md` instead. |
-| **History** | No portable history tool. Use a transcript or digest the user supplies. |
+| **History** | In a cloud or remote session whose tool list includes the remote-session MCP tools, find a session with `list_sessions`, or `list_thread_sessions` in a project thread, and read it with `list_events`. Otherwise use a transcript or digest the user supplies. |
 | **Continue later** | A scheduling tool such as `ScheduleWakeup` or `CronCreate` when the tool list includes one. Otherwise report the gap. |
 | **Generate an image** | None. An `image` line naming a CLI runner, such as `codex exec`, provides it. |
 

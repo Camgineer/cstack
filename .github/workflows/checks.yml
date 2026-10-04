@@ -2,6 +2,7 @@ name: Checks
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main]
   workflow_dispatch:
@@ -23,8 +24,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 2
       - name: Install pinned Bun and run checks
         env:
           SETUP_TOOL_ROOT: ${{ runner.temp }}/plugin-tools
           SETUP_BUN_CACHE: ${{ runner.temp }}/bun-cache
         run: bash tools/setup.sh
+      - name: Check the version bump against the base branch
+        if: github.event_name == 'pull_request'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: '"${{ runner.temp }}/plugin-tools/bin/bun" tools/version.ts check --base HEAD^1 --title "$TITLE"'

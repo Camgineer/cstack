@@ -30,6 +30,10 @@ Set `disable-model-invocation: true` on every `principle-*` skill and on no othe
 
 Keep sources that need one vendor's APIs in `contrib/`, which no manifest loads.
 
+## Dogfooding
+
+This repository is the plugin's source and also one of its users. Build every new mechanism, such as a check, gate, or script, to ship with the plugin, unless it only guards this repository's own release or metadata. Then install it here the same way a user would. When a decision offers a mechanism, state whether each option reaches every user of the plugin or only this repository.
+
 ## Versioning
 
 Every PR bumps the plugin version exactly one step over its base branch. The PR title's type sets the step: `feat` bumps the minor version, and every other type bumps the patch version. Bump the major version only when the user asks for it, by adding `!` after the title's type or scope, as in `feat(cstack-mode)!: rename the mode`.

@@ -2,7 +2,7 @@
 
 **You own the skill's voice.**
 
-1. Apply the **writing-for-agents** skill and its `SKILL-MECHANICS.md`.
+1. Invoke `writing-for-agents` and read its `SKILL-MECHANICS.md`.
 2. Validate the skill: frontmatter has `name` and `description`, referenced files exist, cross-skill links resolve.
 3. Read `playbooks/eval.md` before any run, including a quick old-against-new comparison. Eval the skill per **Eval**'s skill section: realistic tasks run with the skill and against a baseline, plus trigger evals when the description is new or changed. Bundle into `scripts/` any helper the run transcripts show every run writing for itself.
 4. Run **Opening a PR**.

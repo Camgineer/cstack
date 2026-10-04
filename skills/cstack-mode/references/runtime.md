@@ -19,7 +19,7 @@ Each workflow uses these capabilities by name. Use the native tool the host note
 | **Delegate** | Spawn a subagent with a brief, a role, and a scope. Check its status, wait for it, and resume it. |
 | **Ask** | Put a structured question with options to the user. |
 | **Plan** | Keep a visible todolist of the workflow's steps. |
-| **Invoke a skill** | Load a bundled skill by name. A cross-skill reference such as "the **how** skill" means read and apply that skill and its prerequisites. |
+| **Invoke a skill** | Load a bundled skill by name with the host's skill mechanism, then follow it. A workflow step that names a skill ("invoke `how`", "the **how** skill") is a call to make at that step, not background reading. The step is done only when the skill is loaded, or when the reply records `skip <skill>: <reason>`. A `principle-*` skill is the exception: read its `SKILL.md` file. |
 | **History** | Read authorized past conversations for the current project. |
 | **Continue later** | Wake the work again after the current task ends. |
 

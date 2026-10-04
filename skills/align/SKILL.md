@@ -48,11 +48,11 @@ Then run the **cold-implementer check**. Use the **Delegate** capability to give
 
 ## 5. Sign
 
-Show the whole spec and ask for sign-off. Without a trusted merge gate, sign-off is the operator's explicit word, such as "aligned". Under a trusted gate per `../cstack-mode/references/merge-gate.md`, sign-off is the operator's approving review on a PR of its own that commits the spec under the spec directory. It holds under a full-autonomy grant, because it is a gate the operator named. Silence and partial answers keep the spec unsigned.
+Show the whole spec and ask for sign-off. Without a trusted merge gate, sign-off is the operator's explicit word, such as "aligned". Under a trusted gate per `../cstack-mode/references/merge-gate.md`, post the spec as an issue with one sub-issue per slice, and sign-off is the operator applying the ready label to it, per that reference. It holds under a full-autonomy grant, because it is a gate the operator named. Silence and partial answers keep the spec unsigned.
 
 ## 6. Hand off
 
-1. Open the bottom PR of the stack as a draft right at sign-off per `../cstack-mode/playbooks/opening-a-pr.md`, with the signed spec as its description. Under a trusted gate, it links the committed spec instead, as every slice PR does. Push the first slice's first commit to make that possible. Each PR above it names the criteria it proves and links the spec. Every PR stays a draft until it is merge-ready.
+1. Open the bottom PR of the stack as a draft right at sign-off per `../cstack-mode/playbooks/opening-a-pr.md`, with the signed spec as its description, or under a trusted gate a link to the spec issue. Push the first slice's first commit to make that possible. Each PR above it names the criteria it proves and links the spec. Every PR stays a draft until it is merge-ready.
 2. Run the slices through the **Autonomous run** playbook (`../cstack-mode/playbooks/autonomous-run.md`). Its exit condition is every acceptance criterion VERIFIED with its agreed evidence in the PR. Each iteration runs the **Feature** playbook for one slice, with `how` and `architect` marked `skip: settled in spec`.
 3. Inside the envelope, decide, log the decision via the **show-me-your-work** skill, and report it in the PR.
 4. When a tripwire fires, stop the affected slice, run a Grill round on that branch only, and get the changed section signed. Then resume. Unaffected slices keep running.

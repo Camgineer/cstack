@@ -1,6 +1,6 @@
 ---
 name: cstack-mode
-description: The plugin's working mode for engineering tasks, with concise, detailed replies, deliberate subagents, unslopped prose, simple code, and verified work. Use for cstack-mode, an engineering task from investigation through verification, or requests to work in this style.
+description: The plugin's working mode for engineering tasks, with concise, detailed replies, deliberate subagents, plain prose, simple code, and verified work. Use for cstack-mode, an engineering task from investigation through verification, or requests to work in this style.
 ---
 
 Read [the runtime contract](references/runtime.md) before executing this workflow.
@@ -29,7 +29,7 @@ Remaining triggers:
 - Explaining, proposing, or putting a decision to the user → show it per **principle-show-dont-tell**, using the **show-me** skill. Grilling or stress-testing a plan with the user → the **grill-with-docs** skill.
 - Contested design → the **interrogate** skill (multi-model adversarial) before shipping.
 - Nontrivial multi-step → write the throughput checkpoint (Feature step 3).
-- Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the **writing-for-agents** skill.
+- Any prose surface → the **simple-as-prose** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the **writing-for-agents** skill.
 - Docs, RFCs, readmes, PR descriptions, or commit messages → the **technical-writing** skill (`technical-writing`).
 - Before commit → the **deslop** skill (`deslop`).
 - Before review → the **no-comments** skill (`no-comments`).
@@ -109,7 +109,7 @@ Write the reply clean as you draft it. A cleanup pass after drafting does not re
 
 - **Short declarative sentences.** One thought per sentence, ended with a period.
 - **No long-dash character anywhere.** Write a file-list bullet as a sentence ("`main.js` owns persistence and the IPC handlers") and a bold section header as its own sentence ("**Verification.** End to end via CDP").
-- **A colon as a mid-sentence connector is also out** (unslop rule 14). A colon before a list is fine.
+- **A colon as a mid-sentence connector is also out** (per the **simple-as-prose** skill). A colon before a list is fine.
 - **Terse is not an excuse to drop content.** Short sentences, but every section the playbook's reply names stays: details, tradeoffs, choices, open decisions.
 - **Frame impact for the consumer and the maintainer.** Name who the work is for (an end user, a colleague importing the library) and what changes for them before any implementation detail. Then what the next engineer who owns this code inherits. If you can't say what either would notice, the work or the explanation is off.
 - **Never fabricate a link, citation, or transcript reference.** Link only artifacts you produced or read this session.

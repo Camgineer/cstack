@@ -4,7 +4,7 @@ description: Write or revise prose for a person or an agent so it is plain, spec
 license: MIT
 metadata:
   authors: "Alex Hormozi, @Anthony-Lionetti, @Camgineer"
-  source: "ai-tells.md adapts unslop from PStack by Lauren Tan, https://github.com/cursor/plugins/tree/main/pstack/skills/unslop"
+  source: "ai-tells.md adapts unslop from PStack by Lauren Tan, https://github.com/cursor/plugins/tree/main/pstack/skills/unslop, and humanizer by Siqi Chen, https://github.com/blader/humanizer. See humanizer-origin.json and humanizer-LICENSE."
 ---
 
 # Simple as prose
@@ -48,6 +48,7 @@ Replace these on sight. For documents, PRs, skills, and rewrites, also check the
 - Groups of three forced by rhythm. Use the natural count.
 - Trailing "-ing" phrases such as "ensuring..." or "highlighting...". Name the actor and the action, or cut the phrase.
 - Arrows, dropped articles, and verbless fragments. Write whole sentences.
+- Run-ups such as "Here's the thing", sayings such as "at its core", and one-line closers that restate the point. State the claim and stop.
 
 ## Punctuation
 
@@ -63,7 +64,8 @@ Replace these on sight. For documents, PRs, skills, and rewrites, also check the
 3. Fix unclear pronouns, modifiers, conditions, and list groupings.
 4. Replace every AI tell. Use [ai-tells.md](ai-tells.md) for documents, PRs, skills, and rewrites.
 5. Search for em dash and en dash characters and replace each one.
-6. Read once at normal speed. Revise anything that sounds scripted, stiff, or vague.
+6. When revising, compare the result with the original. It adds no fact, name, number, date, quote, or claim the original lacks, and drops none that still applies. When a sentence needs a detail you do not have, ask for it or write a simpler sentence.
+7. Read once at normal speed. Revise anything that sounds scripted, stiff, or vague.
 
 ## Return the right artifact
 

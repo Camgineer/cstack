@@ -1,5 +1,5 @@
 interface:
   display_name: "Cstack Mode"
-  short_description: "The plugin's working mode for engineering tasks, with concise, detailed replies, deliberate subagents, unslopped..."
+  short_description: "The plugin's working mode for engineering tasks, with concise, detailed replies, deliberate subagents, plain prose..."
 policy:
   allow_implicit_invocation: true

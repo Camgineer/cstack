@@ -1,6 +1,6 @@
 ---
 name: automate-me
-description: Use for "automate me", "create/update/refresh my -mode skill", "turn/capture my preferences or working style into a skill", or wanting agents to follow how the user works. Drafts or revises a personal -mode skill via writing-for-agents + unslop, optionally pulling fresh evidence from recent transcripts.
+description: Use for "automate me", "create/update/refresh my -mode skill", "turn/capture my preferences or working style into a skill", or wanting agents to follow how the user works. Drafts or revises a personal -mode skill via writing-for-agents + simple-as-prose, optionally pulling fresh evidence from recent transcripts.
 ---
 
 Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
@@ -10,7 +10,7 @@ Read [the runtime contract](../cstack-mode/references/runtime.md) before executi
 
 A guided flow for turning the user's working conventions into a skill agents will follow. The output is one `-mode` skill tailored to them (e.g. `jay-mode`, `priya-mode`).
 
-This skill orchestrates three others: an inline mining pass (see step 1), the **writing-for-agents** skill (authoring), and the **unslop** skill (prose discipline). It sequences them. It doesn't replace them.
+This skill orchestrates three others: an inline mining pass (see step 1), the **writing-for-agents** skill (authoring), and the **simple-as-prose** skill (prose discipline). It sequences them. It doesn't replace them.
 
 ## Flow
 
@@ -76,7 +76,7 @@ Author the skill with the **writing-for-agents** skill and its `SKILL-MECHANICS.
 
 ### 5. Iterate on prose
 
-Apply the **unslop** skill and **writing-for-agents** to every line.
+Apply the **writing-for-agents** and **simple-as-prose** skills to every line.
 
 Show the draft to the user and take feedback. Expect multiple iterations. Cut ruthlessly. A mode skill is not a manual.
 

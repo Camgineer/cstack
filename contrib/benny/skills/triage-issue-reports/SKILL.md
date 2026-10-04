@@ -25,7 +25,7 @@ Load the external Benny configuration supplied by the automation. If the config 
 - Never create an issue that cannot link back to the source thread.
 - Prefer no ticket over a guessed or duplicate ticket.
 - Apply pstack's `principle-separate-before-serializing-shared-state` to source coordinates.
-- Apply pstack's `principle-minimize-reader-load` and `unslop` skills to the final verdict.
+- Apply pstack's `principle-minimize-reader-load` and `simple-as-prose` skills to the final verdict.
 
 ## 1. Freeze source coordinates
 

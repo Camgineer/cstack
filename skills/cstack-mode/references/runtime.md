@@ -36,7 +36,7 @@ Reuse a child only when the host reports it resumable. Read its status without w
 
 ## Model roles
 
-A role names the kind of work a delegated step does. The person picks where each role runs with a `Models:` block in their own instructions file, the one that applies to every project they work in:
+A role names the kind of work a delegated step does. The person picks where each role runs with a `Models:` block in their own instructions file, the one that applies to every project they work in. A project can set its own models in a `Models:` block in its instructions files:
 
 ```markdown
 Models:
@@ -44,7 +44,7 @@ Models:
 - build: native, model <id>, effort xhigh
 ```
 
-Read the block only from that file. A runner is a command that runs on the person's machine, so a `Models:` block in a project's files is not theirs to trust. Report one you find there, and resolve every role as unset.
+A command runner runs on the person's machine, so only the person's own file may name one. A project's block may hold only `native` lines. For each role, a project's `native` line wins, then the person's line, then the host's model. Ignore a project line that names a command, and report it.
 
 | Role | Steps that use it |
 | --- | --- |

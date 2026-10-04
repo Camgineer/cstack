@@ -83,13 +83,14 @@ function resolveMetadata(): boolean {
   return git("add", "tools/metadata.json").status === 0;
 }
 
-function merge(base: string, expected: string): void {
+function merge(base: string, level: Level): void {
   if (git("status", "--porcelain", "--untracked-files=no").stdout !== "") throw new Error("Commit or stash your changes before you merge.");
   const remote = /^([^/]+)\/(.+)$/.exec(base);
   if (remote !== null && git("remote").stdout.split("\n").includes(remote[1]!)) {
     const fetched = git("fetch", "--quiet", remote[1]!, remote[2]!);
     if (fetched.status !== 0) throw new Error(`git fetch ${remote[1]} ${remote[2]} failed: ${fetched.stderr.trim()}`);
   }
+  const expected = next(baseVersion(base), level);
   const merging = git("merge", "--no-commit", "--no-ff", base);
   if (git("rev-parse", "-q", "--verify", "MERGE_HEAD").status !== 0) {
     if (merging.status !== 0) throw new Error(`git merge ${base} failed: ${merging.stderr.trim()}`);
@@ -132,6 +133,10 @@ function main(): void {
     throw new Error('usage: version.ts <bump|check|merge> --base <git ref> --title "<PR title>"');
   }
   const level = levelOf(values.title);
+  if (command === "merge") {
+    merge(values.base, level);
+    return;
+  }
   const expected = next(baseVersion(values.base), level);
 
   if (command === "check") {
@@ -144,10 +149,6 @@ function main(): void {
     console.error('Run `bun tools/version.ts bump --base origin/<base branch> --title "<PR title>"` and commit the result.');
     console.error('If the base moved, run `bun tools/version.ts merge --base origin/<base branch> --title "<PR title>"` instead.');
     process.exit(1);
-  }
-  if (command === "merge") {
-    merge(values.base, expected);
-    return;
   }
   bump(expected);
 }

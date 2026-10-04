@@ -50,7 +50,7 @@ Reload the target project or start a fresh agent rooted there. Verify that these
 - `how`
 - `why`
 - `tdd`
-- `unslop`
+- `simple-as-prose`
 - `principle-separate-before-serializing-shared-state`
 - `principle-minimize-reader-load`
 - `principle-guard-the-context-window`
@@ -113,7 +113,7 @@ Use only model slugs shown as available in the user's Cursor model picker or sup
 
 The source channel, triage identity, repository, tracker adapter, control skill, and feature map must be explicit. Fail setup if any required value stays ambiguous.
 
-Use pstack's `unslop` skill on the final automation names, descriptions, and prompt shims before saving them.
+Use the plugin's `simple-as-prose` skill on the final automation names, descriptions, and prompt shims before saving them.
 
 ## 4. Check integration capabilities
 

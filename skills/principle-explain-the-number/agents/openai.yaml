@@ -1,0 +1,5 @@
+interface:
+  display_name: "Principle Explain the Number"
+  short_description: "Apply before you trust, report, or act on a number you measured: a speedup, a regression, a throughput, a latency..."
+policy:
+  allow_implicit_invocation: false

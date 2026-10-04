@@ -2,7 +2,7 @@
 
 Invoked at the end of every other playbook.
 
-**Worktree.** Work from a git worktree off main. Subagents inherit it. Multiple native subagent calls on the same branch each get their own worktree, or `git fetch && git reset --hard origin/<branch>` between them. Dirty branch with unrelated work: patch out, fresh worktree, apply. Snarled worktree: reset from main, redo minimally.
+**Worktree.** Fetch the trunk, then work from a git worktree off the fetched trunk tip, not the local ref. Subagents inherit it. Name its base SHA in each subagent's brief. A subagent's claim that something is absent holds only for that SHA, so recheck it against the current trunk before you act on it. Multiple native subagent calls on the same branch each get their own worktree, or `git fetch && git reset --hard origin/<branch>` between them. Dirty branch with unrelated work: patch out, fresh worktree, apply. Snarled worktree: reset from main, redo minimally.
 
 **Commits.** Commit liberally. Rebase into small, ordered commits before opening PRs, one purpose per commit. Each commit is a future PR: landable, ordered to tell the story. Amend when the fix belongs in a just-made commit. New commit when separable. Before regrouping commits that are already pushed, record `git rev-parse HEAD^{tree}`. Before the force-push, confirm the tree hash is unchanged. A different hash means the regroup changed content, so stop and restore the original branch.
 
@@ -20,7 +20,7 @@ Use these sections in order. Drop a section when it has nothing to say.
 - `## Scope`. Use bullets to list real symbols and paths. Name both sides of a rename or retarget. State what is in and out only when the boundary matters. Do not write a file-by-file essay.
 - `## Tradeoffs`. Name only rejected alternatives that a reviewer would otherwise ask about. Skip this section when there was no real choice.
 - `## Blast Radius`. In one to three sentences, name who or what the change touches and why the change is safe or risky. State the continuing cost if main stays red without the fix. End with a door call. Call it one-way when the merge is hard to undo, such as a schema migration, a public API, or deleted data. Call it two-way when a revert is cheap. The reviewer then knows how careful the merge must be.
-- `## Verification`. Name each real run path and its outcome. For a performance change, report one primary number with its unit in `before → after` form. Link the arena or swarm directory for the remaining evidence. Do not include sample-size methodology, swarm recitals, or metric tables.
+- `## Verification`. Name each real run path and its outcome. Name any failure that passed on rerun, and link the follow-up you filed for it. A rerun pass does not clear a timing or locking test. For a performance change, report one primary number with its unit in `before → after` form. Link the arena or swarm directory for the remaining evidence. Do not include sample-size methodology, swarm recitals, or metric tables.
 
 **Spec PRs.** When the **align** skill produced a signed spec, the bottom PR's description is that spec, and the 40-line limit gives way to it. Every PR in the stack ends with an `## Evidence` table in place of `## Verification`: one row per acceptance criterion it proves, every kind of proof that criterion's verification row names, and a verdict. Link or inline each proof so a reviewer can judge the PR from the table alone, before or after the merge. A PR that proves no criterion, such as a prefactor, keeps `## Verification`.
 

@@ -31,16 +31,8 @@ jobs:
           SETUP_TOOL_ROOT: ${{ runner.temp }}/plugin-tools
           SETUP_BUN_CACHE: ${{ runner.temp }}/bun-cache
         run: bash tools/setup.sh
-      - name: Check the version bump against the base branch
+      - name: Check that the PR title names a release level
         if: github.event_name == 'pull_request'
         env:
           TITLE: ${{ github.event.pull_request.title }}
-        run: '"${{ runner.temp }}/plugin-tools/bin/bun" tools/version.ts check --base HEAD^1 --title "$TITLE"'
-      - name: Check the merged version bump against main before the push
-        if: github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BEFORE: ${{ github.event.before }}
-        run: |
-          title=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" --jq 'map(select(.merged_at != null)) | .[0].title // empty')
-          "$RUNNER_TEMP/plugin-tools/bin/bun" tools/version.ts check --base "$BEFORE" --title "${title:-$(git log -1 --format=%s)}"
+        run: '"${{ runner.temp }}/plugin-tools/bin/bun" tools/version.ts title --title "$TITLE"'

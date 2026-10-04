@@ -157,7 +157,7 @@ The flag guards the command; it does not grant permission. Verify host-specific 
 
 PStack updates arrive through reviewed, agent-assisted imports. An agent compares upstream changes with the recorded baseline, adapts useful changes to the harness-neutral core, and verifies the result in a PR. The plugin can change upstream structure and behavior to suit its own design.
 
-The imported baseline is PStack 0.15.5 at `cursor/plugins@fae2c6ed95821bd85f614a73e4842e13229fa5e5`. The original import remains in Git history at `c31f7ace991843f5576398ad025969465251192c`.
+The imported baseline is PStack 0.15.9 at `cursor/plugins@e43c7ee26e0038c6c1fa8380dd34ce86ff94cb2a`. The update from 0.15.5 took `correct`, `benchmark-checklist`, `principle-explain-the-number`, and the agent-friendly `architect` red flags. It left out the performance mantras, the PR heading rewrite, `/goal` and `/loop` scheduling, fresh subagents by default, the rule against reply tokens, the zod-first boundary parsing in `typescript-best-practices`, and the removal of source lines from `technical-writing`. The original import of 0.15.5 remains in Git history at `c31f7ace991843f5576398ad025969465251192c`.
 
 ## License
 

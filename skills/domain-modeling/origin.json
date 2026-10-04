@@ -8,6 +8,7 @@
     "GLOSSARY-FORMAT.md": "21dcc40cdec8e151a829b98ab1517c1867bc444e3665134a98c6983411996801"
   },
   "adaptations": [
-    "Added license, source, and the runtime-contract pointer to SKILL.md; body and format references preserved verbatim."
+    "Added license, source, and the runtime-contract pointer to SKILL.md; format references preserved verbatim.",
+    "Added scripts/check-glossary.ts and a Check the language step that runs it, so _Avoid_ aliases fail a check instead of relying on review."
   ]
 }

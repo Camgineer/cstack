@@ -16,3 +16,5 @@ Skill directories. `<project-skills>` is `.claude/skills` in the project. `<user
 Plugin root. A loaded skill reports its base directory. The plugin root is two levels above a skill's `SKILL.md`.
 
 Persistent mode. Claude Code runs the plugin's `hooks/hooks.json`. Typing the `cstack-mode` command turns the mode on for the project, and the SessionStart hook restores it at startup, resume, `/clear`, and compaction.
+
+Attribution. Claude Code adds a model co-author trailer to commits, a "Generated with Claude Code" line to PR bodies, and a session link to cloud and Remote Control commits. The `attribution` settings key turns all three off. In `~/.claude/settings.json` or a project's `.claude/settings.json`, set `"attribution": { "commit": "", "pr": "", "sessionUrl": false }`. Version 2.1.281 and later also accept `"attribution": false`, but earlier versions skip the whole settings file that holds it. Cloud sessions can start with a git identity that names Claude, so check it per **Authorship** in `playbooks/opening-a-pr.md`.

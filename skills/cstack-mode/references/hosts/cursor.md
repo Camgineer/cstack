@@ -16,3 +16,5 @@ Skill directories. `<project-skills>` is `.cursor/skills` in the project. `<user
 Plugin root. Two levels above a loaded skill's `SKILL.md`, per the runtime contract.
 
 Persistent mode. The plugin ships no Cursor hooks, so `cstack-mode` lasts for the current chat. Re-invoke it in a new chat.
+
+Attribution. Cursor adds a "Made with Cursor" trailer to agent commits and a footer to agent PRs. In the IDE, turn off Commit Attribution and PR Attribution in Cursor Settings. For the CLI, set `"attribution": { "attributeCommitsToAgent": false, "attributePRsToAgent": false }` in `~/.cursor/cli-config.json`. Cloud agents sign their commits as Cursor Agent, which no setting changes. Apply the **Authorship** rule in `playbooks/opening-a-pr.md` on every surface.

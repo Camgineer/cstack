@@ -48,3 +48,27 @@ Classify every dependency of a module, because the category decides how its test
 - **True external.** A third-party service. Inject it as a port and give tests a mock adapter.
 
 A candidate whose tests must reach past its interface, or mock an in-process dependency, has the wrong shape. Tests at a deepened interface replace the tests on the shallow modules it absorbed.
+
+## Split ownership
+
+More than one module writes the same state or keeps its own copy of it. An agent that edits one writer can't see the others, so their rules diverge.
+
+Give each piece of state one owner. Other modules read it or ask the owner to change it.
+
+## Two ways to do one task
+
+The design supports more than one way to do the same task. An agent copies whichever way it finds first, so every way keeps gaining callers.
+
+Keep one way. Move callers off the others and delete them in the same change, per the **migrate-callers-then-delete-legacy-apis** principle skill.
+
+## Importable internals
+
+A caller can import a module's internals. An agent takes the shortest path that compiles, so it imports them directly and they become part of the interface.
+
+Make internals unreachable from outside the module, so an import from outside fails the build.
+
+## Hand-synced list
+
+Two or more places list the same items, and adding an item means editing every list. An agent that sees one list updates only that one.
+
+Keep one list and derive the others from it. If a list can't be derived, make the build fail when the lists disagree.

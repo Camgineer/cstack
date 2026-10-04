@@ -1,12 +1,13 @@
 #!/bin/sh
 # Keeps the plugin's <plugin>-mode skill on for a project across sessions, /clear, and compaction.
-# Hosts call this from hooks/hooks.json; the agent runs `mode.sh off` when the user opts out in plain words.
+# Hosts call this from hooks/hooks.json or hooks/cursor.json; the agent runs `mode.sh off` when the user opts out in plain words.
 set -eu
 
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 name=$(sed -n 's/^[[:space:]]*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$root/tools/metadata.json" 2>/dev/null | head -n 1)
 mode="${name:-plugin}-mode"
 state="${XDG_STATE_HOME:-$HOME/.local/state}/${name:-plugin}/$mode"
+env_switch=$(printf '%s' "$mode" | tr '[:lower:]-' '[:upper:]_')
 
 json_string() {
   printf '"%s"' "$(printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | awk 'NR > 1 { printf "\\n" } { printf "%s", $0 }')"
@@ -24,14 +25,49 @@ flag_for() {
   printf '%s/%s\n' "$state" "$(printf '%s' "$1" | cksum | cut -d ' ' -f 1)"
 }
 
+# A project is on or off once the user says so. Until then the environment switch decides.
+# Flags written before `off` was recorded hold only the project path, and read as on.
+choice_of() {
+  if [ ! -f "$1" ]; then echo none
+  elif [ "$(head -n 1 "$1")" = off ]; then echo off
+  else echo on
+  fi
+}
+
+choose() {
+  mkdir -p "$state" && printf '%s\n%s\n' "$2" "$3" >"$1"
+}
+
+on_by_env_switch() {
+  [ "$(printenv "$env_switch")" = on ]
+}
+
+mode_is_on() {
+  case $(choice_of "$1") in
+    on) true ;;
+    off) false ;;
+    none) on_by_env_switch ;;
+  esac
+}
+
+env_switch_note() {
+  if on_by_env_switch; then printf ' %s=on in the environment turns it on in every project the user has not turned off. Unsetting it turns that off.' "$env_switch"; fi
+}
+
+# Cursor's sessionStart reads a flat additional_context field, and its beforeSubmitPrompt can only let the prompt continue.
+# Claude Code and Codex read hookSpecificOutput.additionalContext.
 emit() {
-  printf '{"hookSpecificOutput":{"hookEventName":%s,"additionalContext":%s}}\n' "$(json_string "$1")" "$(json_string "$2")"
+  case "$1:$2" in
+    cursor:SessionStart) printf '{"additional_context":%s}\n' "$(json_string "$3")" ;;
+    cursor:*) printf '{"continue":true}\n' ;;
+    *) printf '{"hookSpecificOutput":{"hookEventName":%s,"additionalContext":%s}}\n' "$(json_string "$2")" "$(json_string "$3")" ;;
+  esac
 }
 
 # Hosts load a named skill without a file-read permission prompt, so name it first and keep the path as the fallback.
 reminder() {
-  printf '%s is on for %s. Invoke the %s skill now and apply it to every task in this session. If you cannot invoke a skill by name, read %s in full instead. It stays on until the user turns it off. If the user asks to turn it off, run: sh %s off\n' \
-    "$mode" "$1" "${name:-plugin}:$mode" "$root/skills/$mode/SKILL.md" "'$root/hooks/mode.sh'"
+  printf '%s is on for %s. Invoke the %s skill now and apply it to every task in this session. If you cannot invoke a skill by name, read %s in full instead. It stays on until the user turns it off. If the user asks to turn it off, run: sh %s off.%s\n' \
+    "$mode" "$1" "${name:-plugin}:$mode" "$root/skills/$mode/SKILL.md" "'$root/hooks/mode.sh'" "$(env_switch_note)"
 }
 
 command=${1:-}
@@ -40,40 +76,43 @@ case "$command" in
     project=$(project_of "$(pwd)")
     flag=$(flag_for "$project")
     case "$command" in
-      on) mkdir -p "$state" && printf '%s\n' "$project" >"$flag" && echo "$mode is on for $project." ;;
-      off) rm -f "$flag" && echo "$mode is off for $project." ;;
-      status) if [ -f "$flag" ]; then echo "$mode is on for $project."; else echo "$mode is off for $project."; fi ;;
+      on | off) choose "$flag" "$command" "$project" && echo "$mode is $command for $project.$(env_switch_note)" ;;
+      status) if mode_is_on "$flag"; then echo "$mode is on for $project.$(env_switch_note)"; else echo "$mode is off for $project.$(env_switch_note)"; fi ;;
     esac
     ;;
   session-start | prompt)
     input=$(cat)
-    cwd=${CLAUDE_PROJECT_DIR:-$(json_field "$input" cwd)}
+    cwd=${CLAUDE_PROJECT_DIR:-${CURSOR_PROJECT_DIR:-$(json_field "$input" cwd)}}
     project=$(project_of "${cwd:-$(pwd)}")
     flag=$(flag_for "$project")
+    host=${2:-}
     if [ "$command" = session-start ]; then
-      if [ -f "$flag" ]; then emit SessionStart "$(reminder "$project")"; fi
+      if mode_is_on "$flag"; then emit "$host" SessionStart "$(reminder "$project")"; fi
       exit 0
     fi
     # Only an explicit command toggles the mode: /<plugin>:<plugin>-mode, $<plugin>:<plugin>-mode, or /<plugin>-mode.
     rest=$(json_field "$input" prompt | sed -E -n "s/^[[:space:]]*[/\$]([A-Za-z0-9_.-]*:)?$mode(([[:space:]]|\\\\n).*)?\$/x\\2/p")
     case "$rest" in
-      "") exit 0 ;;
+      "")
+        if [ "$host" = cursor ]; then emit cursor UserPromptSubmit ""; fi
+        exit 0
+        ;;
       x) args= ;;
       *) args=$(printf '%s' "${rest#x}" | sed -e 's/\\n/ /g' -e 's/^[[:space:]]*//') ;;
     esac
     case "$args" in
       off | "off "* | "off."*)
-        rm -f "$flag"
-        emit UserPromptSubmit "$mode is now off for $project. Stop applying it."
+        choose "$flag" off "$project"
+        emit "$host" UserPromptSubmit "$mode is now off for $project and stays off in later sessions until the user turns it on. Stop applying it."
         ;;
       *)
-        mkdir -p "$state" && printf '%s\n' "$project" >"$flag"
-        emit UserPromptSubmit "$mode is now on for $project and stays on in later sessions until the user turns it off. If the user asks to turn it off, run: sh '$root/hooks/mode.sh' off"
+        choose "$flag" on "$project"
+        emit "$host" UserPromptSubmit "$mode is now on for $project and stays on in later sessions until the user turns it off. If the user asks to turn it off, run: sh '$root/hooks/mode.sh' off"
         ;;
     esac
     ;;
   *)
-    echo "usage: mode.sh on|off|status|session-start|prompt" >&2
+    echo "usage: mode.sh on|off|status|session-start [cursor]|prompt [cursor]" >&2
     exit 2
     ;;
 esac

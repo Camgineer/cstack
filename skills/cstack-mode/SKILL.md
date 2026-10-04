@@ -29,24 +29,16 @@ Remaining triggers. A trigger that names a skill means invoke that skill with th
 - Explaining, proposing, or putting a decision to the user → show it per **principle-show-dont-tell**: invoke `show-me`. Grilling or stress-testing a plan with the user → invoke `grill-with-docs`.
 - Contested design → invoke `interrogate` (multi-model adversarial) before shipping.
 - Nontrivial multi-step → write the throughput checkpoint (Feature step 3).
-<<<<<<< HEAD
 - Any prose surface → invoke `simple-as-prose`. Your reply is a prose surface. Write it per **Writing the reply**. For agent-facing prose, also invoke `writing-for-agents`.
 - Docs, RFCs, readmes, PR descriptions, or commit messages → invoke `technical-writing`.
 - Before commit → invoke `deslop`.
 - Before review → invoke `no-comments`.
 - Shipping UI / IDE / CLI → invoke the matching control skill: `control-cli` for CLIs and TUIs, `control-ui` for browser, Electron, and web UIs, or the project's own verification skill. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
-=======
-- Any prose surface → the **simple-as-prose** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the **writing-for-agents** skill.
-- Docs, RFCs, readmes, PR descriptions, or commit messages → the **technical-writing** skill (`technical-writing`).
-- Before commit → the **deslop** skill (`deslop`).
-- Before review → the **no-comments** skill (`no-comments`).
-- Shipping UI / IDE / CLI → the matching control skill: `control-cli` for CLIs and TUIs, `control-ui` for browser, Electron, and web UIs, or the project's own verification skill. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
-- Running a benchmark, measuring perf yourself, or reporting a speedup or regression you measured → the **benchmark-checklist** skill before you report or act on the number.
->>>>>>> origin/main
+- Running a benchmark, measuring perf yourself, or reporting a speedup or regression you measured → invoke `benchmark-checklist` before you report or act on the number.
 - Any PR-status request → the **Babysit** playbook (`playbooks/babysit.md`), rather than a similarly named host shortcut. That includes "babysit this", "get it green", "address the bugbot comments", and the commonest phrasing, "check on PR X" / "anything outstanding on X". Never triggered by merely opening a PR. Declare its mode before polling. The playbook's step 1 owns the request-to-mode mapping. Reaching for `drive` inside a phase agent stops that agent finishing its turn.
 - Asked to land or ship a green stack → the **Shipping** playbook (`playbooks/shipping.md`). Green is not safe. Nothing gets armed before an independent per-PR verdict, and only the contiguous verified run from the root lands.
 - Bugbot or the agentic security review commented → skeptical posture. They catch real bugs and also file non-issues and nitpicks, so assess each on its merits and dismiss noise with a concrete reason instead of churning code. Triage fix / dismiss / ask per `references/bugbot-triage.md`.
-- The operator corrects the same agent mistake a second time → the **correct** skill, which fixes the repo instead of adding another instruction.
+- The operator corrects the same agent mistake a second time → invoke `correct`, which fixes the repo instead of adding another instruction.
 - Broken skill mid-task → fix it in its own PR. Don't block. Don't silently work around it.
 - Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "keep going until X") → invoke `show-me-your-work` for a decision trail. Commit it when stakes need an auditable record. Keep it local otherwise.
 

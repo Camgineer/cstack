@@ -1,0 +1,54 @@
+import { expect, test } from "bun:test";
+import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const filter = resolve(import.meta.dir, "../../skills/reflect/gate/retro-gate.jq");
+
+function gate(pullRequest: { body: string | null; comments: string[] }) {
+  const run = spawnSync("jq", ["-c", "-f", filter], { input: JSON.stringify(pullRequest), encoding: "utf8" });
+  expect(run.stderr).toBe("");
+  return JSON.parse(run.stdout);
+}
+
+test("a PR without a retro record waits", () => {
+  expect(gate({ body: "## Why\n\nFix a typo.", comments: ["LGTM", "The retro found nothing. Retro: no lessons"] })).toEqual({
+    state: "pending",
+    description: "Waiting for the builder's retro comment (reflect, PR retro scope)",
+  });
+});
+
+test("a no-lessons record passes", () => {
+  expect(gate({ body: null, comments: ["Retro: no lessons\n\n- Backlog: version conflicts"] })).toEqual({
+    state: "success",
+    description: "Retro: no lessons",
+  });
+});
+
+test("a record that links a lessons PR passes", () => {
+  expect(gate({ body: "", comments: ["  Retro: lessons in https://github.com/o/r/pull/7"] })).toEqual({
+    state: "success",
+    description: "Retro: lessons in https://github.com/o/r/pull/7",
+  });
+});
+
+test("a lessons PR needs no retro of its own", () => {
+  expect(gate({ body: "Lessons from https://github.com/o/r/pull/6\n\n## Accepted", comments: [] })).toEqual({
+    state: "success",
+    description: "Lessons PR, which gets no retro",
+  });
+});
+
+test("a PR that only mentions a lessons PR still waits", () => {
+  expect(gate({ body: "Follows the Lessons from https://github.com/o/r/pull/6 review.", comments: [] }).state).toBe("pending");
+});
+
+test("this repository runs the gate the plugin ships", () => {
+  const root = resolve(import.meta.dir, "../..");
+  for (const [installed, shipped] of [
+    [".github/workflows/retro.yml", "skills/reflect/gate/retro.yml"],
+    [".github/retro-gate.jq", "skills/reflect/gate/retro-gate.jq"],
+  ]) {
+    expect(readFileSync(resolve(root, installed!), "utf8")).toBe(readFileSync(resolve(root, shipped!), "utf8"));
+  }
+});

@@ -10,6 +10,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **Invoke a skill** | Cursor selects a skill by its description. Users type `/<skill>`. A skill that sets `disable-model-invocation` stays out of automatic selection. Read its `SKILL.md` when a workflow names it. |
 | **History** | Conversation history tools when the session exposes them. Otherwise use a transcript or digest the user supplies. |
 | **Continue later** | A Cursor automation the user authorized. Otherwise report the gap. |
+| **Generate an image** | An image tool when this session's tool list has one. Otherwise an `image` line naming a CLI runner, such as `codex exec`, provides it. |
 
 Skill directories. `<project-skills>` is `.cursor/skills` in the project. `<user-skills>` is `~/.cursor/skills`.
 

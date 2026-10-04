@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,7 +25,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 2
+          fetch-depth: 0
       - name: Install pinned Bun and run checks
         env:
           SETUP_TOOL_ROOT: ${{ runner.temp }}/plugin-tools
@@ -35,6 +36,11 @@ jobs:
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: '"${{ runner.temp }}/plugin-tools/bin/bun" tools/version.ts check --base HEAD^1 --title "$TITLE"'
-      - name: Check the merged version bump against the previous commit
+      - name: Check the merged version bump against main before the push
         if: github.event_name == 'push'
-        run: '"${{ runner.temp }}/plugin-tools/bin/bun" tools/version.ts check --base HEAD^1 --title "$(git log -1 --format=%s)"'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          title=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" --jq 'map(select(.merged_at != null)) | .[0].title // empty')
+          "$RUNNER_TEMP/plugin-tools/bin/bun" tools/version.ts check --base "$BEFORE" --title "${title:-$(git log -1 --format=%s)}"

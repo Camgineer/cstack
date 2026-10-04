@@ -16,6 +16,8 @@ function inRepositoryCopy(run: (directory: string) => void): void {
     writeFileSync(metadata, readFileSync(metadata, "utf8").replace(/"version": "[^"]*"/, '"version": "1.4.2"'));
     const git = (...args: string[]) => spawnSync("git", args, { cwd: directory, encoding: "utf8" });
     expect(git("init", "--quiet", "--initial-branch=main").status).toBe(0);
+    expect(git("config", "user.name", "Fixture").status).toBe(0);
+    expect(git("config", "user.email", "fixture@example.com").status).toBe(0);
     expect(git("add", ".").status).toBe(0);
     expect(git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.com", "commit", "--quiet", "--message", "base").status).toBe(0);
     expect(spawnSync(process.execPath, [join(directory, "tools/sync-hosts.ts")]).status).toBe(0);

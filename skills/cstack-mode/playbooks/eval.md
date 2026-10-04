@@ -15,7 +15,7 @@
 **Steps:**
 
 1. **Frame.** State what variant is under test and what behavior counts as success. Write the rubric (3-6 concrete criteria) for the judge only. Hold it back from candidates.
-2. **Set up sanitized environments.** Per-candidate working dir with the variant in place. Plant any context an organic task would have: a project skeleton, the skills the candidate would naturally read.
+2. **Set up sanitized environments.** Per-candidate working dir with the variant in place. Give each candidate its own scratch and output paths too. Confirm each candidate has every capability the variant uses, such as **Delegate**. When one is missing, run candidates as top-level sessions or mark that step untested. Plant any context an organic task would have: a project skeleton, the skills the candidate would naturally read.
 3. **Author one organic prompt.** What a user would type. No leakage of what's being measured.
 4. **Spawn N parallel candidates** on different models per the **arena** skill's Phase B. Each works in its own sanitized dir. Same prompt to each.
 5. **Spawn one blinded judge** on a different model family per the **arena** skill's Phase C. Judge sees outputs by sanitized label and the rubric, never a model name.
@@ -26,6 +26,6 @@
 
 - **Baseline.** Each task runs twice under the same prompt, model, and environment: once with the skill and once without it. When revising an existing skill, the baseline is a snapshot of the previous version. Launch both arms together.
 - **Repeated work.** Read the transcripts of the with-skill runs. A helper script or multi-step procedure that several runs wrote independently belongs in the skill's `scripts/`, with the skill pointing to it.
-- **Trigger evals.** Write about 20 realistic requests: half that should load the skill, half near-misses that share its keywords but need something else. Make each one substantive enough that an agent would reach for a skill at all. Run each request a few times and score the trigger rate against the expected answer. Revise the description against a train split of about 60 percent, and keep the version with the best score on the held-out rest.
+- **Trigger evals.** Write about 20 realistic requests: half that should load the skill, half near-misses that share its keywords but need something else. Make each one substantive enough that an agent would reach for a skill at all. Run each request as a real headless session inside a realistic project copy, with enough turns for the agent to look around first, and count only actual skill loads. Include neighbouring skills' own requests among the near-misses. State which entry path you measured: the description alone, or the mode's trigger line. Run each request a few times and score the trigger rate against the expected answer. Revise the description against a train split of about 60 percent, and keep the version with the best score on the held-out rest.
 
 **Reply:** variant under test, rubric, per-candidate notes, judge's verdict, your synthesis, and a recommendation for whether to promote the variant.

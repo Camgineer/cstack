@@ -26,6 +26,12 @@ Set `disable-model-invocation: true` on every `principle-*` skill and on no othe
 
 Keep sources that need one vendor's APIs in `contrib/`, which no manifest loads.
 
+## Versioning
+
+Every PR bumps the plugin version exactly one step over its base branch. The PR title's type sets the step: `feat` bumps the minor version, and every other type bumps the patch version. Bump the major version only when the user asks for it, by adding `!` after the title's type or scope, as in `feat(cstack-mode)!: rename the mode`.
+
+Run `bun tools/version.ts bump --base origin/<base-branch> --title "<PR title>"` and commit the result. Rerun it after you change the title or merge a base that moved the version. CI runs the matching `check` on every PR.
+
 ## Documentation scope
 
 Keep the root README as this repository's only human guide. Keep other instructional prose agent-facing, with a clear workflow or context pointer that reaches it. Classify files by their actual use; an agent verification index may still be named README.md. Preserve legal notices, provenance, and machine metadata.

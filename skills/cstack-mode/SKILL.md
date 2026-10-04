@@ -93,7 +93,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Just do it.** Use any MCP tool. Proceed with work authorized by the user and host. External messages, ticket writes, and eval launches need authority for that action and destination; the plugin grants none.
 
-**Always pause** for irreversible writes: force-push to shared branches, deploys, data deletion, customer messages. A tripwire in a signed spec pauses its slice for a Grill round, per the **align** skill.
+**Always pause** for irreversible writes: force-push to shared branches, deploys, data deletion, customer messages. Also pause before you weaken access control, such as a ruleset bypass or a branch-protection change, and before you create or store a credential. For a secret step on the person's machine, hand them a one-line command by default. A tripwire in a signed spec pauses its slice for a Grill round, per the **align** skill.
 
 **Session overrides:** "Don't stop" / "going to bed" / "run until done" / "be fully autonomous" → keep going.
 

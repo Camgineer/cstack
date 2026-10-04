@@ -48,7 +48,7 @@ Each round the user answers reshapes the tree: settled decisions push the fronti
 When the user brings a solution rather than a problem, such as "add a cache" or "build a dashboard", treat the solution as evidence of a problem. The first round works back to that problem, and it becomes the root of the design tree. Ask it in the round format:
 
 - Name the signal that prompted the solution: the complaint, metric, incident, or request behind it.
-- Offer three framings of the underlying problem, each pointing to a different build, shown side by side.
+- Offer each framing of the underlying problem you can back with a reason, each pointing to a different build, shown side by side.
 - Show each load-bearing assumption in a table with the risk if it is wrong, the cheapest test that checks it, and its evidence status: none, anecdotal, or measured.
 
 An assumption with evidence status none gets its test before its design. Recommend the test, and keep the design questions that depend on it off the frontier until the result is in.
@@ -59,8 +59,8 @@ Finding _facts_ is your job, never the user's. When a frontier question needs a 
 
 ## Absent decider
 
-When a decision belongs to someone outside the session, grill the send, not the subject. Ask the user who it goes to, what that person knows, and what the user needs back. Then write a questionnaire for that person: a one-paragraph context, then single-idea questions ordered most important first, each with an answer stub beneath it. Add a one-line why only where a question could be misread. Keep the dependent questions off the frontier until the answers come back.
+When a decision belongs to someone outside the session, grill the send, not the subject. Ask the user who it goes to, what that person knows, and what the user needs back. Then write a questionnaire for that person: a one-paragraph context, then single-idea questions ordered most important first, each with an answer stub beneath it. Add a one-line why only where a question could be misread. Hand the questionnaire to the user to send, list the waiting branches as open, and keep their dependent questions off the frontier until the answers come back.
 
 ## Done
 
-The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed, every resolved term in `GLOSSARY.md`, and every qualifying decision offered as an ADR. Do not act on the plan until the user confirms you have reached a shared understanding.
+The session is done when the frontier is empty, or holds only branches waiting on an absent decider: every branch of the design tree visited, nothing left silently assumed, every resolved term in `GLOSSARY.md`, and every qualifying decision offered as an ADR. Do not act on the plan until the user confirms you have reached a shared understanding.

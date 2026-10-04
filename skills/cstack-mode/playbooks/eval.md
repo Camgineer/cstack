@@ -24,7 +24,7 @@
 
 **Evaluating a skill.** Run the steps above with these additions:
 
-- **Baseline.** Each task runs twice under the same prompt, model, and environment: once with the skill and once without it. When revising an existing skill, the baseline is a snapshot of the previous version. Launch both arms together.
+- **Baseline.** Each task runs twice under the same prompt, model, and environment: once with the skill and once without it. When revising an existing skill, the baseline is a snapshot of the previous version. Pin each arm's runtime with an absolute path to its variant and an explicit model that matches the sessions under study. Smoke-test one run per arm that proves the variant loaded and the model matches, and abort the arm otherwise. Pilot each task once on the baseline arm. When the baseline already shows the target behavior, or the fixture is too small for the skill to earn its cost, harden the task before you spend reps. Then launch both arms together.
 - **Repeated work.** Read the transcripts of the with-skill runs. A helper script or multi-step procedure that several runs wrote independently belongs in the skill's `scripts/`, with the skill pointing to it.
 - **Trigger evals.** Write about 20 realistic requests: half that should load the skill, half near-misses that share its keywords but need something else. Make each one substantive enough that an agent would reach for a skill at all. Run each request a few times and score the trigger rate against the expected answer. Revise the description against a train split of about 60 percent, and keep the version with the best score on the held-out rest.
 

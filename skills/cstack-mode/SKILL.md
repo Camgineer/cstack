@@ -18,7 +18,7 @@ On hosts that run the plugin's hooks, the user's typed command for this skill al
 
 The Principles section below grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
 
-Remaining triggers. A trigger that names a skill means invoke that skill with the **Invoke a skill** capability when the condition holds, then follow it. Knowing what the skill says is not running it.
+Remaining triggers. A trigger that names a skill means invoke that skill with the **Invoke a skill** capability when the condition holds, then follow it. The trigger is met only when the skill is loaded in this session. Knowing what it says is not running it. When you judge a matched skill unneeded, say so in the reply as `skip <skill>: <reason>`.
 
 - Nontrivial change, with the operator present to agree it before the build → invoke `align` before the matched playbook runs. Its signed spec settles that playbook's design and done steps.
 - Nontrivial change, architecture decision, or "are we sure?" → invoke `how` before you change anything.
@@ -34,9 +34,11 @@ Remaining triggers. A trigger that names a skill means invoke that skill with th
 - Before commit → invoke `deslop`.
 - Before review → invoke `no-comments`.
 - Shipping UI / IDE / CLI → invoke the matching control skill: `control-cli` for CLIs and TUIs, `control-ui` for browser, Electron, and web UIs, or the project's own verification skill. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
+- Running a benchmark, measuring perf yourself, or reporting a speedup or regression you measured → invoke `benchmark-checklist` before you report or act on the number.
 - Any PR-status request → the **Babysit** playbook (`playbooks/babysit.md`), rather than a similarly named host shortcut. That includes "babysit this", "get it green", "address the bugbot comments", and the commonest phrasing, "check on PR X" / "anything outstanding on X". Never triggered by merely opening a PR. Declare its mode before polling. The playbook's step 1 owns the request-to-mode mapping. Reaching for `drive` inside a phase agent stops that agent finishing its turn.
 - Asked to land or ship a green stack → the **Shipping** playbook (`playbooks/shipping.md`). Green is not safe. Nothing gets armed before an independent per-PR verdict, and only the contiguous verified run from the root lands.
 - Bugbot or the agentic security review commented → skeptical posture. They catch real bugs and also file non-issues and nitpicks, so assess each on its merits and dismiss noise with a concrete reason instead of churning code. Triage fix / dismiss / ask per `references/bugbot-triage.md`.
+- The operator corrects the same agent mistake a second time → invoke `correct`, which fixes the repo instead of adding another instruction.
 - Broken skill mid-task → fix it in its own PR. Don't block. Don't silently work around it.
 - Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "keep going until X") → invoke `show-me-your-work` for a decision trail. Commit it when stakes need an auditable record. Keep it local otherwise.
 
@@ -46,7 +48,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Core**
 
-- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, sizing a diff, or tempted to add abstractions, layers, or signal threading. Bias to deletion and the smallest change that solves the problem.
+- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, sizing a diff, or tempted to add wrappers, layers, or signal threading. Bias to deletion and the smallest change that solves the problem.
 - **Foundational Thinking** (**principle-foundational-thinking**). Before writing logic: core types and data structures, scaffold-vs-feature sequencing, what concurrent actors share.
 - **Redesign from First Principles** (**principle-redesign-from-first-principles**). Integrating a new requirement into an existing design. Redesign as if it had been foundational from day one.
 - **Attack the Premise** (**principle-attack-the-premise**). Two or more fixes that share one premise have failed the same gate. Take a census of which actors hold the imbalance before the next fix, then question the premise instead of writing another fix that assumes it.
@@ -73,6 +75,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 - **Fix Root Causes** (**principle-fix-root-causes**). Debugging. Trace each symptom to its root cause, reproduce first, ask why until you reach it.
 - **Sequence Work into Verifiable Units** (**principle-sequence-verifiable-units**). Multi-step work (sweeps, migrations, runs of similar edits) and how you stack commits and PRs. Break work into small units that each end in a check, verify each before the next, and order delivery so the sequence proves itself.
 - **Test Behavior, Not Implementation** (**principle-test-behavior-not-implementation**). Writing, changing, or keeping a test. Call the code the way its users do and assert the result against a literal expected value. If the test would still pass when every imported function returns `undefined`, rewrite the assertion or delete the test.
+- **Explain the Number** (**principle-explain-the-number**). Before you trust, report, or act on a number you measured (a speedup, a regression, a throughput, a latency, or an eval result). Find what limits it, and rule out that it measured something other than the work you think.
 
 **Delegation**
 

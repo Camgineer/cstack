@@ -1,0 +1,5 @@
+interface:
+  display_name: "Correct"
+  short_description: "Find the mistakes agents keep repeating in a repo and make each one impossible, with architecture first, then types..."
+policy:
+  allow_implicit_invocation: true

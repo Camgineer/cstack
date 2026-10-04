@@ -82,7 +82,7 @@ A dependency is a context relay, not just ordering. Undeclared upstream context 
 - Exactly one stacker per stack may run `gt`, serialized within its stack. Record the holder in the standing orders. Restacks use the authorized local repository and one owner; bound concurrency to avoid competing mutations.
 - Workers never rebase and never run `gt`. Babysitters follow `playbooks/babysit.md`, one per stack, scoped to one immutable frontier generation. They report conflicts to the stacker rather than restacking.
 - PR closes and retargets go through the stacker only. Closing a base PR orphans every chain above it. Merges and stack surgery are units with briefs like any other.
-- One retro watcher follows merged PRs for reverts, post-merge CI breaks, and orphaned follow-ups.
+- One post-merge watcher follows merged PRs for reverts, post-merge CI breaks, and orphaned follow-ups.
 
 #### Verification
 

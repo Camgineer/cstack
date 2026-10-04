@@ -13,6 +13,8 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 Skill directories. `<project-skills>` is `.cursor/skills` in the project. `<user-skills>` is `~/.cursor/skills`.
 
+Instructions file. Cursor reads `AGENTS.md` at the project root at session start.
+
 Plugin root. Two levels above a loaded skill's `SKILL.md`, per the runtime contract.
 
 Persistent mode. The plugin ships no Cursor hooks, so `cstack-mode` lasts for the current chat. Re-invoke it in a new chat.

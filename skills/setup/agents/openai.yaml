@@ -1,0 +1,5 @@
+interface:
+  display_name: "Setup"
+  short_description: "Prepare a person's harness and a project for this plugin, fixing each gap found. Use for setup, plugin setup, or..."
+policy:
+  allow_implicit_invocation: true

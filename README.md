@@ -30,7 +30,7 @@ On a new computer, run the same commands. Every skill, playbook, and persona com
 
 ## Get started
 
-Run `setup-pstack` once to check which workflows your harness supports. Then run `cstack-mode` for an engineering task. Each harness has its own command form.
+Run `setup` once in each repository. It turns off AI attribution where your harness allows, fixes the commit identity, and makes the mode start in every session. Then run `cstack-mode` for an engineering task. Each harness has its own command form.
 
 | Harness | Command |
 | --- | --- |

@@ -13,7 +13,7 @@ Read [the runtime contract](../cstack-mode/references/runtime.md) before executi
 
 Cut through the fog of war before the build. The operator does the critical thinking once, at the start. You do every lookup, draft, and sketch so their time goes only to decisions. The phase ends in a **signed spec**: the contract an autonomous loop then runs to the end without the operator.
 
-Open a todolist with one entry per step: Ground, Tier, Grill, Draft, Sign, Hand off.
+Open a todolist with one entry per step: Ground, Tier, Grill, Draft, Advise, Sign, Hand off.
 
 ## 1. Ground
 
@@ -46,13 +46,19 @@ Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md) for the tier, using the glossary's ter
 
 Then run the **cold-implementer check**. Use the **Delegate** capability to give a fresh-context reader the spec and the repository, and nothing from this conversation. Ask it for every question it would need answered before building. Route each one back: a fact you fill in; a decision, including any edge case the user would see, goes to a Grill round. Repeat until the reader returns no questions.
 
-## 5. Sign
+## 5. Advise
 
-Show the whole spec and ask for sign-off. Sign-off is the operator's explicit word, such as "aligned". It holds under a full-autonomy grant, because it is a gate the operator named. Silence and partial answers keep the spec unsigned.
+Get a second opinion on the spec before the operator leaves the loop. Run the advisor on the `advisor` role per **Model roles** in the runtime contract, in a fresh context. Give it the drafted spec, the repository, and this brief: find what would make the autonomous run build the wrong thing or fail to prove it, such as a criterion that can't be checked, a criterion with no evidence in the verification plan, an open fork, or a design the code contradicts. Tag each note `blocker`, `concern`, or `nit`, and name the spec section it touches.
 
-## 6. Hand off
+Route each note. A `blocker` or `concern` becomes a question in a Grill round. Fix a `nit` yourself and log it via the **show-me-your-work** skill. After the round, run the advisor again on the changed sections. Done when the advisor returns no `blocker` or `concern`, or the operator has answered each one.
+
+## 6. Sign
+
+Show the whole spec, with each advisor note and how it was settled, and ask for sign-off. An open `blocker` keeps the spec unsigned until the operator overrules it in words, which the spec's Decisions section records. Sign-off is the operator's explicit word, such as "aligned". It holds under a full-autonomy grant, because it is a gate the operator named. Silence and partial answers keep the spec unsigned.
+
+## 7. Hand off
 
 1. Open the bottom PR of the stack as a draft right at sign-off, with the signed spec as its description, per `../cstack-mode/playbooks/opening-a-pr.md`. Push the first slice's first commit to make that possible. Each PR above it names the criteria it proves and links the spec. Every PR stays a draft until it is merge-ready.
 2. Run the slices through the **Autonomous run** playbook (`../cstack-mode/playbooks/autonomous-run.md`). Its exit condition is every acceptance criterion VERIFIED with its agreed evidence in the PR. Each iteration runs the **Feature** playbook for one slice, with `how` and `architect` marked `skip: settled in spec`.
 3. Inside the envelope, decide, log the decision via the **show-me-your-work** skill, and report it in the PR.
-4. When a tripwire fires, stop the affected slice, run a Grill round on that branch only, and get the changed section signed. Then resume. Unaffected slices keep running.
+4. When a tripwire fires, stop the affected slice, run a Grill round on that branch only, run step 5 on the changed section, and get it signed. Then resume. Unaffected slices keep running.

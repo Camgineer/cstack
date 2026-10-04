@@ -47,6 +47,7 @@ Models:
 | --- | --- |
 | `build` | Implementation delegates, such as the cstack agent a playbook hands a fix or a slice |
 | `review` | The fresh-context reviewer in Readiness, each interrogate seat, and the verifiers in Shipping and Autopilot-full |
+| `advisor` | The second opinion in align's Advise step, a tripwire's re-sign, and a one-way door in the Autonomous run |
 
 Each line is `<role>: <runner>, <model>, <options>`. Every field after the runner is optional, and a missing field takes the runner's default. The runner is `native`, the host's own Delegate capability, or a command that runs another agent CLI, such as `codex exec`, `claude -p`, or `cursor-agent -p`. Options are `effort <level>`, `fast`, and any other setting the runner documents. A role can list several runners separated by `;`, and a panel gives one to each seat.
 

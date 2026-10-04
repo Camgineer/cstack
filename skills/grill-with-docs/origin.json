@@ -3,17 +3,21 @@
   "commit": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60",
   "paths": [
     "skills/engineering/grill-with-docs",
-    "skills/productivity/grilling"
+    "skills/productivity/grilling",
+    "skills/productivity/to-questionnaire"
   ],
   "source_sha256": {
     "skills/engineering/grill-with-docs/SKILL.md": "7de372c13488f1ee96cc11cd8907b56b6809cc93eef776eeddd37de6b6cbe3fe",
-    "skills/productivity/grilling/SKILL.md": "10ff989e7498b23b5acb49d5048f11dcd906757d2f79c5cdf8a00001381296f2"
+    "skills/productivity/grilling/SKILL.md": "10ff989e7498b23b5acb49d5048f11dcd906757d2f79c5cdf8a00001381296f2",
+    "skills/productivity/to-questionnaire/SKILL.md": "b5eb929842ee0e93d867c5e906d183d350f2f2d149eaeaa86967d94d8eda1d3b"
   },
   "adaptations": [
     "Merged the grill-with-docs router and the grilling interview into one skill; grilling and grill-me have no separate entry point.",
     "Every round runs show-me and domain-modeling; questions show code, diffs, or diagrams instead of prose.",
     "Model-invocable, per the plugin's rule for bundled skills.",
     "Harness tool names replaced with runtime-contract capabilities.",
-    "Added a problem-first opening round, adapted from a product-management technique with no source text."
+    "Added a problem-first opening round, adapted from a product-management technique with no source text.",
+    "Each question leads with the recommendation and lists only options backed by a reason, each shown at the fastest high-fidelity view.",
+    "Added an absent-decider branch adapted from to-questionnaire in the same repository; to-questionnaire has no separate entry point."
   ]
 }

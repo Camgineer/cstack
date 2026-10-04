@@ -30,11 +30,15 @@ Set `disable-model-invocation: true` on every `principle-*` skill and on no othe
 
 Keep sources that need one vendor's APIs in `contrib/`, which no manifest loads.
 
+## Dogfooding
+
+This repository is the plugin's source and also one of its users. Build every new mechanism, such as a check, gate, or script, to ship with the plugin, unless it only guards this repository's own release or metadata. Then install it here the same way a user would. When a decision offers a mechanism, state whether each option reaches every user of the plugin or only this repository.
+
 ## Versioning
 
 Every PR bumps the plugin version exactly one step over its base branch. The PR title's type sets the step: `feat` bumps the minor version, and every other type bumps the patch version. Bump the major version only when the user asks for it, by adding `!` after the title's type or scope, as in `feat(cstack-mode)!: rename the mode`.
 
-Run `bun tools/version.ts bump --base origin/<base-branch> --title "<PR title>"` and commit the result. Rerun it after you change the title. To bring in a base that moved, run `bun tools/version.ts merge --base origin/<base-branch> --title "<PR title>"` instead of `git merge`. It resolves the version and generated host files, bumps over the new base, and commits the merge. It stops and lists any other conflict for you to resolve, after which you rerun `bump` and commit. After any merge of main, re-read each skill or playbook the merge changed that you are following, since it may have changed how you work. A git merge driver cannot do this, because GitHub detects conflicts on its own servers. CI runs the matching `check` on every PR. After a merge passes CI on main, CI tags the new version and publishes its GitHub release, so never create tags or releases by hand.
+Run `bun tools/version.ts bump --base origin/<base-branch> --title "<PR title>"` and commit the result. On a branch older than the `merge` subcommand, run the base branch's copy instead: `git show origin/<base-branch>:tools/version.ts > <scratch>/version.ts`, then `bun <scratch>/version.ts merge ...`. Rerun it after you change the title. To bring in a base that moved, run `bun tools/version.ts merge --base origin/<base-branch> --title "<PR title>"` instead of `git merge`. It resolves the version and generated host files, bumps over the new base, and commits the merge. It stops and lists any other conflict for you to resolve, after which you rerun `bump` and commit. After any merge of main, re-read each skill or playbook the merge changed that you are following, since it may have changed how you work. A git merge driver cannot do this, because GitHub detects conflicts on its own servers. CI runs the matching `check` on every PR. After a merge passes CI on main, CI tags the new version and publishes its GitHub release, so never create tags or releases by hand.
 
 ## Documentation scope
 

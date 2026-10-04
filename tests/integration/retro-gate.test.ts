@@ -39,6 +39,22 @@ test("a lessons PR needs no retro of its own", () => {
   });
 });
 
+test("a lessons PR under a host's attribution comment and byline needs no retro", () => {
+  const body = '<!-- host: {"login":"someone"} -->\n_Requested by someone_\n\nLessons from https://github.com/o/r/pull/6\n\n## Accepted';
+  expect(gate({ body, comments: [] }).state).toBe("success");
+});
+
+test("a lessons line that renders hidden or as code still waits", () => {
+  for (const body of ["<!--\nLessons from https://github.com/o/r/pull/6", "    Lessons from https://github.com/o/r/pull/6"]) {
+    expect(gate({ body, comments: [] }).state).toBe("pending");
+  }
+});
+
+test("a lessons line below the opening lines still waits", () => {
+  const body = "## Why\n\nOne\n\nTwo\n\nLessons from https://github.com/o/r/pull/6";
+  expect(gate({ body, comments: [] }).state).toBe("pending");
+});
+
 test("a PR that only mentions a lessons PR still waits", () => {
   expect(gate({ body: "Follows the Lessons from https://github.com/o/r/pull/6 review.", comments: [] }).state).toBe("pending");
 });

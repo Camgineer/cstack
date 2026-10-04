@@ -1,7 +1,7 @@
 {
   "name": "cstack",
   "displayName": "CStack",
-  "version": "0.36.3",
+  "version": "0.37.0",
   "description": "Engineering workflows for coding agents: investigate, design, build, verify, and review. Adapted from PStack by Lauren Tan (poteto).",
   "author": {
     "name": "CStack contributors"

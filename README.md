@@ -119,7 +119,7 @@ flowchart LR
 | `tools/metadata.json` | The single source for the plugin's name, version, and description. |
 | `contrib/` | Optional sources that need one vendor's automation APIs. No manifest loads them. |
 
-To change the version, edit `tools/metadata.json` and regenerate. To rename the plugin, also rename the `<name>-mode` skill and the `<name>-agent` persona to match, then regenerate. The agent's skill list shows every workflow skill. The `principle-*` skills set `disable-model-invocation: true`, which keeps them off that list. `cstack-mode` reads them when a step needs one. CI fails if a principle is visible or any other skill is hidden.
+The release workflow sets the version after each merge to main. To rename the plugin, also rename the `<name>-mode` skill and the `<name>-agent` persona to match, then regenerate. The agent's skill list shows every workflow skill. The `principle-*` skills set `disable-model-invocation: true`, which keeps them off that list. `cstack-mode` reads them when a step needs one. CI fails if a principle is visible or any other skill is hidden.
 
 ```bash
 bun run --cwd skills/cstack-mode/scripts sync:hosts

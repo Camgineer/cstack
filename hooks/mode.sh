@@ -28,9 +28,10 @@ emit() {
   printf '{"hookSpecificOutput":{"hookEventName":%s,"additionalContext":%s}}\n' "$(json_string "$1")" "$(json_string "$2")"
 }
 
+# Hosts load a named skill without a file-read permission prompt, so name it first and keep the path as the fallback.
 reminder() {
-  printf '%s is on for %s. Read %s in full and apply it to every task in this session. It stays on until the user turns it off. If the user asks to turn it off, run: sh %s off\n' \
-    "$mode" "$1" "$root/skills/$mode/SKILL.md" "'$root/hooks/mode.sh'"
+  printf '%s is on for %s. Invoke the %s skill now and apply it to every task in this session. If you cannot invoke a skill by name, read %s in full instead. It stays on until the user turns it off. If the user asks to turn it off, run: sh %s off\n' \
+    "$mode" "$1" "${name:-plugin}:$mode" "$root/skills/$mode/SKILL.md" "'$root/hooks/mode.sh'"
 }
 
 command=${1:-}
@@ -67,7 +68,7 @@ case "$command" in
         ;;
       *)
         mkdir -p "$state" && printf '%s\n' "$project" >"$flag"
-        emit UserPromptSubmit "$(reminder "$project")"
+        emit UserPromptSubmit "$mode is now on for $project and stays on in later sessions until the user turns it off. If the user asks to turn it off, run: sh '$root/hooks/mode.sh' off"
         ;;
     esac
     ;;

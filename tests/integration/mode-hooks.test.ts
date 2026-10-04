@@ -51,10 +51,12 @@ describe("persistent mode hooks", () => {
       expect(context(fire("SessionStart", { cwd: project, source: "startup" }, state))).toBe("");
 
       const on = context(fire("UserPromptSubmit", { cwd: project, prompt: `/${pluginName}:${mode} fix the "export" bug\nthen ship it` }, state));
-      expect(on).toContain(join(root, "skills", mode, "SKILL.md"));
+      expect(on).toContain("now on");
 
       for (const source of ["startup", "resume", "clear", "compact"]) {
-        expect(context(fire("SessionStart", { cwd: join(project, "src"), source }, state))).toContain(`${mode} is on`);
+        const restored = context(fire("SessionStart", { cwd: join(project, "src"), source }, state));
+        expect(restored).toContain(`Invoke the ${pluginName}:${mode} skill now`);
+        expect(restored).toContain(join(root, "skills", mode, "SKILL.md"));
       }
 
       expect(context(fire("UserPromptSubmit", { cwd: project, prompt: `$${pluginName}:${mode} off` }, state))).toContain("now off");

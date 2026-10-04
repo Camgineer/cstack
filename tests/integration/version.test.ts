@@ -82,6 +82,7 @@ test("merge takes the base's version files, keeps both sides' other changes, and
 
     expect(git("checkout", "--quiet", "-b", "lanes").status).toBe(0);
     writeFileSync(join(directory, "skills/lanes.md"), "lanes\n");
+    writeFileSync(metadata, readFileSync(metadata, "utf8").replace(/"license": "[^"]*"/, '"license": "Apache-2.0"'));
     expect(version(directory, "bump", "feat(swarm): add lanes").status).toBe(0);
     expect(git("add", "-A").status).toBe(0);
     expect(git("commit", "--quiet", "--message", "lanes").status).toBe(0);
@@ -93,11 +94,17 @@ test("merge takes the base's version files, keeps both sides' other changes, and
     expect(git("commit", "--quiet", "--message", "description").status).toBe(0);
 
     expect(git("checkout", "--quiet", "lanes").status).toBe(0);
+    writeFileSync(join(directory, "notes.txt"), "draft\n");
+    const dirty = version(directory, "merge", "feat(swarm): add lanes");
+    expect(dirty.status).toBe(1);
+    expect(dirty.stderr).toContain("Commit or stash your changes");
+    rmSync(join(directory, "notes.txt"));
     const merged = version(directory, "merge", "feat(swarm): add lanes");
     expect(merged.stderr).toBe("");
     expect(merged.status).toBe(0);
     expect(shipped(directory)).toBe("1.5.0");
     expect(readFileSync(metadata, "utf8")).toContain('"description": "A changed description."');
+    expect(readFileSync(metadata, "utf8")).toContain('"license": "Apache-2.0"');
     expect(readFileSync(join(directory, "skills/lanes.md"), "utf8")).toBe("lanes\n");
     expect(git("status", "--porcelain").stdout).toBe("");
     expect(git("rev-list", "--parents", "-n", "1", "HEAD").stdout.trim().split(" ")).toHaveLength(3);

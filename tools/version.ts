@@ -62,21 +62,20 @@ function bump(expected: string): void {
   console.log(`Version set to ${expected}.`);
 }
 
-// Merges metadata.json as if both sides kept the base's version, so only real field changes can conflict.
+// Gives all three sides one version before merging metadata.json, so the version line never conflicts.
 function resolveMetadata(): boolean {
   const stages = [1, 2, 3].map((stage) => git("show", `:${stage}:tools/metadata.json`));
   if (stages.some((stage) => stage.status !== 0)) return false;
-  const baseSide = versionIn(stages[2]!.stdout);
   const directory = mkdtempSync(join(tmpdir(), "plugin-version-"));
   try {
     const [ancestor, ours, theirs] = stages.map((stage, index) => {
       const path = join(directory, String(index));
-      writeFileSync(path, stage.stdout.replace(versionField, `$1${baseSide}$3`));
+      writeFileSync(path, stage.stdout.replace(versionField, "$1$3"));
       return path;
     });
     const merged = spawnSync("git", ["merge-file", "-p", ours!, ancestor!, theirs!], { encoding: "utf8" });
-    if (merged.status !== 0) return false;
     writeFileSync(metadataPath, merged.stdout);
+    if (merged.status !== 0) return false;
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
@@ -84,11 +83,13 @@ function resolveMetadata(): boolean {
 }
 
 function merge(base: string, expected: string): void {
+  if (git("status", "--porcelain").stdout !== "") throw new Error("Commit or stash your changes before you merge.");
   const merging = git("merge", "--no-commit", "--no-ff", base);
   if (git("rev-parse", "-q", "--verify", "MERGE_HEAD").status !== 0) {
     if (merging.status !== 0) throw new Error(`git merge ${base} failed: ${merging.stderr.trim()}`);
     console.log(`Already up to date with ${base}.`);
     bump(expected);
+    console.log("Commit the result if the version changed.");
     return;
   }
   const unmerged = git("diff", "--name-only", "--diff-filter=U").stdout.split("\n").filter(Boolean);
@@ -104,13 +105,14 @@ function merge(base: string, expected: string): void {
     }
   }
   if (left.length > 0) {
-    console.error(`Resolved the version files. Resolve these by hand, then rerun bump and commit the merge:\n${left.join("\n")}`);
+    const resolved = left.includes("tools/metadata.json") ? "" : "Resolved the version files. ";
+    console.error(`${resolved}Resolve these by hand, then rerun bump and commit the merge:\n${left.join("\n")}`);
     process.exit(1);
   }
   bump(expected);
-  if (git("add", "-A").status !== 0 || git("commit", "--no-edit", "--quiet").status !== 0) {
-    throw new Error("could not commit the merge");
-  }
+  git("add", "-A");
+  const commit = git("commit", "--no-edit", "--quiet");
+  if (commit.status !== 0) throw new Error(`could not commit the merge: ${commit.stderr.trim()}`);
   console.log(`Merged ${base} and committed.`);
 }
 

@@ -48,13 +48,13 @@ Then run the **cold-implementer check**. Use the **Delegate** capability to give
 
 ## 5. Advise
 
-Get a second opinion on the spec before the operator leaves the loop. Run the advisor on the `advisor` role per **Model roles** in the runtime contract, in a fresh context. Give it the drafted spec, the repository, and this brief: find what would make the autonomous run build the wrong thing or fail to prove it, such as a criterion that can't be checked, a criterion with no evidence in the verification plan, an open fork, or a design the code contradicts. Tag each note `blocker`, `concern`, or `nit`, and name the spec section it touches.
+Get a second opinion on the spec before the operator leaves the loop. Skip this step in the Inline tier, which has no spec. Run the advisor on the `advisor` role per **Model roles** in the runtime contract, in a fresh context. Give it the drafted spec, the repository, and this brief: find what would make the autonomous run build the wrong thing or fail to prove it, such as a criterion that can't be checked, a criterion with no evidence in the verification plan, an open fork, or a design the code contradicts. Tag each note `blocker`, `concern`, or `nit`, and name the spec section it touches.
 
-Route each note. A `blocker` or `concern` becomes a question in a Grill round. Fix a `nit` yourself and log it via the **show-me-your-work** skill. After the round, run the advisor again on the changed sections. Done when the advisor returns no `blocker` or `concern`, or the operator has answered each one.
+Route each note. A `blocker` or `concern` becomes a question in a Grill round. Fix a `nit` yourself and log it via the **show-me-your-work** skill. After the round, run the advisor again on the whole spec, with the changed sections as its focus. Done when the advisor returns no `blocker` or `concern`, or the operator has answered each one.
 
 ## 6. Sign
 
-Show the whole spec, with each advisor note and how it was settled, and ask for sign-off. An open `blocker` keeps the spec unsigned until the operator overrules it in words, which the spec's Decisions section records. Sign-off is the operator's explicit word, such as "aligned". It holds under a full-autonomy grant, because it is a gate the operator named. Silence and partial answers keep the spec unsigned.
+Show the whole spec, with each advisor note and how it was settled, and ask for sign-off. An open `blocker` keeps the spec unsigned until the operator overrules it in words, which the spec records. Sign-off is the operator's explicit word, such as "aligned". It holds under a full-autonomy grant, because it is a gate the operator named. Silence and partial answers keep the spec unsigned.
 
 ## 7. Hand off
 

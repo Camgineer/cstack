@@ -28,4 +28,4 @@ Persistent mode. Codex runs the plugin's `hooks/hooks.json` once the user review
 
 Attribution. The current Codex configuration reference has no commit or PR attribution key, so the **Authorship** rule in `playbooks/opening-a-pr.md` is the whole control.
 
-Headless runs. To prove a hook change, run `codex exec` with stdin closed, because it otherwise waits for more input. Install the plugin into a disposable `CODEX_HOME` with `codex plugin marketplace add <plugin-root>` and `codex plugin add <plugin>@<plugin>`. Codex skips untrusted hooks without an error, so pass the hook-trust bypass flag that [the hooks docs](https://learn.chatgpt.com/docs/hooks) name, and only in that disposable home.
+Headless runs. To prove a hook change, run `codex exec` with stdin closed, because it otherwise waits for more input. Install the plugin into a disposable `CODEX_HOME` with `codex plugin marketplace add <plugin-root>` and `codex plugin add <plugin>@<plugin>`. Codex skips untrusted hooks with only a startup warning, so pass the hook-trust bypass flag that [the hooks docs](https://learn.chatgpt.com/docs/hooks) name, and only in that disposable home.

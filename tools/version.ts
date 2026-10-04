@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
@@ -15,6 +16,7 @@ const levelByType: ReadonlyMap<string, Level> = new Map([
 const root = resolve(import.meta.dir, "..");
 const metadataPath = join(root, "tools/metadata.json");
 const versionField = /("version":\s*")([^"]*)(")/;
+const hostFiles = /^(\.claude-plugin\/(plugin|marketplace)\.json|\.codex-plugin\/plugin\.json|\.cursor-plugin\/plugin\.json|\.agents\/plugins\/marketplace\.json|skills\/[^/]+\/agents\/openai\.yaml)$/;
 
 function levelOf(title: string): Level {
   const match = /^(\w+)(?:\([^)]*\))?(!)?: \S/.exec(title);
@@ -49,21 +51,83 @@ function baseVersion(ref: string): Version {
   return parseVersion(versionIn(shown.stdout));
 }
 
+function git(...args: string[]): { status: number | null; stdout: string; stderr: string } {
+  return spawnSync("git", args, { cwd: root, encoding: "utf8" });
+}
+
+function bump(expected: string): void {
+  writeFileSync(metadataPath, readFileSync(metadataPath, "utf8").replace(versionField, `$1${expected}$3`));
+  const sync = spawnSync(process.execPath, [join(root, "tools/sync-hosts.ts")], { stdio: "inherit" });
+  if (sync.status !== 0) process.exit(sync.status ?? 1);
+  console.log(`Version set to ${expected}.`);
+}
+
+// Merges metadata.json as if both sides kept the base's version, so only real field changes can conflict.
+function resolveMetadata(): boolean {
+  const stages = [1, 2, 3].map((stage) => git("show", `:${stage}:tools/metadata.json`));
+  if (stages.some((stage) => stage.status !== 0)) return false;
+  const baseSide = versionIn(stages[2]!.stdout);
+  const directory = mkdtempSync(join(tmpdir(), "plugin-version-"));
+  try {
+    const [ancestor, ours, theirs] = stages.map((stage, index) => {
+      const path = join(directory, String(index));
+      writeFileSync(path, stage.stdout.replace(versionField, `$1${baseSide}$3`));
+      return path;
+    });
+    const merged = spawnSync("git", ["merge-file", "-p", ours!, ancestor!, theirs!], { encoding: "utf8" });
+    if (merged.status !== 0) return false;
+    writeFileSync(metadataPath, merged.stdout);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+  return git("add", "tools/metadata.json").status === 0;
+}
+
+function merge(base: string, expected: string): void {
+  const merging = git("merge", "--no-commit", "--no-ff", base);
+  if (git("rev-parse", "-q", "--verify", "MERGE_HEAD").status !== 0) {
+    if (merging.status !== 0) throw new Error(`git merge ${base} failed: ${merging.stderr.trim()}`);
+    console.log(`Already up to date with ${base}.`);
+    bump(expected);
+    return;
+  }
+  const unmerged = git("diff", "--name-only", "--diff-filter=U").stdout.split("\n").filter(Boolean);
+  const left: string[] = [];
+  for (const path of unmerged) {
+    if (path === "tools/metadata.json") {
+      if (!resolveMetadata()) left.push(path);
+    } else if (hostFiles.test(path)) {
+      git("checkout", "--theirs", "--", path);
+      git("add", "--", path);
+    } else {
+      left.push(path);
+    }
+  }
+  if (left.length > 0) {
+    console.error(`Resolved the version files. Resolve these by hand, then rerun bump and commit the merge:\n${left.join("\n")}`);
+    process.exit(1);
+  }
+  bump(expected);
+  if (git("add", "-A").status !== 0 || git("commit", "--no-edit", "--quiet").status !== 0) {
+    throw new Error("could not commit the merge");
+  }
+  console.log(`Merged ${base} and committed.`);
+}
+
 function main(): void {
   const { positionals, values } = parseArgs({
     allowPositionals: true,
     options: { base: { type: "string" }, title: { type: "string" } },
   });
   const [command] = positionals;
-  if ((command !== "bump" && command !== "check") || values.base === undefined || values.title === undefined) {
-    throw new Error('usage: version.ts <bump|check> --base <git ref> --title "<PR title>"');
+  if ((command !== "bump" && command !== "check" && command !== "merge") || values.base === undefined || values.title === undefined) {
+    throw new Error('usage: version.ts <bump|check|merge> --base <git ref> --title "<PR title>"');
   }
   const level = levelOf(values.title);
   const expected = next(baseVersion(values.base), level);
-  const metadata = readFileSync(metadataPath, "utf8");
 
   if (command === "check") {
-    const actual = versionIn(metadata);
+    const actual = versionIn(readFileSync(metadataPath, "utf8"));
     if (actual === expected) {
       console.log(`Version ${actual} is the ${level} bump over ${values.base}.`);
       return;
@@ -72,11 +136,11 @@ function main(): void {
     console.error('Run `bun tools/version.ts bump --base origin/<base branch> --title "<PR title>"` and commit the result.');
     process.exit(1);
   }
-
-  writeFileSync(metadataPath, metadata.replace(versionField, `$1${expected}$3`));
-  const sync = spawnSync(process.execPath, [join(root, "tools/sync-hosts.ts")], { stdio: "inherit" });
-  if (sync.status !== 0) process.exit(sync.status ?? 1);
-  console.log(`Version set to ${expected}.`);
+  if (command === "merge") {
+    merge(values.base, expected);
+    return;
+  }
+  bump(expected);
 }
 
 try {

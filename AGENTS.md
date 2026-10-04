@@ -50,4 +50,4 @@ When importing an upstream update, compare the recorded PStack baseline, the tar
 
 ## Test scope
 
-Keep tests that protect a concrete failure in supported behavior, using observable results at the relevant boundary. Prefer real CLI, filesystem, and Git fixtures where practical. Verify agent workflow quality through realistic task execution. Reconsider a test when it only repeats implementation details or checks document wording.
+Keep tests that protect a concrete failure in supported behavior, using observable results at the relevant boundary. Prefer real CLI, filesystem, and Git fixtures where practical. Verify agent workflow quality through realistic task execution. Reconsider a test when it only repeats implementation details or checks document wording. To prove a change to host hook behavior, extend the host harness in `tests/e2e/` and run `test:e2e` once the user authorizes it, rather than building a one-off probe.

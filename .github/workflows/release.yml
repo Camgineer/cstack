@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: [Checks]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish the release for a new version
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the verified commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Tag and publish the version unless it already has a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          tag="v$(jq -r .version tools/metadata.json)"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "$tag already has a release."
+            exit 0
+          fi
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$SHA" --title "$tag" --generate-notes

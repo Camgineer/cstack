@@ -72,7 +72,7 @@ export const OBSERVED_AT = "2026-07-26T00:00:00.000Z";
 // A queue bug can loop without sleeping; the budget turns that hang into a failure.
 const CALL_BUDGET = 1_000;
 
-export function fakeGitHub(github: FakeGitHub = {}): GitHubReader & {
+function fakeGitHub(github: FakeGitHub = {}): GitHubReader & {
   readonly calls: readonly string[];
 } {
   const calls: string[] = [];
@@ -156,7 +156,7 @@ export function fakeGitHub(github: FakeGitHub = {}): GitHubReader & {
   };
 }
 
-export function fakeClock(): {
+function fakeClock(): {
   readonly clock: CliRuntime["clock"];
   readonly sleeps: readonly number[];
 } {

@@ -8,8 +8,6 @@ const bin = resolve(import.meta.dir, "../../skills/cstack-mode/scripts/watch-pr/
 const fakeGh = resolve(import.meta.dir, "../support/fake-gh.ts");
 const repo = ["--owner", "owner", "--repo", "repo"];
 const head = "| PR | CI | Review | Merge |\n| --- | --- | --- | --- |\n";
-const statusAction =
-  "action=verify current PR context, GitHub authentication, and API availability, then rearm\n";
 
 type Responses = Record<string, { readonly json?: unknown; readonly stdout?: string; readonly stderr?: string; readonly code?: number }>;
 
@@ -288,11 +286,11 @@ describe("watch-pr binary", () => {
   });
 
   it("refuses a current-PR URL outside github.com without retrying", () => {
-    const run = runWatchPr(["--pretty"], {
+    const run = runWatchPr(["--max-query-errors", "1"], {
       responses: { "pr current": { json: { number: 7, url: "https://example.com/inferred/remote/pull/7" } } },
     });
     expect(run.stdout).toBe(
-      `BLOCKER: status-query\nfailures=1\ndetail=could not infer owner/repo from PR URL: https://example.com/inferred/remote/pull/7 (not a canonical GitHub pull URL)\n${statusAction}`
+      '{"schemaVersion":1,"sequence":1,"observedAt":"<time>","mode":"single","kind":"BLOCKER","terminal":true,"exitCode":7,"blocker":{"kind":"status-query","failures":1,"failure":{"kind":"invalid-context-url","retryable":false,"rawValue":"https://example.com/inferred/remote/pull/7","detail":"could not infer owner/repo from PR URL: https://example.com/inferred/remote/pull/7 (not a canonical GitHub pull URL)"}}}\n'
     );
     expect(run.status).toBe(7);
   });

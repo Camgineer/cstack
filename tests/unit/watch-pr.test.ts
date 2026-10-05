@@ -109,7 +109,7 @@ describe("defaults", () => {
       },
     });
     expect(run.code).toBe(0);
-    expect(run.sleeps).toHaveLength(100);
+    expect(run.sleeps).toEqual(Array(100).fill(60));
     expect(lastEvent(run.stdout)).toMatchObject({ kind: "READY", sequence: 101 });
   });
 

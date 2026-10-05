@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -16,8 +16,8 @@ function withHome(run: (home: string) => void): void {
   }
 }
 
-function install(home: string) {
-  return spawnSync("sh", [script], { env: { PATH: process.env.PATH, HOME: home }, encoding: "utf8" });
+function install(home: string, from = script) {
+  return spawnSync("sh", [from], { env: { PATH: process.env.PATH, HOME: home }, encoding: "utf8" });
 }
 
 function visibleSkills(): string[] {
@@ -57,6 +57,7 @@ test("an update drops links to removed or hidden skills and keeps the person's o
     mkdirSync(join(skills, "align"), { recursive: true });
     symlinkSync(join(root, "skills/retired"), join(skills, "retired"));
     symlinkSync(join(root, "skills/principle-laziness-protocol"), join(skills, "principle-laziness-protocol"));
+    mkdirSync(join(home, "elsewhere/how"), { recursive: true });
     symlinkSync(join(home, "elsewhere/how"), join(skills, "how"));
 
     const result = install(home);
@@ -74,5 +75,43 @@ test("an update drops links to removed or hidden skills and keeps the person's o
     expect(readdirSync(join(skills, "align"))).toEqual([]);
     expect(readlinkSync(join(skills, "how"))).toBe(join(home, "elsewhere/how"));
     expect(readlinkSync(join(skills, "cstack-mode"))).toBe(join(root, "skills/cstack-mode"));
+  });
+});
+
+test("refuses to run through a link from outside the plugin checkout", () => {
+  withHome((home) => {
+    mkdirSync(join(home, "bin"));
+    symlinkSync(script, join(home, "bin/intent-install"));
+
+    const result = install(home, join(home, "bin/intent-install"));
+    expect(result.status).toBe(2);
+    expect(result.stderr).toBe("Run intent-install from inside the plugin checkout, not through a link to it.\n");
+    expect(existsSync(join(home, ".intent"))).toBe(false);
+  });
+});
+
+test("a checkout reached through an alias, then moved, keeps working links", () => {
+  withHome((home) => {
+    const checkout = join(home, "plugin checkout");
+    for (const entry of ["agents", "hooks", "skills", "tools"]) {
+      cpSync(join(root, entry), join(checkout, entry), { recursive: true, filter: (source) => !source.includes("node_modules") });
+    }
+    symlinkSync(checkout, join(home, "alias"));
+    expect(install(home, join(home, "alias/hooks/intent-install.sh")).status).toBe(0);
+
+    const skills = join(home, ".intent/skills");
+    expect(readlinkSync(join(skills, "cstack-mode"))).toBe(join(realpathSync(checkout), "skills/cstack-mode"));
+    const again = install(home, join(checkout, "hooks/intent-install.sh"));
+    expect(again.status).toBe(0);
+    expect(again.stdout).toBe("");
+
+    const moved = join(home, "moved checkout");
+    renameSync(checkout, moved);
+    const afterMove = install(home, join(moved, "hooks/intent-install.sh"));
+    expect(afterMove.stderr).toBe("");
+    expect(afterMove.status).toBe(0);
+    expect(readlinkSync(join(skills, "cstack-mode"))).toBe(join(realpathSync(moved), "skills/cstack-mode"));
+    expect(readlinkSync(join(home, ".intent/specialists/cstack-agent.md"))).toBe(join(realpathSync(moved), "agents/cstack-agent.md"));
+    expect(readdirSync(skills).sort()).toEqual(visibleSkills());
   });
 });

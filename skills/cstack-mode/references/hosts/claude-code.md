@@ -16,7 +16,7 @@ GitHub API. In a Claude Code cloud session, every `gh` command that uses GraphQL
 
 Skill directories. `<project-skills>` is `.claude/skills` in the project. `<user-skills>` is `~/.claude/skills`.
 
-Instructions file. Claude Code reads `CLAUDE.md` at the project root at session start, not `AGENTS.md`. A `CLAUDE.md` line `@AGENTS.md` imports `AGENTS.md`, so one file can serve every host.
+Instructions file. Claude Code reads `CLAUDE.md` at the project root at session start, not `AGENTS.md`. A `CLAUDE.md` line `@AGENTS.md` imports `AGENTS.md`, so one file can serve Claude Code, Codex, and Cursor. Intent reads `CLAUDE.md` without following the import, so the mode line belongs in `CLAUDE.md` too.
 
 User instructions file. `~/.claude/CLAUDE.md`, which Claude Code loads in every project.
 

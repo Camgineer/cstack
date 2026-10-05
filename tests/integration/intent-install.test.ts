@@ -85,7 +85,25 @@ test("refuses to run through a link from outside the plugin checkout", () => {
 
     const result = install(home, join(home, "bin/intent-install"));
     expect(result.status).toBe(2);
-    expect(result.stderr).toBe("Run intent-install from inside the plugin checkout, not through a link to it.\n");
+    expect(result.stderr).toBe("Run intent-install from a git checkout of the plugin, not through a link to it or from a plugin cache.\n");
+    expect(existsSync(join(home, ".intent"))).toBe(false);
+  });
+});
+
+function copyPlugin(to: string): void {
+  for (const entry of ["agents", "hooks", "skills", "tools"]) {
+    cpSync(join(root, entry), join(to, entry), { recursive: true, filter: (source) => !source.includes("node_modules") });
+  }
+}
+
+test("refuses a plugin cache, which has the plugin's files but is no git checkout", () => {
+  withHome((home) => {
+    const cache = join(home, "cache/cstack/1.0.0");
+    copyPlugin(cache);
+
+    const result = install(home, join(cache, "hooks/intent-install.sh"));
+    expect(result.status).toBe(2);
+    expect(result.stderr).toBe("Run intent-install.sh from a git checkout of the plugin, not through a link to it or from a plugin cache.\n");
     expect(existsSync(join(home, ".intent"))).toBe(false);
   });
 });
@@ -93,9 +111,8 @@ test("refuses to run through a link from outside the plugin checkout", () => {
 test("a checkout reached through an alias, then moved, keeps working links", () => {
   withHome((home) => {
     const checkout = join(home, "plugin checkout");
-    for (const entry of ["agents", "hooks", "skills", "tools"]) {
-      cpSync(join(root, entry), join(checkout, entry), { recursive: true, filter: (source) => !source.includes("node_modules") });
-    }
+    copyPlugin(checkout);
+    mkdirSync(join(checkout, ".git"));
     symlinkSync(checkout, join(home, "alias"));
     expect(install(home, join(home, "alias/hooks/intent-install.sh")).status).toBe(0);
 

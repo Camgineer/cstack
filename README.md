@@ -32,7 +32,7 @@ codex plugin add PLUGIN@PLUGIN
 sh /path/to/checkout/hooks/intent-install.sh
 ```
 
-Run it again after each `git pull`, so new and removed skills follow. To keep the mode on, paste the rule from [the Intent host note](skills/cstack-mode/references/hosts/intent.md) into Intent's Settings, under Agent Behavior. To pick models for the plugin's delegated steps, add a `Models:` block to that rule. Leave the plugin's specialists alone in Intent's specialist editor, which saves its changes into your checkout.
+Run it again after each `git pull`, so new and removed skills follow. Intent support is new: the install is checked against Intent's daemon, but no agent session has run under it yet. To keep the mode on, paste the rule from [the Intent host note](skills/cstack-mode/references/hosts/intent.md) into Intent's Settings, under Agent Behavior. To pick models for the plugin's delegated steps, add a `Models:` block to that rule. Leave the plugin's specialists alone in Intent's specialist editor, which saves its changes into your checkout.
 
 On a new computer, run the same commands. Every skill, playbook, and persona comes back with the plugin.
 

@@ -6,8 +6,8 @@ skills="$HOME/.intent/skills"
 specialists="$HOME/.intent/specialists"
 conflicts=0
 
-if [ ! -f "$root/tools/metadata.json" ] || [ ! -d "$root/skills" ] || [ ! -d "$root/agents" ]; then
-  printf 'Run %s from inside the plugin checkout, not through a link to it.\n' "$(basename -- "$0")" >&2
+if [ ! -e "$root/.git" ] || [ ! -f "$root/tools/metadata.json" ] || [ ! -d "$root/skills" ] || [ ! -d "$root/agents" ]; then
+  printf 'Run %s from a git checkout of the plugin, not through a link to it or from a plugin cache.\n' "$(basename -- "$0")" >&2
   exit 2
 fi
 

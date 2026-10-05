@@ -1,6 +1,6 @@
 # Skill mechanics
 
-Apply [writing-for-agents](SKILL.md) to the instruction body. This reference covers discovery and invocation. These skills follow the shared `SKILL.md` format, so one skill works in Claude Code, Codex, and Cursor.
+Apply [writing-for-agents](SKILL.md) to the instruction body. This reference covers discovery and invocation. These skills follow the shared `SKILL.md` format, so one skill works in Claude Code, Codex, Cursor, and Intent.
 
 ## Discovery
 

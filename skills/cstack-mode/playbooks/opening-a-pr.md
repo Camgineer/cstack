@@ -46,6 +46,7 @@ After these sections, attach videos or screenshots when they prove a claim. Do n
 - The load-bearing behavior is proven on the real surface the change touches, per the **prove-it-works** principle skill. For a docs-only or instruction-only change, the proof is a realistic run of the changed workflow, or `n/a: <reason>` recorded in **Verification**.
 - The PR description matches the final diff per **Descriptions**. Recheck it after every fix wave.
 - The PR holds one purpose per **Size and stacks**, and every new type, field, helper, or endpoint in the diff has a caller as **Size and stacks** defines one, in the same diff or, for a public seam, outside the repository. Have the fresh-context reviewer check both. A second purpose or a caller-less addition is a proven finding.
+- Each bug fix in the diff closes its class at the chokepoint per the **fix-root-causes** principle skill. Have the fresh-context reviewer check it. A leaf fix with unfixed sibling sites inside the PR's scope is a proven finding.
 - Every commit author, commit message, and the PR title and body meet **Authorship**.
 - No question or pending decision for the human is open. When the change settles or moots a question you put to the human, answer or close it and link the PR.
 - The PR has its retro record per **Retro**, unless it is a lessons PR.

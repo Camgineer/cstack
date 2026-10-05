@@ -26,7 +26,7 @@ Present the framing and tradeoffs before committing to a long run. Reversible wo
 
 ## Phase B: Design the workflow
 
-Decompose into atomic, independently-landable units. Sequence riskiest-unknown-first. Scaffold and verification come before features (the **foundational-thinking** principle skill).
+Decompose into atomic, independently landable units. A unit is one purpose with standalone value, and it carries its own callers. Merge two units when neither is demoable alone. Sequence riskiest unknown first. Scaffold and verification come before features (the **foundational-thinking** principle skill).
 
 - Build the verification harness before the work, with the baseline captured from the pre-change state, so the check reads as "old value vs new value".
 - For one-way-door design decisions, run the **architect** skill (it runs **arena**). Skip it for mechanical work whose shape is already concrete. A second arena over a settled design is over-engineering (the **laziness-protocol** principle skill).
@@ -37,7 +37,7 @@ Then execute the design. Add its steps to the todolist as concrete items, after 
 
 ## Phase C: Run the loop
 
-Each unit is an experiment. State the hypothesis, make the smallest change, measure against the predicate on the real artifact, keep it if it advanced, revert it if it didn't.
+Each step inside a unit is an experiment. State the hypothesis, make the smallest change, measure against the predicate on the real artifact, keep it if it advanced, revert it if it didn't.
 Apply the **sequence-verifiable-units** principle skill, verifying each unit before starting the next instead of batching checks at the end.
 
 - Verify by inspecting the artifact, never a self-report. When something passes too easily, suspect the observation method before the system.

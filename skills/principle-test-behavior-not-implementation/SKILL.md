@@ -45,6 +45,6 @@ The check: before you keep a test, ask whether it would still pass if every func
 
 **Symmetric inputs.** When the subject takes two sides, such as ours and theirs, old and new, or base and head, give each side a distinct value that shows up in the result, so a test fails when the code swaps them.
 
-**Failure paths.** Assert the machine-readable output that carries the field under test, not a rendering that looks the same for both values. Bound the subject's own waits and retries with its own options, so a regression fails on an assertion within seconds instead of at a timeout.
+**Failure paths.** Assert the machine-readable output that carries the field under test, not a rendering that looks the same for the right and the wrong value. Bound the subject's waits and retries with its public options, so a regression fails on an assertion within seconds.
 
 **Keep** a test of a relation across a table's rows (a key present in two tables, a parent that exists), and a compile-time check in a `*.test-d.ts` file.

@@ -164,6 +164,16 @@ function expectedFiles(root: string): Map<string, string> {
     hooks: "./hooks/cursor.json",
   }));
 
+  // `npx github:<owner>/<repo>` reads this to install the plugin into hosts that load no plugins.
+  files.set("package.json", json({
+    name: metadata.name,
+    version: metadata.version,
+    description: metadata.description,
+    license: metadata.license,
+    bin: { [`${metadata.name}-intent`]: "hooks/intent-install.sh" },
+    files: ["agents", "hooks", "skills", "tools/metadata.json", "!**/node_modules"],
+  }));
+
   const skills = readSkills(root);
   // The hooks and the entry-point docs find the mode skill by the plugin's name.
   if (!skills.some((skill) => skill.name === `${metadata.name}-mode`)) throw new Error(`skills/${metadata.name}-mode must exist; rename it with the plugin`);

@@ -1,14 +1,50 @@
 #!/bin/sh
 set -eu
 
-root=$(cd -- "$(dirname -- "$0")/.." && pwd -P)
+self=$0
+while [ -L "$self" ]; do
+  target=$(readlink "$self")
+  case $target in
+    /*) self=$target ;;
+    *) self=$(dirname -- "$self")/$target ;;
+  esac
+done
+source=$(cd -- "$(dirname -- "$self")/.." && pwd -P)
 skills="$HOME/.intent/skills"
 specialists="$HOME/.intent/specialists"
 conflicts=0
 
-if [ ! -e "$root/.git" ] || [ ! -f "$root/tools/metadata.json" ] || [ ! -d "$root/skills" ] || [ ! -d "$root/agents" ]; then
-  printf 'Run %s from a git checkout of the plugin, not through a link to it or from a plugin cache.\n' "$(basename -- "$0")" >&2
+if [ ! -f "$source/tools/metadata.json" ] || [ ! -d "$source/skills" ] || [ ! -d "$source/agents" ]; then
+  printf '%s is not inside the plugin.\n' "$self" >&2
   exit 2
+fi
+
+name=$(sed -n 's/^[[:space:]]*"name":[[:space:]]*"\([a-z0-9-]*\)".*/\1/p' "$source/tools/metadata.json" | head -n 1)
+if [ -z "$name" ]; then
+  printf '%s has no plugin name.\n' "$source/tools/metadata.json" >&2
+  exit 2
+fi
+first_install=true
+if [ -e "$skills/$name-mode" ] || [ -L "$skills/$name-mode" ]; then first_install=false; fi
+
+# npx and host plugin caches can vanish or move on update, so only a git checkout is linked in place.
+if [ -e "$source/.git" ]; then
+  root=$source
+else
+  root="${XDG_DATA_HOME:-$HOME/.local/share}/$name"
+  if [ -e "$root" ] && [ ! -f "$root/tools/metadata.json" ]; then
+    printf 'kept %s: it is not a copy of this plugin\n' "$root" >&2
+    exit 2
+  fi
+  rm -rf "$root.new"
+  mkdir -p "$root.new/tools"
+  cp -R "$source/agents" "$source/hooks" "$source/skills" "$root.new/"
+  cp "$source/tools/metadata.json" "$root.new/tools/"
+  if [ -f "$source/LICENSE" ]; then cp "$source/LICENSE" "$root.new/"; fi
+  rm -rf "$root"
+  mv "$root.new" "$root"
+  root=$(cd -- "$root" && pwd -P)
+  printf 'copied the plugin to %s\n' "$root"
 fi
 
 explicit_only() {
@@ -70,5 +106,38 @@ for persona in "$root"/agents/*.md; do
   [ -f "$persona" ] || continue
   link "$persona" "$specialists/$(basename "$persona")"
 done
+
+find_intentd() {
+  command -v intentd && return
+  # The desktop app ships intentd inside its bundle rather than on PATH.
+  find /Applications "$HOME/Applications" -maxdepth 5 -path '*Intent*.app/*' -name intentd -type f -perm -u+x 2>/dev/null | head -n 1
+}
+
+# A rerun is an update, and leaves the rule alone so a person who removed it keeps the mode off.
+if [ "$first_install" = true ]; then
+  rule="Before any other step, read the \`$name-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session."
+  intentd=$(find_intentd)
+  status=1
+  if [ -n "$intentd" ] && command -v node >/dev/null 2>&1; then
+    INTENTD="$intentd" RULE="$rule" MODE="$name-mode" node -e '
+      const { execFileSync } = require("node:child_process");
+      const call = (method, params) => JSON.parse(execFileSync(process.env.INTENTD, ["call", method, "--params", JSON.stringify(params)], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }));
+      const key = { workspaceId: "global", ruleType: "workspace" };
+      const current = call("rules.get", key);
+      if (current.content.includes(process.env.MODE)) process.exit(3);
+      if (!current.enabled && current.content.trim() !== "") process.exit(1);
+      const content = current.content.trim() === "" ? process.env.RULE : `${process.env.RULE}\n\n${current.content}`;
+      call("rules.update", { ...key, content, enabled: true });
+    ' 2>/dev/null && status=0 || status=$?
+  fi
+  case $status in
+    0) printf 'added the %s rule to Intent'"'"'s Settings, under Agent Behavior\n' "$name-mode" ;;
+    3) ;;
+    *) printf 'To keep the mode on, paste this into Intent'"'"'s Settings, under Agent Behavior:\n%s\n' "$rule" ;;
+  esac
+  if [ "$status" != 1 ] && "$intentd" settings git.autoCommit 2>/dev/null | grep -q '= true'; then
+    printf 'Intent commits agent work with Agent-Id trailers. To stop it, run: %s settings git.autoCommit false\n' "$intentd"
+  fi
+fi
 
 exit "$conflicts"

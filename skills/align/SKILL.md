@@ -44,7 +44,7 @@ Run the **grill-with-docs** skill with the tier's spec sections as the design tr
 
 Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md) for the tier, using the glossary's terms. Keep the draft as an untracked working file. When the change adds a setting that names a command to run, add one line naming where that setting may come from, and allow only the operator's own config. An operator's waiver of a safeguard covers their own tools, not content a repository ships.
 
-Then run the **cold-implementer check**. Use the **Delegate** capability to give a fresh-context reader the spec and a clean worktree at the fetched trunk SHA, named in the brief, and nothing from this conversation. When you have already built shared parts, hand them over as a separate diff labelled as the proposal, so the reader never takes them for trunk. Ask it for every question it would need answered before building. Route each one back: a fact you fill in; a decision, including any edge case the user would see, goes to a Grill round. Repeat until the reader returns no questions.
+Then run the **cold-implementer check**. Use the **Delegate** capability to give a fresh-context reader the spec and a clean worktree at the fetched trunk SHA, with that SHA named in the brief, and nothing from this conversation. When you have already built shared parts, hand them over as a separate diff labelled as the proposal, so the reader never takes them for trunk. Ask it for every question it would need answered before building. Route each one back: a fact you fill in; a decision, including any edge case the user would see, goes to a Grill round. Repeat until the reader returns no questions.
 
 ## 5. Advise
 

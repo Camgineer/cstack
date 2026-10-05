@@ -49,7 +49,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Core**
 
-- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, deciding how much code a change needs, or tempted to add wrappers, layers, or signal threading. Bias to deletion and the smallest change that solves the problem.
+- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, deciding how much code a change needs, or tempted to add wrappers, layers, or signal threading. Bias to deletion and the smallest change that solves the problem. For a bug, the problem is its whole class.
 - **Foundational Thinking** (**principle-foundational-thinking**). Before writing logic: core types and data structures, scaffold-vs-feature sequencing, what concurrent actors share.
 - **Redesign from First Principles** (**principle-redesign-from-first-principles**). Integrating a new requirement into an existing design. Redesign as if it had been foundational from day one.
 - **Attack the Premise** (**principle-attack-the-premise**). Two or more fixes that share one premise have failed the same gate. Take a census of which actors hold the imbalance before the next fix, then question the premise instead of writing another fix that assumes it.

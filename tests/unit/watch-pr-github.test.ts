@@ -5,7 +5,6 @@ import { join } from "node:path";
 import {
   ChecksUnavailable,
   GhGitHubReader,
-  WatcherQueryError,
   mapRollupNode,
   orderStack,
   parsePullRequest,
@@ -19,7 +18,7 @@ import {
   passingCheck,
   pendingCheck,
 } from "../support/watch-pr-fakes.ts";
-import { parsePrNumber } from "../../skills/cstack-mode/scripts/watch-pr/types.ts";
+import { WatcherQueryError, parsePrNumber } from "../../skills/cstack-mode/scripts/watch-pr/types.ts";
 
 const context = {
   owner: "owner",

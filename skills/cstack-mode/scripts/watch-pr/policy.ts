@@ -1,6 +1,6 @@
-import { WatcherQueryError, resolveChecks } from "./github.ts";
+import { resolveChecks } from "./github.ts";
 import type * as T from "./types.ts";
-import { nonEmpty } from "./types.ts";
+import { WatcherQueryError, nonEmpty } from "./types.ts";
 export function assessGitHubMerge(args: {
   readonly mergeStateStatus: T.MergeStateStatus;
   readonly headRollupState: T.RollupState;

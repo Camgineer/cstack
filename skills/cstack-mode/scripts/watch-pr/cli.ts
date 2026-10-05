@@ -7,7 +7,6 @@ import {
 } from "commander";
 import {
   GhGitHubReader,
-  WatcherQueryError,
   discoverStack,
   resolveContext,
 } from "./github.ts";
@@ -20,7 +19,7 @@ import {
 } from "./policy.ts";
 import { renderJson, renderPretty } from "./render.ts";
 import type * as T from "./types.ts";
-import { nonEmpty, parsePrNumber } from "./types.ts";
+import { WatcherQueryError, nonEmpty, parsePrNumber } from "./types.ts";
 export interface CliOptions {
   readonly owner: string | null;
   readonly repo: string | null;

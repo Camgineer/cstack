@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { WatcherQueryError } from "../../skills/cstack-mode/scripts/watch-pr/github.ts";
+import { WatcherQueryError } from "../../skills/cstack-mode/scripts/watch-pr/types.ts";
 import {
   applyQueueSnapshot,
   assessGitHubMerge,

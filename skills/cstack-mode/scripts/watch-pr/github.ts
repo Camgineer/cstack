@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import type * as T from "./types.ts";
-import { nonEmpty, parsePrNumber } from "./types.ts";
+import { WatcherQueryError, nonEmpty, parsePrNumber } from "./types.ts";
 export const REVIEW_THREADS_QUERY =
   "\nquery ReviewThreads($owner: String!, $repo: String!, $pr: Int!) {\n  repository(owner: $owner, name: $repo) {\n    pullRequest(number: $pr) {\n      reviewThreads(first: 100) {\n        nodes {\n          id\n          isResolved\n          comments(first: 10) {\n            nodes {\n              body\n              createdAt\n              path\n              line\n              author { login }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n";
 export const PR_COMMIT_STATUS_QUERY =
@@ -12,14 +12,6 @@ interface CommandResult {
   readonly code: number;
   readonly stdout: string;
   readonly stderr: string;
-}
-export class WatcherQueryError extends Error {
-  readonly failure: T.QueryFailure;
-  constructor(failure: T.QueryFailure) {
-    super(failure.detail);
-    this.name = "WatcherQueryError";
-    this.failure = failure;
-  }
 }
 export class ChecksUnavailable extends WatcherQueryError {
   constructor(detail: string) {

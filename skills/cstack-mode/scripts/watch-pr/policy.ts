@@ -1,7 +1,7 @@
 import { resolveChecks } from "./github.ts";
 import type * as T from "./types.ts";
 import { WatcherQueryError, nonEmpty } from "./types.ts";
-export function assessGitHubMerge(args: {
+function assessGitHubMerge(args: {
   readonly mergeStateStatus: T.MergeStateStatus;
   readonly headRollupState: T.RollupState;
 }): T.GitHubMergeAssessment {
@@ -52,7 +52,7 @@ const AUTOMATION_TOKENS = [
   "pr review automation",
   "review automation",
 ] as const;
-export async function readSnapshot(args: {
+async function readSnapshot(args: {
   readonly reader: T.GitHubReader;
   readonly context: T.PrContext;
   readonly pendingHistory: "include" | "omit";
@@ -211,7 +211,7 @@ function readyContribution(
     },
   };
 }
-export function classifyPr(
+function classifyPr(
   row: T.PrSnapshot,
   allowDraft = false
 ): T.PrDecision {
@@ -230,7 +230,7 @@ export function classifyPr(
     ? { kind: "merged", pr: ready }
     : { kind: "ready", pr: ready };
 }
-export function selectTierMajorStackDecision(
+function selectTierMajorStackDecision(
   rows: T.NonEmpty<T.PrSnapshot>,
   allowDraft = false
 ): T.StackDecision {
@@ -259,7 +259,7 @@ export function selectTierMajorStackDecision(
     throw new Error("stack has no classified decision");
   return { kind: "clear", prs };
 }
-export const queryBackoffSeconds = (
+const queryBackoffSeconds = (
   interval: number,
   failures: number
 ): number => Math.min(Math.max(interval, 60) * 2 ** (failures - 1), 300);
@@ -273,7 +273,7 @@ type Payload<V> = V extends unknown
   ? Omit<V, keyof Envelope<T.WatchMode>>
   : never;
 type VerdictPayload = Payload<T.WatcherVerdict>;
-export interface VerdictStamp<M extends T.WatchMode = T.WatchMode> {
+interface VerdictStamp<M extends T.WatchMode = T.WatchMode> {
   <const P extends VerdictPayload>(payload: P): Envelope<M> & P;
   <const P extends VerdictPayload, M2 extends T.WatchMode>(
     payload: P,
@@ -340,7 +340,7 @@ export interface WatchClock {
   observedAt(): string;
   sleep(seconds: number): Promise<void>;
 }
-export interface RunDependencies {
+interface RunDependencies {
   readonly reader: T.GitHubReader;
   readonly clock: WatchClock;
   readonly emit: (verdict: T.ProgressVerdict) => void;
@@ -513,13 +513,13 @@ export async function runSimple(args: {
     step,
   });
 }
-export type QueueWork =
+type QueueWork =
   | {
       readonly kind: "whole-stack-sweep";
       readonly remaining: T.NonEmpty<T.PrContext>;
     }
   | { readonly kind: "frontier-poll"; readonly frontier: T.PrContext };
-export interface QueueState {
+interface QueueState {
   readonly queue: T.NonEmpty<T.PrContext>;
   readonly snapshots: ReadonlyMap<T.PrNumber, T.PrSnapshot>;
   readonly work: QueueWork | null;
@@ -528,7 +528,7 @@ export interface QueueState {
   readonly lastWaitKey: string | null;
   readonly startedAt: number;
 }
-export const createQueueState = (
+const createQueueState = (
   queue: T.NonEmpty<T.PrContext>,
   now: number
 ): QueueState => ({
@@ -547,7 +547,7 @@ const orderedRows = (state: QueueState): T.PrSnapshot[] =>
   });
 const activeRows = (state: QueueState): T.PrSnapshot[] =>
   orderedRows(state).filter((row) => row.kind !== "merged");
-export function planQueue(state: QueueState, now: number): QueueState {
+function planQueue(state: QueueState, now: number): QueueState {
   if (state.work !== null) return state;
   if (state.snapshots.size === 0 || now >= state.nextSweepAt) {
     const remaining = nonEmpty(
@@ -563,11 +563,11 @@ export function planQueue(state: QueueState, now: number): QueueState {
     ? state
     : { ...state, work: { kind: "frontier-poll", frontier } };
 }
-export interface QueueSnapshotResult {
+interface QueueSnapshotResult {
   readonly state: QueueState;
   readonly completedSweepRows: T.NonEmpty<T.PrSnapshot> | null;
 }
-export function applyQueueSnapshot(
+function applyQueueSnapshot(
   state: QueueState,
   snapshot: T.PrSnapshot,
   now: number,
@@ -601,7 +601,7 @@ export function applyQueueSnapshot(
     completedSweepRows: rows,
   };
 }
-export type QueueEvaluation =
+type QueueEvaluation =
   | {
       readonly kind: "complete";
       readonly state: QueueState;
@@ -637,7 +637,7 @@ export type QueueEvaluation =
         | { readonly kind: "merge-queue"; readonly unmergedCount: number };
       readonly emit: boolean;
     };
-export function evaluateQueue(
+function evaluateQueue(
   state: QueueState,
   now: number,
   options: T.PollingOptions

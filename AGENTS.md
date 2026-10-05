@@ -32,7 +32,7 @@ Keep sources that need one vendor's APIs in `contrib/`, which no manifest loads.
 
 ## Dogfooding
 
-This repository is the plugin's source and also one of its users. Build every new mechanism, such as a check, gate, or script, to ship with the plugin, unless it only guards this repository's own release or metadata. Then install it here the same way a user would. When a decision offers a mechanism, state whether each option reaches every user of the plugin or only this repository.
+This repository is the plugin's source and also one of its users. Build every new mechanism, such as a check, gate, or script, to ship with the plugin, unless it only guards this repository's own release or metadata. Then install it here the same way a user would. A PR that adds a host also sets this repository up for that host and uses that setup as its live fixture. When a decision offers a mechanism, state whether each option reaches every user of the plugin or only this repository.
 
 ## Versioning
 

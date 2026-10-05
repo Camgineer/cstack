@@ -50,7 +50,7 @@ Don't penalize simple code for lacking abstraction. Premature abstraction is wor
 
 Can you tell that this code works from reading it?
 
-- Are there tests? Do they test behavior or implementation details?
+- Are there tests? Does each one call only a public seam, run libraries for real, and assert behavior rather than implementation details, per [Test Behavior, Not Implementation](../../principle-test-behavior-not-implementation/SKILL.md)?
 - Are there assertions/invariants that would catch regressions?
 - If this is a bug fix: is there a test for the bug?
 - If this touches an integration boundary: is the full path tested?

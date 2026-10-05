@@ -21,7 +21,7 @@ Fix each class at the first level that can stop it. This is the **encode-lessons
 
 1. **Architecture.** Give each piece of state one owner and each task one supported way. Hide internals so the wrong import fails. Replace hand-synced lists with one source of truth. Delete old ways and dead code an agent would copy.
 2. **Types.** Make the bad state impossible to write. If bad code still compiles, add a lint or CI check whose error names the file, type, or function to use instead. If the pattern is already common, fail only when a change adds more of it.
-3. **Tests.** Test the behavior per the **test-behavior-not-implementation** principle skill. Fix or delete any test that would still pass if every function it calls returned nothing.
+3. **Tests.** Test the behavior at a public seam per the **test-behavior-not-implementation** principle skill. Fix or delete any test that would still pass if every function it calls returned nothing.
 4. **Agent rules.** Write docs or agent rules last, and only for judgment calls. Nothing fails when an agent skips them.
 
 Human review is the fallback when every level fails, never the fix.

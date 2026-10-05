@@ -53,7 +53,7 @@ To turn the mode on in every project, set `CSTACK_MODE=on` in the environment yo
 
 ## Write a prompt
 
-A prompt states what you want and how to tell when it is done. The playbook supplies the steps, so a few plain sentences work better than a spec. Put in:
+A prompt states what you want and how to tell when it is done. The playbook supplies the steps, so a few plain sentences work better than a step-by-step plan. Put in:
 
 - **The goal.** Say what is wrong, or what you want.
 - **The done check.** Name something that can pass or fail. "Make it better" and "work on it for an hour" are not checks.
@@ -68,7 +68,7 @@ Use cstack-mode to read this thread and restate the underlying issue
 in plain words. Don't change any code yet.
 ```
 
-For a change you will leave running, the `align` skill asks you for the goal, the done check, and the proof, and records them in a signed spec. Before you step away, tell the agent. It then stops asking and keeps going.
+For a change you will leave running, the `align` skill asks you for the goal, the done check, and the proof, and records them in a signed spec. Before you step away, say so, for example "going to bed". The agent then keeps going, and it still pauses before irreversible steps such as a deploy or a force-push.
 
 ## Learn from every PR
 

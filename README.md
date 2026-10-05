@@ -51,6 +51,25 @@ In Claude Code and Codex, the mode stays on for the project once you invoke it, 
 
 To turn the mode on in every project, set `CSTACK_MODE=on` in the environment your harness starts from, such as your shell profile or a cloud environment's settings. Claude Code, Codex, and Cursor all read it when a session starts. Unset it to stop. A project you turn off with the `off` command stays off either way.
 
+## Write a prompt
+
+A prompt states what you want and how to tell when it is done. The playbook supplies the steps, so a few plain sentences work better than a spec. Put in:
+
+- **The goal.** Say what is wrong, or what you want.
+- **The done check.** Name something that can pass or fail. "Make it better" and "work on it for an hour" are not checks.
+- **The proof to show.** Ask for the real command output, a video of the flow, the stored value, or a before and after number.
+- **What you already know.** Add a symptom, a repro step, a log line, or a link.
+- **The real constraints.** "Reproduce it first", "don't change any code yet", "no behavior change", and "let me review the design first" each change what the agent does.
+
+Leave out the how and the list of skills. The playbook picks both, and a hand-written order drops steps it would keep. Hold back your theory of the cause until the agent restates the problem, because a stated guess narrows its search. For a long thread or a vague report, make the restatement the first step:
+
+```text
+Use cstack-mode to read this thread and restate the underlying issue
+in plain words. Don't change any code yet.
+```
+
+For a change you will leave running, the `align` skill asks you for the goal, the done check, and the proof, and records them in a signed spec. Before you step away, tell the agent. It then stops asking and keeps going.
+
 ## Learn from every PR
 
 Before an agent marks a PR ready to merge, it runs a retro with the `reflect` skill. Lessons for your repository go to its `AGENTS.md`, and lessons for the plugin go to a draft for the plugin's repository. The lessons land in one PR that goes through the same review and merge rules as any other PR. A PR with nothing to learn gets a `Retro: no lessons` comment.

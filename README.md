@@ -57,7 +57,7 @@ CStack Mode picks a playbook and loads the skills the task needs. It reports any
 
 In Claude Code and Codex, the mode stays on for the project once you invoke it, including in new sessions and after the context compacts. Run the same command with `off` to turn it off. Codex asks you to review and trust the plugin's hooks first. In Cursor, it stays on in new chats, but can lapse when a long chat compacts. To keep it on every turn, pick `cstack-mode` from the `/` menu with Option+Enter on Mac or Alt+Enter on Windows instead of Enter. That makes it a [Custom Mode](https://cursor.com/docs/agent/prompting#custom-modes), which stays in context until you exit it. Cursor offers Custom Modes in the Agents Window and the CLI.
 
-To turn the mode on in every project, set `CSTACK_MODE=on` in the environment your harness starts from, such as your shell profile or a cloud environment's settings. Claude Code, Codex, and Cursor all read it when a session starts. Unset it to stop. A project you turn off with the `off` command stays off either way.
+To turn the mode on in every project, set `CSTACK_MODE=on` in the environment your harness starts from, such as your shell profile or a cloud environment's settings. Claude Code, Codex, and Cursor all read it when a session starts. Intent ignores it and uses the rule from its install step instead. Unset it to stop. A project you turn off with the `off` command stays off either way.
 
 ## Write a prompt
 

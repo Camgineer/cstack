@@ -20,7 +20,7 @@
 4. **Spawn N parallel candidates** on different models per the **arena** skill's Phase B. Each works in its own sanitized dir. Same prompt to each.
 5. **Spawn one blinded judge** on a different model family per the **arena** skill's Phase C. Judge sees outputs by sanitized label and the rubric, never a model name.
 6. **Verify the chain from transcripts, not self-report.** Read each candidate's actual tool history through the host's supported history tools or an authorized export. If unavailable, mark chain-following unverified. Do not inspect private host transcript storage. Look at which files each candidate actually opened. Grade chain-following from the files it really read plus the shape of the code, never from the candidate's own claims.
-7. **Read every candidate output yourself** end to end. Compare to the judge's verdict. Disagreement means a model is biased or the rubric is ambiguous. Synthesize. Before you recommend promotion, read **principle-explain-the-number**: report each arm's run count and spread, and call a gap inside run-to-run noise no result.
+7. **Read every candidate output yourself** end to end. Compare to the judge's verdict. Disagreement means a model is biased or the rubric is ambiguous. Synthesize. Before you recommend promotion, read **principle-explain-the-number**: report each arm's run count and spread, and call a gap inside run-to-run noise no result. When a variant changes nothing, check from step 6's opened-file list whether the runs loaded the edited file before you revise its wording.
 
 **Evaluating a skill.** Run the steps above with these additions:
 
@@ -28,4 +28,4 @@
 - **Repeated work.** Read the transcripts of the with-skill runs. A helper script or multi-step procedure that several runs wrote independently belongs in the skill's `scripts/`, with the skill pointing to it.
 - **Trigger evals.** Write about 20 realistic requests: half that should load the skill, half near-misses that share its keywords but need something else. Make each one substantive enough that an agent would reach for a skill at all. Run each request as a real headless session inside a realistic project copy, with enough turns for the agent to look around first, and count only actual skill loads. Include neighbouring skills' own requests among the near-misses. State which entry path you measured: the description alone, or the mode's trigger line. Run each request a few times and score the trigger rate against the expected answer. Revise the description against a train split of about 60 percent, and keep the version with the best score on the held-out rest.
 
-**Reply:** variant under test, rubric, per-candidate notes, judge's verdict, your synthesis, and a recommendation for whether to promote the variant.
+**Reply:** variant under test, rubric, per-candidate notes, judge's verdict, your synthesis, each edited file marked exercised or untested by the runs, and a recommendation for whether to promote the variant.

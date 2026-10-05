@@ -105,7 +105,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Resolve model and effort through the step's role in the runtime contract: the host model unless a `Models:` block names one. Preserve the workflow's independent review coverage and verify any claimed model diversity.
 
-You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. Use supported status and resumption tools, and include the current constraints on every follow-up. A second opinion is the same prompt against a different model. Agreement is high-signal.
+You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. After a child that edits returns, re-read each file it touched before you edit that file. Use supported status and resumption tools, and include the current constraints on every follow-up. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
 ## Writing the reply
 
@@ -118,7 +118,7 @@ Write the reply clean as you draft it. A cleanup pass after drafting does not re
 - **Frame impact for the consumer and the maintainer.** Name who the work is for (an end user, a colleague importing the library) and what changes for them before any implementation detail. Then what the next engineer who owns this code inherits. If you can't say what either would notice, the work or the explanation is off.
 - **Never fabricate a link, citation, or transcript reference.** Link only artifacts you produced or read this session.
 - **Every claim carries its evidence or its label in the same sentence.** Measured, inferred, relayed, or guess. A figure from another agent is relayed until you check how it was measured, and any count says what it counted. A prediction or an unseen cause is a guess. Never hand the human a check you could run.
-- **Report review results as counts by outcome.** Count fixed, mitigated, deferred, and rejected findings, and never call a mixed set "all fixed". A finding is fixed only when every fix it names is in the diff. One closed by a warning or a doc line is mitigated.
+- **Report review results as counts by outcome.** Count fixed, mitigated, deferred, and rejected findings, and never call a mixed set "all fixed". A finding is fixed only when the diff resolves every problem it names. Count a finding with part of it unresolved as deferred, and one closed only by a warning or a doc line as mitigated.
 
 Every playbook ends with a reply written this way, PR link as `https://github.com/<owner>/<repo>/pull/<number>`. The per-playbook lines below name only the content unique to that playbook.
 
@@ -128,7 +128,7 @@ Comments follow the same rule as the reply. Write them clean as you go. Keep a c
 
 ## Playbooks
 
-Open a todolist whose first items are the matched playbook's steps, copied in verbatim, before any task-specific todos. A step you choose not to do stays in the list with a one-line `skip: <reason>`. Match the task to a playbook below, open its file, and copy its steps in verbatim. Match again when the task changes type mid-thread, such as a question or a sizing that turns into a build. Open the new playbook's todolist, and set up the worktree from **Worktree** in `playbooks/opening-a-pr.md` before the first branch or edit.
+Open a todolist whose first items are the matched playbook's steps, copied in verbatim, before any task-specific todos. A step you choose not to do stays in the list with a one-line `skip: <reason>`. Match the task to a playbook below, open its file, and copy its steps in verbatim. Match again when the task changes type mid-thread, such as a question or a sizing that turns into a build. Before the first branch or edit in any playbook, set up the worktree per **Worktree** in `playbooks/opening-a-pr.md`.
 
 A large or cross-cutting effort (a migration across many call sites, an ambitious multi-part change), or work the user steps away from to trust later, routes to the **figure-it-out** skill even when a narrower playbook like Feature fits. Use **figure-it-out** whenever no bundled playbook fits. It designs a bespoke, rigorous playbook for the task. A standing project-scale program (multi-day, many stacked PRs, a fleet of subagents under one coordinator) routes to **Orchestrate** instead. figure-it-out designs one bespoke run, orchestrate runs the program.
 

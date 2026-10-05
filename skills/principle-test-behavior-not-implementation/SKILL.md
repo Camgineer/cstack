@@ -1,6 +1,6 @@
 ---
 name: principle-test-behavior-not-implementation
-description: "Apply when you write, change, or keep a test. Call the code the way its users do and assert the result they observe against a literal expected value. If the test would still pass when every imported function returns undefined, rewrite the assertion or delete the test."
+description: "Apply when you write, change, review, or keep a test. Test only at a public seam, the entry a module's outside callers use, at the unit, integration, and end-to-end levels. Run libraries for real and never make one the subject. Assert the result callers observe against a literal expected value. If the test would still pass when every imported function returns undefined, rewrite the assertion or delete the test."
 disable-model-invocation: true
 ---
 
@@ -9,7 +9,25 @@ Read [the runtime contract](../cstack-mode/references/runtime.md) before executi
 
 # Test Behavior, Not Implementation
 
-A test calls the code the way its users do and asserts the result they observe against a literal expected value. A test that asserts which calls the code made, or restates a constant the code contains, does neither.
+A test calls the code the way its users do and asserts the result they observe against a literal expected value. A test that asserts which internal calls the code made, or restates a constant the code contains, does neither.
+
+## Where to test
+
+Test only at a **public seam**: the entry a module's outside callers use. Every call in the test body is one an outside caller makes. The rule is the same at every level:
+
+| Level | The seam | Runs for real | May be faked |
+| --- | --- | --- | --- |
+| Unit | The entry a module's outside callers use: a package's exports, a directory's entry file, a script's main function. Files inside the module that call each other are internal, even through an export. | Your code, libraries, in-memory stand-ins | Third-party services, time, and randomness, behind a port you own |
+| Integration | A process boundary: CLI arguments, output, and exit code, an HTTP route, files, a database | Your modules, libraries, local services | Third-party services, behind a port you own or as a stand-in at the boundary, such as a fake binary on `PATH` or a local HTTP stub |
+| End to end | What the user touches: the UI, the CLI as typed, the public API | Everything | Nothing |
+
+**Ports are part of the seam.** A dependency the public interface accepts, such as a clock, a client, or a mailer, is part of the seam even when only tests pass a fake for it, and so are the port's types, error classes, and constructors. An export, hook, or state read that exists only for a test is internal, so route the test through a seam instead.
+
+**Private logic worth its own test.** Push its edge cases through the seam: for each internal rule, pick a seam input whose result differs from the nearest wrong version of that rule, such as rounding each line against rounding the total. When the seam cannot reach a case, promote the logic to a module with its own public interface that outside callers use, then test that seam. When a behavior is hard to reach through any seam, reshape the module per the **encode-lessons-in-structure** principle skill.
+
+**Libraries and SDKs.** Your code is the subject and a library is a collaborator. Run each library for real through your seam, including stand-ins such as a temp directory or an in-memory database. When a library upgrade changes behavior you rely on, your seam tests fail, so a test that pins the library's own behavior adds nothing. Fake a third-party service only behind a port you own or at the process boundary. The requests your code sends it are observable output, so assert their payloads, and assert that a request was skipped only in a test that also covers the input that sends it.
+
+## Assertions
 
 The check: before you keep a test, ask whether it would still pass if every function it imports returned `undefined`. If yes, it observes no behavior and cannot fail for a defect. Rewrite the assertion or delete the test.
 

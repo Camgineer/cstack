@@ -24,7 +24,7 @@ Open a todolist with one entry per phase before launching anything.
 1. State the done predicate and the artifact or report the swarm must return.
 2. Choose the shape. Partition into slices, race N workers on identical briefs, or mix both. For a race or mixed shape, declare `first pass`, `rank all`, or `best-of` before spawning.
 3. Set N from the user or derive it from the shape. N is total workers, not the native concurrency limit.
-4. Resolve the `swarm workers` model through the runtime contract. Workers on an exploration brief, which only read and report, use the `explore` role. Inherit for other workers unless the user chose a supported override. Validate effort separately and report rejected IDs. For a model race, name each arm's supported model up front.
+4. Resolve the `swarm workers` model through the runtime contract. Workers on an exploration brief use the `explore` role. An exploration brief asks a worker only to search code, docs, or history and report findings. A worker that edits, runs or drives the app, verifies, or measures is on another brief. Inherit for other workers unless the user chose a supported override. Validate effort separately and report rejected IDs. For a model race, name each arm's supported model up front.
 5. Give each worker its own writable output when it writes. When workers verify or measure commits, each brief names the exact SHAs. A measurement brief also names the method (sample count, what one sample is, order). The worker records both in its result.
 
 ## Phase B: Fan out

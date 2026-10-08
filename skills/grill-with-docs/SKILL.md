@@ -55,7 +55,7 @@ An assumption with evidence status none gets its test before its design. Recomme
 
 ## Facts versus decisions
 
-Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (code, files, tools, history), delegate a read-only investigator to find it, or look it up yourself. Ask the user only for what you cannot look up. Don't block on it: a running investigation is an unsettled prerequisite, so only the questions downstream of it wait; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
+Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (code, files, tools, history), delegate a read-only investigator on the `explore` role to find it, or look it up yourself. Ask the user only for what you cannot look up. Don't block on it: a running investigation is an unsettled prerequisite, so only the questions downstream of it wait; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
 
 ## Absent decider
 

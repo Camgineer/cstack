@@ -52,10 +52,10 @@ A command runner runs on the person's machine, so only the person's own file may
 | `build` | Implementation delegates, such as the cstack agent a playbook hands a fix or a slice, and arena runners |
 | `review` | The fresh-context reviewer in Readiness, each interrogate seat, arena's cross-judge, the verifiers in Shipping, Autopilot-full, and Orchestrate, and show-me-your-work's hand-back check |
 | `advisor` | The second opinion in align's Advise step, a tripwire's re-sign, and a one-way door in the Autonomous run |
-| `explore` | Read-only search delegates that read code, docs, or history and report findings: how's explorers, why's investigators, recall's history readers, and swarm workers on an exploration brief |
+| `explore` | Read-only search delegates that read code, docs, or history and report findings: how's explorers, why's investigators, recall's and automate-me's history readers, maintain-verification-skill's source wave, grill-with-docs's investigator, and swarm workers on an exploration brief. A delegate that edits, runs or drives the app, verifies, or measures is not on it. A lane that needs a connector or history tool its runner cannot reach is a missing lane, never a null result |
 | `image` | The Image generation playbook, on hosts whose note maps no **Generate an image** capability. It has no host-model fallback. |
 
-Each line is `<role>: <runner>, <option>, ...`. The runner is `native`, the host's own Delegate capability, or a command that runs another agent CLI, such as `codex exec`, `claude -p`, or `cursor-agent -p`. Options are `model <id>`, `effort <level>`, `fast`, and any other setting the runner documents. An option left out takes the runner's default. A role can list several runners separated by `;`. A single step uses the first. A panel or a set of lanes gives one runner to each seat in order, and the seats left over run on the host's model, so a `review` line with one runner fills one interrogate seat and the host fills the other two.
+Each line is `<role>: <runner>, <option>, ...`. The runner is `native`, the host's own Delegate capability, or a command that runs another agent CLI, such as `codex exec`, `claude -p`, or `cursor-agent -p`. Options are `model <id>`, `effort <level>`, `fast`, and any other setting the runner documents. An option left out takes the runner's default. A role can list several runners separated by `;`. A single step uses the first. A panel or a set of lanes gives one runner to each seat in order, and the seats left over run on the host's model, so a `review` line with one runner fills one interrogate seat and the host fills the other two. An `explore` line's runners repeat across its lanes in order, so a one-runner line runs every lane.
 
 Resolve a role before each delegated step:
 
@@ -66,7 +66,7 @@ Resolve a role before each delegated step:
 
 Model ID and reasoning effort are separate choices. A requested model is not proof of served identity. Report identity only when host metadata or the runner's output establishes it. Never guess a provider slug.
 
-A panel keeps its default three seats unless the user selected another size. A panel with no role, such as swarm workers on a race or verification brief, or architect runners, uses the host's model unless the user names models for that run. Call a panel model-diverse only when its seats resolve to different model families, and report a panel whose seats share one family. Independent prompts alone do not make a panel diverse. When the user asks for diversity the host and roles cannot provide, report that and get their choice between a reduced panel and waiting. Treat a rejected model ID as a missing lane.
+A panel keeps its default three seats unless the user selected another size. A panel with no role, such as swarm workers on any brief other than exploration, or architect runners, uses the host's model unless the user names models for that run. Call a panel model-diverse only when its seats resolve to different model families, and report a panel whose seats share one family. Independent prompts alone do not make a panel diverse. When the user asks for diversity the host and roles cannot provide, report that and get their choice between a reduced panel and waiting. Treat a rejected model ID as a missing lane.
 
 ## Skills, resources, and writing
 

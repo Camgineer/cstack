@@ -83,7 +83,7 @@ Launch all matching investigators in a single message so they run concurrently. 
 
 Subagent config (each):
 - Persona: generic native investigator; apply the workflow reference prompt.
-- Model role: `why investigators` through the runtime contract.
+- Model role: `why investigators`, from the `explore` role per **Model roles** in the runtime contract.
 - Scope: read-only source and connector investigation. Use supported read-only tools; never add write permissions to retain MCP access.
 
 Each investigator gets:

@@ -36,7 +36,7 @@ When in doubt, take the simple path.
 Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Spawn all explorers in a single message:
 
 - Persona: generic native investigator; apply the workflow reference prompt.
-- Model role: `how explorer` through the runtime contract.
+- Model role: `how explorer`, from the `explore` role per **Model roles** in the runtime contract.
 - Scope: read-only; use the supported sandbox and no connector writes.
 
 Each explorer gets the prompt in `references/explorer-prompt.md` with its angle filled in. Then go to Step 3.

@@ -24,6 +24,8 @@ codex plugin marketplace add /path/to/checkout
 codex plugin add PLUGIN@PLUGIN
 ```
 
+Then run `/hooks` in Codex and trust the plugin's hooks. Codex skips untrusted hooks, so the mode does not stay on until you do.
+
 **Cursor.** Add the repository through Cursor's plugin settings. Cursor reads `.cursor-plugin/plugin.json` at the repository root.
 
 **Intent.** Intent loads no plugins, so this command fetches the latest plugin, keeps a copy in `~/.local/share/cstack`, and links its skills and personas into Intent:

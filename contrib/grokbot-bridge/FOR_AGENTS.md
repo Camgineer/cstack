@@ -13,7 +13,7 @@ A remote MCP server with one tool, `notify_grokbot(message, project, thread)`. I
 
 | Variable | Purpose |
 | --- | --- |
-| `BRIDGE_TOKEN` | Path token that the connector URL carries. Required. |
+| `BRIDGE_TOKEN` | Path token that the connector URL carries. Required, at least 32 characters. |
 | `GROKBOT_WEBHOOK_URL` | Webhook URL. Required. |
 | `GROKBOT_WEBHOOK_SECRET` | Bearer secret for the webhook. Required. Never commit it. |
 | `PORT` | Port for `src/serve.ts`. Default 8787. |

@@ -8,6 +8,7 @@ const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_LABEL_LENGTH = 200;
 const WEBHOOK_TIMEOUT_MS = 10_000;
+const MIN_TOKEN_LENGTH = 32;
 
 export const NOTIFY_TOOL = {
   name: "notify_grokbot",
@@ -34,15 +35,45 @@ type JsonRpcRequest = {
   params?: Record<string, unknown>;
 };
 
-export async function handle(request: Request, env: Env, fetchWebhook: typeof fetch = fetch): Promise<Response> {
-  const token = env.BRIDGE_TOKEN;
-  const webhookUrl = env.GROKBOT_WEBHOOK_URL;
-  const webhookSecret = env.GROKBOT_WEBHOOK_SECRET;
+export type WebhookConfig = { webhookUrl: string; webhookSecret: string };
+
+export type ConfigResult = { ok: true; config: WebhookConfig } | { ok: false; problem: string };
+
+// Reads and checks the env vars. The bridge refuses to run on a bad config, so no note is sent to an unsafe URL or behind a guessable path.
+export function readConfig(env: Env): ConfigResult {
+  const { BRIDGE_TOKEN: token, GROKBOT_WEBHOOK_URL: webhookUrl, GROKBOT_WEBHOOK_SECRET: webhookSecret } = env;
   if (!token || !webhookUrl || !webhookSecret) {
-    return text("Bridge is not configured.", 500);
+    return { ok: false, problem: "BRIDGE_TOKEN, GROKBOT_WEBHOOK_URL and GROKBOT_WEBHOOK_SECRET must be set." };
   }
-  if (new URL(request.url).pathname !== `/mcp/${token}`) {
+  if (token.length < MIN_TOKEN_LENGTH) {
+    return { ok: false, problem: `BRIDGE_TOKEN must be at least ${MIN_TOKEN_LENGTH} characters.` };
+  }
+  if (!isSecureWebhookUrl(webhookUrl)) {
+    return { ok: false, problem: "GROKBOT_WEBHOOK_URL must be an https URL." };
+  }
+  return { ok: true, config: { webhookUrl, webhookSecret } };
+}
+
+function isSecureWebhookUrl(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  // Plain http is allowed only for a local webhook, so tests and local runs can use one.
+  const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  return url.protocol === "https:" || (local && url.protocol === "http:");
+}
+
+export async function handle(request: Request, env: Env, fetchWebhook: typeof fetch = fetch): Promise<Response> {
+  const token = env.BRIDGE_TOKEN ?? "";
+  if (!token || new URL(request.url).pathname !== `/mcp/${token}`) {
     return text("Not found.", 404);
+  }
+  const loaded = readConfig(env);
+  if (!loaded.ok) {
+    return text(`Bridge is not configured. ${loaded.problem}`, 500);
   }
   if (request.method !== "POST") {
     return text("Method not allowed.", 405, { allow: "POST" });
@@ -58,7 +89,7 @@ export async function handle(request: Request, env: Env, fetchWebhook: typeof fe
   const messages: unknown[] = Array.isArray(body) ? body : [body];
   const replies: object[] = [];
   for (const message of messages) {
-    const reply = await dispatch(message as JsonRpcRequest, { webhookUrl, webhookSecret }, fetchWebhook);
+    const reply = await dispatch(message as JsonRpcRequest, loaded.config, fetchWebhook);
     if (reply) replies.push(reply);
   }
   if (replies.length === 0) {
@@ -67,11 +98,7 @@ export async function handle(request: Request, env: Env, fetchWebhook: typeof fe
   return json(Array.isArray(body) ? replies : replies[0]);
 }
 
-async function dispatch(
-  message: JsonRpcRequest,
-  webhook: { webhookUrl: string; webhookSecret: string },
-  fetchWebhook: typeof fetch,
-): Promise<object | null> {
+async function dispatch(message: JsonRpcRequest, webhook: WebhookConfig, fetchWebhook: typeof fetch): Promise<object | null> {
   // A message without an id is a notification, and gets no reply.
   if (message.id === undefined) return null;
   const id = message.id;
@@ -96,7 +123,7 @@ async function dispatch(
 async function callTool(
   id: JsonRpcId,
   params: Record<string, unknown>,
-  webhook: { webhookUrl: string; webhookSecret: string },
+  webhook: WebhookConfig,
   fetchWebhook: typeof fetch,
 ): Promise<object> {
   if (params.name !== NOTIFY_TOOL.name) {

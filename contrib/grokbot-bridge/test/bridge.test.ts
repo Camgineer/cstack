@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { handle, type Env } from "../src/bridge.ts";
 
-const TOKEN = "path-token-for-tests";
+const TOKEN = "path-token-for-tests-0123456789abcdef";
 const SECRET = "webhook-secret-for-tests";
 
 type Received = { method: string; authorization: string | null; body: unknown };
@@ -29,11 +29,11 @@ function startWebhook(status = 200) {
   return { url: `http://localhost:${server.port}/hook`, received };
 }
 
-function startBridge(webhookUrl: string) {
-  const env: Env = { BRIDGE_TOKEN: TOKEN, GROKBOT_WEBHOOK_URL: webhookUrl, GROKBOT_WEBHOOK_SECRET: SECRET };
+function startBridge(webhookUrl: string, token = TOKEN) {
+  const env: Env = { BRIDGE_TOKEN: token, GROKBOT_WEBHOOK_URL: webhookUrl, GROKBOT_WEBHOOK_SECRET: SECRET };
   const server = Bun.serve({ port: 0, fetch: (request) => handle(request, env) });
   servers.push(server);
-  return `http://localhost:${server.port}/mcp/${TOKEN}`;
+  return `http://localhost:${server.port}/mcp/${token}`;
 }
 
 function rpc(endpoint: string, body: unknown) {
@@ -96,6 +96,26 @@ test("an empty message is rejected before the webhook is called", async () => {
   const reply = await (await rpc(endpoint, callNotify({ message: "   " }))).json();
 
   expect(reply.result).toEqual({ content: [{ type: "text", text: "message must be a non-empty string." }], isError: true });
+  expect(webhook.received).toEqual([]);
+});
+
+test("the bridge refuses to answer when the webhook URL is not https", async () => {
+  const endpoint = startBridge("http://example.com/hook");
+
+  const response = await rpc(endpoint, callNotify({ message: "hello" }));
+
+  expect(response.status).toBe(500);
+  expect(await response.text()).toBe("Bridge is not configured. GROKBOT_WEBHOOK_URL must be an https URL.");
+});
+
+test("the bridge refuses to answer when the path token is shorter than 32 characters", async () => {
+  const webhook = startWebhook();
+  const endpoint = startBridge(webhook.url, "short-token");
+
+  const response = await rpc(endpoint, callNotify({ message: "hello" }));
+
+  expect(response.status).toBe(500);
+  expect(await response.text()).toBe("Bridge is not configured. BRIDGE_TOKEN must be at least 32 characters.");
   expect(webhook.received).toEqual([]);
 });
 

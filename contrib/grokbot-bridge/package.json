@@ -1,0 +1,9 @@
+{
+  "name": "grokbot-bridge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun src/serve.ts",
+    "test": "bun test"
+  }
+}

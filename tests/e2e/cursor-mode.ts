@@ -12,7 +12,6 @@ const mode = `${pluginName}-mode`;
 const variable = mode.toUpperCase().replaceAll("-", "_");
 const timeoutMs = 300_000;
 
-// Records what each hook event received, beside the plugin's own hook, so a run shows which hooks fired.
 const observer = `#!/bin/sh
 f="$2/$1-$(date +%s)-$$"
 cat > "$f.json"
@@ -20,8 +19,7 @@ printf '%s=%s\\nCURSOR_PLUGIN_ROOT=%s\\nXDG_STATE_HOME=%s\\n' "$3" "$(printenv "
 case $1 in beforeSubmitPrompt) printf '{"continue":true}\\n' ;; *) printf '{}\\n' ;; esac
 `;
 
-// A skill list names the mode skill in every chat, so ask about the hook's sentence that the mode is on.
-const onOrOff = `If your context says that ${mode} is on for this project, reply with only the word ON. Otherwise reply with only the word OFF. Use no tools.`;
+const askWhetherHookSaidOn = `If your context says that ${mode} is on for this project, reply with the word ON and then the path of the mode script that context names, and nothing else. Otherwise reply with only the word OFF. Use no tools.`;
 
 type Check = { name: string; passed: boolean; evidence: string };
 
@@ -43,7 +41,6 @@ async function main() {
 
   const scratch = await mkdtemp(join(tmpdir(), "cursor-mode-"));
   // On macOS the person's ~/.zshenv set the variable in Cursor's hooks, so an empty ZDOTDIR keeps zsh from reading it.
-  // The real HOME stays, because Cursor keeps its sign-in there.
   const zdotdir = join(scratch, "zdotdir");
   const baseEnv: Record<string, string> = {};
   for (const [key, value] of Object.entries(process.env)) if (value !== undefined && key !== variable) baseEnv[key] = value;
@@ -76,26 +73,37 @@ async function main() {
     await writeFile(hookFile, JSON.stringify(hooks, null, 2));
     Bun.spawnSync(["git", "init", "-q", project]);
     await writeFile(join(project, "README.md"), "# Probe project\n");
-    // Recording a typed on or off runs the candidate's mode script, the only command these chats may run.
-    const modeScripts = [...new Set([plugin, await realpath(plugin)])].map((root) => `Shell(sh:*${root}/hooks/mode.sh*)`);
+    const candidateScripts = [...new Set([plugin, await realpath(plugin)])].map((root) => `${root}/hooks/mode.sh`);
+    const typedCommandAllowList = candidateScripts.map((script) => `Shell(sh:*${script}*)`);
     await mkdir(join(project, ".cursor"));
-    await writeFile(join(project, ".cursor/cli.json"), JSON.stringify({ permissions: { allow: modeScripts, deny: [] } }));
+    await writeFile(join(project, ".cursor/cli.json"), JSON.stringify({ permissions: { allow: typedCommandAllowList, deny: [] } }));
 
     async function run(prompt: string, env: Record<string, string>, readOnly: boolean) {
       const before = new Set(await readdir(log));
       const child = Bun.spawn(
-        [cursor, "-p", ...(readOnly ? ["--mode", "ask"] : []), "--trust", "--plugin-dir", plugin, "--model", model!, "--output-format", "json", prompt],
+        [cursor, "-p", ...(readOnly ? ["--mode", "ask"] : []), "--trust", "--plugin-dir", plugin, "--model", model!, "--output-format", "stream-json", prompt],
         { cwd: project, env: { ...baseEnv, ...env }, stdin: "ignore", stdout: "pipe", stderr: "pipe" },
       );
-      const timer = setTimeout(() => child.kill("SIGKILL"), timeoutMs);
+      let timer: Timer | undefined;
+      const timedOut = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          child.kill("SIGKILL");
+          reject(new Error(`Cursor gave no result within ${timeoutMs / 1000}s`));
+        }, timeoutMs);
+      });
       try {
-        const [code, stdout, stderr] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
+        const output = Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
+        const [code, stdout, stderr] = await Promise.race([output, timedOut]);
         assert.equal(code, 0, `Cursor exited with code ${code}: ${stderr || stdout}`);
-        const result: unknown = JSON.parse(stdout.trim().split("\n").at(-1) ?? "");
-        assert(typeof result === "object" && result !== null && "result" in result && typeof result.result === "string", `No final result in: ${stdout}`);
+        const events: Record<string, unknown>[] = stdout.trim().split("\n").map((line) => JSON.parse(line));
+        const result = events.findLast((event) => event.type === "result")?.result;
+        assert(typeof result === "string", `No final result in: ${stdout}`);
+        const tools = events
+          .filter((event) => event.type === "tool_call" && event.subtype === "started")
+          .map((event) => JSON.stringify(event.tool_call).slice(0, 200));
         const fired = (await readdir(log)).filter((name) => !before.has(name) && name.endsWith(".env")).sort();
         const hookEnv = await Promise.all(fired.map(async (name) => `${name.split("-")[0]}: ${(await readFile(join(log, name), "utf8")).trim().replaceAll("\n", ", ")}`));
-        return { reply: result.result.trim(), hooks: hookEnv };
+        return { reply: result.trim(), hooks: hookEnv, tools };
       } finally {
         clearTimeout(timer);
       }
@@ -108,14 +116,14 @@ async function main() {
 
     async function check(name: string, prompt: string, env: Record<string, string>, expect: (reply: string) => boolean | Promise<boolean>, readOnly = true) {
       try {
-        const { reply, hooks: fired } = await run(prompt, env, readOnly);
-        checks.push({ name, passed: await expect(reply), evidence: `reply ${JSON.stringify(reply.slice(0, 300))}; hooks [${fired.join("; ")}]; flag ${await flag()}` });
+        const { reply, hooks: fired, tools } = await run(prompt, env, readOnly);
+        checks.push({ name, passed: await expect(reply), evidence: `reply ${JSON.stringify(reply.slice(0, 300))}; tools [${tools.join("; ")}]; hooks [${fired.join("; ")}]; flag ${await flag()}` });
       } catch (error) {
         checks.push({ name, passed: false, evidence: error instanceof Error ? error.message : String(error) });
       }
     }
 
-    const isOn = (reply: string) => /^\W*ON\W*$/.test(reply);
+    const isOn = (reply: string) => /^\W*ON\b/.test(reply) && candidateScripts.some((script) => reply.includes(script));
     const isOff = (reply: string) => /^\W*OFF\W*$/.test(reply);
     await check("skills: the mode and setup skills load, principles stay hidden",
       `List the names of every skill you can use whose name starts with ${mode}, setup, or principle-, comma-separated, and nothing else. Use no tools.`,
@@ -123,12 +131,12 @@ async function main() {
     await check("plugin files: the agent reads a principle file from the plugin",
       `Read ${join(plugin, "skills/principle-prove-it-works/SKILL.md")} and reply with only the value of its name field.`,
       {}, (reply) => reply.includes("principle-prove-it-works"));
-    await check(`${variable}=on turns the mode on in a new chat`, onOrOff, { [variable]: "on" }, isOn);
-    await check("no variable and no recorded choice leave the mode off", onOrOff, {}, isOff);
+    await check(`${variable}=on turns the mode on in a new chat`, askWhetherHookSaidOn, { [variable]: "on" }, isOn);
+    await check("no variable and no recorded choice leave the mode off", askWhetherHookSaidOn, {}, isOff);
     await check(`typed /${mode} records on for the project`, `/${mode}`, {}, async () => (await flag()) === "on", false);
-    await check("the recorded choice turns the mode on in the next chat", onOrOff, {}, isOn);
+    await check("the recorded choice turns the mode on in the next chat", askWhetherHookSaidOn, {}, isOn);
     await check(`typed /${mode} off records off for the project`, `/${mode} off`, {}, async () => (await flag()) === "off", false);
-    await check(`a project turned off stays off under ${variable}=on`, onOrOff, { [variable]: "on" }, isOff);
+    await check(`a project turned off stays off under ${variable}=on`, askWhetherHookSaidOn, { [variable]: "on" }, isOff);
   } finally {
     await rm(scratch, { recursive: true, force: true });
   }
@@ -143,4 +151,5 @@ if (import.meta.main) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
   }
+  process.exit();
 }

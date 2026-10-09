@@ -175,9 +175,9 @@ bun run --cwd skills/cstack-mode/scripts test
 | `tests/integration/` | Real CLI processes, filesystem stores, Git worktrees, and bundled resource links | `test:integration` |
 | `tests/types/` | Compiler checks for valid and invalid watcher states | `typecheck` |
 | `tests/support/` | Shared test fixtures | Loaded by tests |
-| `tests/e2e/` | Real Codex plugin discovery and installation lifecycle in an isolated home | Explicitly authorized `test:e2e` run |
+| `tests/e2e/` | Real Codex plugin discovery and installation lifecycle in an isolated home, and the mode hooks in a real signed-in Cursor CLI | Explicitly authorized `test:e2e` and `test:e2e:cursor` runs |
 
-`test` runs the unit and integration suites. The end-to-end harness is a standalone command because it needs a Codex executable and permission to install the candidate. Automatic CI skips it.
+`test` runs the unit and integration suites. The end-to-end harnesses are standalone commands because each needs a host CLI and the person's permission. Automatic CI skips them.
 
 For a Linux x86_64 cloud environment with Node and npm available, use `bash tools/setup.sh` as the install script. It installs the pinned Bun runtime into `/workspace/.plugin-tools`, installs locked dependencies, and runs the checks. Add `/workspace/.plugin-tools/bin` to the environment PATH. Set `SETUP_TOOL_ROOT` to install somewhere else.
 
@@ -187,7 +187,13 @@ Plugin discovery can also be tested in a disposable, credential-free home. After
 bun run --cwd skills/cstack-mode/scripts test:e2e --allow-isolated-install --codex <binary>
 ```
 
-The flag guards the command; it does not grant permission. Verify host-specific behavior in each harness where you intend to use the plugin.
+The Cursor harness runs eight short read-only chats on the signed-in Cursor account, each in a throwaway project, and checks that the mode hooks turn the mode on and off. After explicit authorization to spend that account's usage, run:
+
+```bash
+bun run --cwd skills/cstack-mode/scripts test:e2e:cursor --allow-account-runs --model <model>
+```
+
+Each flag guards its command; it does not grant permission. Verify host-specific behavior in each harness where you intend to use the plugin.
 
 ## PStack updates
 

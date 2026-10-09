@@ -32,7 +32,6 @@ async function main() {
       cursor: { type: "string", default: "cursor-agent" },
       model: { type: "string" },
       "allow-account-runs": { type: "boolean", default: false },
-      "keep-home": { type: "boolean", default: false },
     },
   });
   if (!values["allow-account-runs"]) {
@@ -43,20 +42,19 @@ async function main() {
   assert(model, "Pass --model with a model the account allows; `cursor-agent --list-models` lists them");
 
   const scratch = await mkdtemp(join(tmpdir(), "cursor-mode-"));
-  // A home of its own hides the person's installed copy of the plugin and their shell startup files,
-  // which would otherwise load beside the candidate and set the variable in every hook.
-  const home = join(scratch, "home");
+  // On macOS the person's ~/.zshenv set the variable in Cursor's hooks, so an empty ZDOTDIR keeps zsh from reading it.
+  // The real HOME stays, because Cursor keeps its sign-in there.
+  const zdotdir = join(scratch, "zdotdir");
   const baseEnv: Record<string, string> = {};
   for (const [key, value] of Object.entries(process.env)) if (value !== undefined && key !== variable) baseEnv[key] = value;
-  if (!values["keep-home"]) Object.assign(baseEnv, { HOME: home, ZDOTDIR: home });
-  baseEnv.XDG_STATE_HOME = join(scratch, "state");
-  await mkdir(home);
+  Object.assign(baseEnv, { ZDOTDIR: zdotdir, XDG_STATE_HOME: join(scratch, "state") });
+  await mkdir(zdotdir);
 
   const status = Bun.spawnSync([cursor, "status"], { env: baseEnv, stdout: "pipe", stderr: "pipe" });
   const signedIn = `${status.stdout}${status.stderr}`;
   if (!/logged in/i.test(signedIn) || /not logged in/i.test(signedIn)) {
     await rm(scratch, { recursive: true, force: true });
-    throw new Error(`Cursor is not signed in${values["keep-home"] ? "" : " with a separate home; pass --keep-home to use the real one"}: ${signedIn.trim()}`);
+    throw new Error(`Cursor is not signed in: ${signedIn.trim()}`);
   }
   const version = Bun.spawnSync([cursor, "--version"], { env: baseEnv, stdout: "pipe" }).stdout.toString().trim();
 

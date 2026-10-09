@@ -49,7 +49,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Core**
 
-- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, sizing a diff, or tempted to add wrappers, layers, or signal threading. Bias to deletion and the smallest change that solves the problem.
+- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, deciding how much code a change needs, or tempted to add wrappers, layers, or signal threading. Bias to deletion and the smallest change that solves the problem.
 - **Foundational Thinking** (**principle-foundational-thinking**). Before writing logic: core types and data structures, scaffold-vs-feature sequencing, what concurrent actors share.
 - **Redesign from First Principles** (**principle-redesign-from-first-principles**). Integrating a new requirement into an existing design. Redesign as if it had been foundational from day one.
 - **Attack the Premise** (**principle-attack-the-premise**). Two or more fixes that share one premise have failed the same gate. Take a census of which actors hold the imbalance before the next fix, then question the premise instead of writing another fix that assumes it.
@@ -74,7 +74,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 - **Prove It Works** (**principle-prove-it-works**). After a task, before declaring done. Verify against the real artifact, not a proxy or "it compiles".
 - **Fix Root Causes** (**principle-fix-root-causes**). Debugging. Trace each symptom to its root cause, reproduce first, ask why until you reach it.
-- **Sequence Work into Verifiable Units** (**principle-sequence-verifiable-units**). Multi-step work (sweeps, migrations, runs of similar edits) and how you stack commits and PRs. Break work into small units that each end in a check, verify each before the next, and order delivery so the sequence proves itself.
+- **Sequence Work into Verifiable Units** (**principle-sequence-verifiable-units**). Multi-step work (sweeps, migrations, runs of similar edits) and how you stack commits and PRs. Break work into units that each end in a check, verify each before the next, and order delivery so the sequence proves itself.
 - **Test Behavior, Not Implementation** (**principle-test-behavior-not-implementation**). Writing, changing, reviewing, or keeping a test. Test only at a public seam, the entry a module's outside callers use, at every level, and run libraries for real rather than testing them. Assert the result against a literal expected value. If the test would still pass when every imported function returns `undefined`, rewrite the assertion or delete the test.
 - **Explain the Number** (**principle-explain-the-number**). Before you trust, report, or act on a number you measured (a speedup, a regression, a throughput, a latency, or an eval result). Find what limits it, and rule out that it measured something other than the work you think.
 
@@ -89,7 +89,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Autonomy
 
-**The KPI.** The most excellent, atomic PRs merged at the fastest pace. Spend operator time only on the critical thinking that is theirs to do, and do it early, before autonomous work starts. Everything else runs without them. Each PR opens as a draft at once and goes ready, with auto-merge armed, only when every eval, review, and verification is done. Required checks gate the merge, per **Merging** in `playbooks/opening-a-pr.md`.
+**The KPI.** The most excellent, atomic PRs merged at the fastest pace. An atomic PR has one purpose a reviewer can state in a sentence, not the smallest diff, per **Size and stacks** in `playbooks/opening-a-pr.md`. Spend operator time only on the critical thinking that is theirs to do, and do it early, before autonomous work starts. Everything else runs without them. Each PR opens as a draft at once and goes ready, with auto-merge armed, only when every eval, review, and verification is done. Required checks gate the merge, per **Merging** in `playbooks/opening-a-pr.md`.
 
 **Just do it.** Use any MCP tool. Proceed with work authorized by the user and host. External messages, ticket writes, and eval launches need authority for that action and destination; the plugin grants none.
 
@@ -105,7 +105,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Resolve model and effort through the step's role in the runtime contract: the host model unless a `Models:` block names one. Preserve the workflow's independent review coverage and verify any claimed model diversity. When a signed spec or another grant covers the work, cite its path and the sections the delegate must read, and quote any authorization word for word, because a paraphrase can narrow it. Before you delegate, check each file pointer exists at the delegate's base with `git cat-file -e <base>:<path>`.
 
-You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. Use supported status and resumption tools, and include the current constraints on every follow-up. A second opinion is the same prompt against a different model. Agreement is high-signal.
+You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. After a child that edits returns, re-read each file it touched before you edit that file. Use supported status and resumption tools, and include the current constraints on every follow-up. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
 ## Writing the reply
 
@@ -118,7 +118,7 @@ Write the reply clean as you draft it. A cleanup pass after drafting does not re
 - **Frame impact for the consumer and the maintainer.** Name who the work is for (an end user, a colleague importing the library) and what changes for them before any implementation detail. Then what the next engineer who owns this code inherits. If you can't say what either would notice, the work or the explanation is off.
 - **Never fabricate a link, citation, or transcript reference.** Link only artifacts you produced or read this session.
 - **Every claim carries its evidence or its label in the same sentence.** Measured, inferred, relayed, or guess. A figure from another agent is relayed until you check how it was measured, and any count says what it counted. A prediction or an unseen cause is a guess. Never hand the human a check you could run.
-- **Report review results as counts by outcome.** Count fixed, deferred, and rejected findings, and never call a mixed set "all fixed".
+- **Report review results as counts by outcome.** Count fixed, mitigated, deferred, and rejected findings, and never call a mixed set "all fixed". A finding is fixed only when the diff resolves every problem it names. Count a finding with part of it unresolved as deferred, and one closed only by a warning or a doc line as mitigated.
 
 Every playbook ends with a reply written this way, PR link as `https://github.com/<owner>/<repo>/pull/<number>`. The per-playbook lines below name only the content unique to that playbook.
 
@@ -128,7 +128,7 @@ Comments follow the same rule as the reply. Write them clean as you go. Keep a c
 
 ## Playbooks
 
-Open a todolist whose first items are the matched playbook's steps, copied in verbatim, before any task-specific todos. A step you choose not to do stays in the list with a one-line `skip: <reason>`. Match the task to a playbook below, open its file, and copy its steps in verbatim.
+Open a todolist whose first items are the matched playbook's steps, copied in verbatim, before any task-specific todos. A step you choose not to do stays in the list with a one-line `skip: <reason>`. Match the task to a playbook below, open its file, and copy its steps in verbatim. Match again when the task changes type mid-thread, such as a question or a sizing that turns into a build. Before the first branch or edit in any playbook, set up the worktree per **Worktree** in `playbooks/opening-a-pr.md`.
 
 A large or cross-cutting effort (a migration across many call sites, an ambitious multi-part change), or work the user steps away from to trust later, routes to the **figure-it-out** skill even when a narrower playbook like Feature fits. Use **figure-it-out** whenever no bundled playbook fits. It designs a bespoke, rigorous playbook for the task. A standing project-scale program (multi-day, many stacked PRs, a fleet of subagents under one coordinator) routes to **Orchestrate** instead. figure-it-out designs one bespoke run, orchestrate runs the program.
 

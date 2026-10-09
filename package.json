@@ -1,18 +1,16 @@
 {
   "name": "cstack",
-  "displayName": "CStack",
   "version": "0.45.0",
   "description": "Engineering workflows for coding agents: investigate, design, build, verify, and review. Adapted from PStack by Lauren Tan (poteto).",
-  "author": {
-    "name": "CStack contributors"
-  },
   "license": "MIT",
-  "keywords": [
-    "workflow",
-    "principles",
-    "review",
-    "planning",
-    "subagents",
-    "verification"
+  "bin": {
+    "cstack-intent": "hooks/intent-install.sh"
+  },
+  "files": [
+    "agents",
+    "hooks",
+    "skills",
+    "tools/metadata.json",
+    "!**/node_modules"
   ]
 }

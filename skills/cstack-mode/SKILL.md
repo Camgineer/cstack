@@ -49,7 +49,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Core**
 
-- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, deciding how much code a change needs, or tempted to add wrappers, layers, or signal threading. Bias to deletion and the smallest change that solves the problem.
+- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, deciding how much code a change needs, or tempted to add wrappers, layers, or signal threading. Bias to deletion and the smallest change that solves the problem. For a bug, the problem is its whole class.
 - **Foundational Thinking** (**principle-foundational-thinking**). Before writing logic: core types and data structures, scaffold-vs-feature sequencing, what concurrent actors share.
 - **Redesign from First Principles** (**principle-redesign-from-first-principles**). Integrating a new requirement into an existing design. Redesign as if it had been foundational from day one.
 - **Attack the Premise** (**principle-attack-the-premise**). Two or more fixes that share one premise have failed the same gate. Take a census of which actors hold the imbalance before the next fix, then question the premise instead of writing another fix that assumes it.
@@ -73,7 +73,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 **Verification**
 
 - **Prove It Works** (**principle-prove-it-works**). After a task, before declaring done. Verify against the real artifact, not a proxy or "it compiles".
-- **Fix Root Causes** (**principle-fix-root-causes**). Debugging. Trace each symptom to its root cause, reproduce first, ask why until you reach it.
+- **Fix Root Causes** (**principle-fix-root-causes**). Fixing any defect, whether reported, found mid-task, or flagged by a check or reviewer. Reproduce, ask why until you reach the root cause, then name the class of bug and fix the class once at the most upstream chokepoint every instance passes through, inside the scope the workflow allows.
 - **Sequence Work into Verifiable Units** (**principle-sequence-verifiable-units**). Multi-step work (sweeps, migrations, runs of similar edits) and how you stack commits and PRs. Break work into units that each end in a check, verify each before the next, and order delivery so the sequence proves itself.
 - **Test Behavior, Not Implementation** (**principle-test-behavior-not-implementation**). Writing, changing, reviewing, or keeping a test. Test only at a public seam, the entry a module's outside callers use, at every level, and run libraries for real rather than testing them. Assert the result against a literal expected value. If the test would still pass when every imported function returns `undefined`, rewrite the assertion or delete the test.
 - **Explain the Number** (**principle-explain-the-number**). Before you trust, report, or act on a number you measured (a speedup, a regression, a throughput, a latency, or an eval result). Find what limits it, and rule out that it measured something other than the work you think.

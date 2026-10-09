@@ -384,6 +384,14 @@ export interface RollupPage {
   readonly checks: readonly Check[];
   readonly endCursor: string | null;
 }
+export class WatcherQueryError extends Error {
+  readonly failure: QueryFailure;
+  constructor(failure: QueryFailure) {
+    super(failure.detail);
+    this.name = "WatcherQueryError";
+    this.failure = failure;
+  }
+}
 export interface GitHubReader {
   originRepo(): Promise<Repository | null>;
   currentPr(pr: PrNumber | null): Promise<PrContext>;

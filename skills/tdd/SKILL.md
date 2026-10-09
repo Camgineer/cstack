@@ -18,7 +18,7 @@ Do not force a test when it would be impractical. If the available test would re
 2. **Choose the narrowest public seam that reaches the bug path.** Prefer a test already used for that codepath. If no practical test path is obvious, do not create one from scratch just to satisfy the workflow.
 3. **Write the failing test first.** Add the smallest focused test that would have caught the bug, at a public seam per the **test-behavior-not-implementation** principle skill. The test should encode intended behavior, not mirror the current implementation.
 4. **Run the new test before fixing.** Confirm it fails for the intended reason. If it passes or fails for an unrelated reason, correct the test or reproduction before editing the implementation.
-5. **Fix the bug.** Make the smallest production change that satisfies the intended behavior while preserving nearby contracts.
+5. **Fix the bug.** Fix its class at the chokepoint per the **fix-root-causes** principle skill, with the smallest production change that satisfies the intended behavior while preserving every contract outside the class.
 6. **Rerun the regression test.** Confirm the test now passes.
 
 ## Test-First Features
@@ -37,7 +37,7 @@ Prefer no new test over a bad test. A bad test is one that mostly tests mocks, e
 - Do not weaken existing assertions unless the expected behavior has genuinely changed and the reason is clear.
 - Keep the regression test focused on the bug. Avoid broad fixture churn or unrelated coverage expansion.
 - If the bug is flaky, make the test deterministic where possible and document the signal being locked down.
-- If the bug exposes a broader class of failures, first land the focused regression path, then consider additional sibling coverage.
+- When the fix closes a class of bug, add one case for a second instance of the class beside the focused regression.
 
 ## Final Response
 

@@ -31,6 +31,16 @@ jobs:
           SETUP_TOOL_ROOT: ${{ runner.temp }}/plugin-tools
           SETUP_BUN_CACHE: ${{ runner.temp }}/bun-cache
         run: bash tools/setup.sh
+      - name: Run tests in contrib packages
+        run: |
+          bun="${{ runner.temp }}/plugin-tools/bin/bun"
+          for dir in contrib/*/; do
+            [[ -f "$dir/package.json" ]] || continue
+            if [[ -f "$dir/bun.lock" ]]; then
+              "$bun" install --cwd "$dir" --frozen-lockfile --ignore-scripts
+            fi
+            (cd "$dir" && "$bun" test)
+          done
       - name: Check that the PR title names a release level and leaves the version alone
         if: github.event_name == 'pull_request'
         env:

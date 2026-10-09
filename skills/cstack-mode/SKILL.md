@@ -12,7 +12,7 @@ Read [the runtime contract](references/runtime.md) before executing this workflo
 
 When the user invokes this skill with the argument `off`, stop applying it and reply that the mode is off. Otherwise the mode stays on for the rest of the session.
 
-On hosts that run the plugin's hooks, the user's typed command for this skill also keeps the mode on for the project in later sessions, and the argument `off` keeps it off. The host note says whether the mode also survives `/clear` and compaction. Wherever the plugin's hooks run, an environment variable set to `on` turns the mode on in every project the user has not turned off. Its name is `<plugin>-mode` in capitals, with `_` for `-`. If the user asks in plain words to turn the mode off, run `sh <plugin-root>/hooks/mode.sh off` from the project directory.
+On hosts that run the plugin's hooks, the user's typed command for this skill also keeps the mode on for the project in later sessions, and the argument `off` keeps it off. The host note says whether the mode also survives `/clear` and compaction. Wherever the plugin's hooks run, an environment variable set to `on` turns the mode on in every project the user has not turned off. Its name is `<plugin>-mode` in capitals, with `_` for `-`. If the user asks in plain words to turn the mode off, run `sh <plugin-root>/hooks/mode.sh off` from the project directory. When the host note says a typed command may go unrecorded, and the user's message is this skill's command, run `sh <plugin-root>/hooks/mode.sh on`, or `off` when they passed `off`.
 
 ## Non-negotiables
 

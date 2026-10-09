@@ -5,7 +5,7 @@
 1. When the change is one or two files with an obvious approach, skip the plan. Say so and stop.
 2. Settle open questions by prototype before you write. Run `playbooks/prototype.md` for each. Keep the branch, the SHA, and the screenshots for Appendix A. Ask the operator only about a product or preference call that no run can settle. Give options (the **never-block-on-the-human** principle skill).
 3. Explore in subagents with the complete bundled CStack persona per the runtime contract and a supported model choice per the Subagents section (the **guard-the-context-window** principle skill). Each returns file pointers, conventions, test commands, and entry points. No inlined dumps.
-4. Copy the skeleton below into the plan file and fill every placeholder. Unless the operator names a path, use an owned workspace path outside tracked source and report it. Keep every heading and every sub-block in the order shown. One section per PR. One PR is one change with its own evidence (the **sequence-verifiable-units** principle skill). Name the execution playbook in **How to read this**. Pick between `playbooks/autopilot-full.md` and `playbooks/autopilot-stack.md` per the rule at the end of `playbooks/autopilot-stack.md`. A standing program takes `playbooks/orchestrate.md`.
+4. Copy the skeleton below into the plan file and fill every placeholder. Unless the operator names a path, use an owned workspace path outside tracked source and report it. Keep every heading and every sub-block in the order shown. One section per PR. One PR is one purpose with its own evidence, per **Size and stacks** in `playbooks/opening-a-pr.md`. Name the execution playbook in **How to read this**. Pick between `playbooks/autopilot-full.md` and `playbooks/autopilot-stack.md` per the rule at the end of `playbooks/autopilot-stack.md`. A standing program takes `playbooks/orchestrate.md`.
 5. Write under `technical-writing` in full, then `simple-as-prose`. The body is one Diátaxis mode, how-to. Appendices hold explanation and reference. Each heading states the task or the finding. No long dashes. No mid-sentence colons.
 6. Resolve the installed plugin root, then run `bun "<resolved-plugin-root>/skills/cstack-mode/scripts/check-plan.ts" "<plan.md>"` and fix every line it prints (the **encode-lessons-in-structure** principle skill).
 7. Hand back. Post the plan path and the script's output, then stop. Execution starts on the operator's explicit go, under the execution playbook the plan names.
@@ -46,7 +46,7 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
   - [ ] <PR id> and <PR id> are independent and first. Both branch from `main`.
   - [ ] <PR id> after <PR id>.
 - [ ] Hold the file boundaries. <PR id or class> touches only `<glob>`.
-- [ ] Land each registry that several PRs extend, such as a table, an enum, or an index, in its full shape in the lowest PR, so each child fills only its own rows.
+- [ ] Land each registry that several PRs extend, such as a table, an enum, or an index, in the lowest PR with its first row and that row's caller, so each child adds only its own rows.
 - [ ] Hold the review gate. <PR ids> change an interaction. They wait for the operator's review in chat with screenshots and a video before merge.
 
 ### PR mechanics, for every PR

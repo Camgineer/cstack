@@ -18,7 +18,7 @@ Preserve agent inputs, license notices, and source provenance. Keep task reports
 
 ## Harness neutrality
 
-This plugin runs in Claude Code, Codex, and Cursor from one core. Keep `skills/` and `agents/` free of harness tool names, host paths, and host-only syntax. Name a capability from the [runtime contract](skills/cstack-mode/references/runtime.md) instead. Put each host's tool mapping in its host note under `skills/cstack-mode/references/hosts/`. A host note's claim about what a host can or cannot do is a snapshot. Check it against the host's current docs before you design around it, above all a "cannot" or "has no" claim, and link the doc page that each claim you add or change rests on.
+This plugin runs in Claude Code, Codex, Cursor, and Intent from one core. Keep `skills/` and `agents/` free of harness tool names, host paths, and host-only syntax. Name a capability from the [runtime contract](skills/cstack-mode/references/runtime.md) instead. Put each host's tool mapping in its host note under `skills/cstack-mode/references/hosts/`. A host note's claim about what a host can or cannot do is a snapshot. Check it against the host's current docs before you design around it, above all a "cannot" or "has no" claim, and link the doc page that each claim you add or change rests on. Check the claim against the page's own text, such as its raw `.md` form where the site serves one, not against a summarizing fetch. When a claim rests on a host's source rather than its docs, take it from the code path that applies it, such as a loader's precedence or its handling of imports. Link that source at the host release you tested against, and label the claim as read from source. When you add or change a host note, check the sibling host notes, the setup skill, and the README for cross-host claims and shared files that the change contradicts.
 
 Edit plugin metadata in `tools/metadata.json` and invocation policy in `SKILL.md` frontmatter. Then run `bun run --cwd skills/cstack-mode/scripts sync:hosts` to regenerate every host manifest and each `agents/openai.yaml`. CI fails when generated files drift.
 
@@ -32,7 +32,7 @@ Keep sources that need one vendor's APIs in `contrib/`, which no manifest loads.
 
 ## Dogfooding
 
-This repository is the plugin's source and also one of its users. Build every new mechanism, such as a check, gate, or script, to ship with the plugin, unless it only guards this repository's own release or metadata. Then install it here the same way a user would. When a decision offers a mechanism, state whether each option reaches every user of the plugin or only this repository.
+This repository is the plugin's source and also one of its users. Build every new mechanism, such as a check, gate, or script, to ship with the plugin, unless it only guards this repository's own release or metadata. Then install it here the same way a user would. A PR that adds a host also runs the setup skill for that host in this repository, commits the result, and proves the PR's host behavior against that setup. When a decision offers a mechanism, state whether each option reaches every user of the plugin or only this repository. In this repository, after you invoke a skill or reach a playbook path, read the same path under this checkout's `skills/` and follow it where the two differ, since an installed copy can lag several releases. This also covers the installed playbook paths that tick prompts name.
 
 ## Versioning
 
@@ -50,4 +50,4 @@ When importing an upstream update, compare the recorded PStack baseline, the tar
 
 ## Test scope
 
-Keep tests that protect a concrete failure in supported behavior, using observable results at the relevant boundary. Prefer real CLI, filesystem, and Git fixtures where practical. Verify agent workflow quality through realistic task execution. Reconsider a test when it only repeats implementation details or checks document wording. To prove a change to Codex hook behavior, extend the Codex harness in `tests/e2e/` and run `test:e2e` once the user authorizes it, rather than building a one-off probe.
+Keep tests that protect a concrete failure in supported behavior. Write each one at a public seam per [Test Behavior, Not Implementation](skills/principle-test-behavior-not-implementation/SKILL.md). Prefer real CLI, filesystem, and Git fixtures where practical. Verify agent workflow quality through realistic task execution. Reconsider a test when it only repeats implementation details or checks document wording. To prove a change to Codex hook behavior, extend the Codex harness in `tests/e2e/` and run `test:e2e` once the user authorizes it, rather than building a one-off probe.

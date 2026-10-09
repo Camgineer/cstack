@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { parseArgs } from "node:util";
@@ -78,9 +78,10 @@ async function main() {
     await writeFile(hookFile, JSON.stringify(hooks, null, 2));
     Bun.spawnSync(["git", "init", "-q", project]);
     await writeFile(join(project, "README.md"), "# Probe project\n");
-    // Recording a typed on or off runs the plugin's mode script, the only command these chats may run.
+    // Recording a typed on or off runs the candidate's mode script, the only command these chats may run.
+    const modeScripts = [...new Set([plugin, await realpath(plugin)])].map((root) => `Shell(sh:*${root}/hooks/mode.sh*)`);
     await mkdir(join(project, ".cursor"));
-    await writeFile(join(project, ".cursor/cli.json"), JSON.stringify({ permissions: { allow: ["Shell(sh)"], deny: [] } }));
+    await writeFile(join(project, ".cursor/cli.json"), JSON.stringify({ permissions: { allow: modeScripts, deny: [] } }));
 
     async function run(prompt: string, env: Record<string, string>, readOnly: boolean) {
       const before = new Set(await readdir(log));

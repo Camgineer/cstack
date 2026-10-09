@@ -148,7 +148,7 @@ function parseUser(input: unknown): User {
 
 Use `safeParse` when failure is an expected branch. Use the equivalent inference helper when the repository uses another schema library. Do not add a new schema dependency for one guard. This rule prefers the schema system the codebase already trusts.
 
-When the type comes first, such as a shared contract type, annotate the schema with the type it proves. The compiler then rejects a schema that proves less than the type. Remove `role` from the schema below and the assignment fails to compile.
+When the type comes first, such as a shared contract type, annotate the schema with the type it proves. The compiler then rejects a schema that proves less than the type, unless a field is `z.any()`. Remove `role` from the schema below and the assignment fails to compile.
 
 ```ts
 type User = { id: string; role: "admin" | "member" };
@@ -165,12 +165,12 @@ Every `as` is a potential runtime crash. Cast only after the type system has ver
 
 ```ts
 // Don't
-const user = data as User;
+const account = data as Account;
 
 // Do. With no schema library, build the value from checked fields, so no cast remains.
-type User = { id: string; name: string };
+type Account = { id: string; name: string };
 
-function parseUser(data: unknown): User {
+function parseAccount(data: unknown): Account {
   if (typeof data !== "object" || data === null || !("id" in data) || !("name" in data)) {
     throw new Error("expected a user object");
   }
@@ -182,7 +182,7 @@ function parseUser(data: unknown): User {
 }
 ```
 
-The compiler checks every field of the returned value. Drop the `name` check and the return no longer compiles. A cast after a partial check compiles either way.
+The compiler checks every field of the returned value. Drop either `name` check and the return no longer compiles. A cast after a partial check compiles either way. This narrowing needs TypeScript 4.9 or later.
 
 When refactoring an `as` out of existing code, identify why TypeScript can't infer:
 

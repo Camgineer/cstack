@@ -1,0 +1,20 @@
+{
+  "name": "claude-projects-cli",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "bin": {
+    "claude-projects-cli": "src/main.ts"
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit --project tsconfig.json"
+  },
+  "dependencies": {
+    "playwright-core": "1.63.0"
+  },
+  "devDependencies": {
+    "bun-types": "1.4.2",
+    "typescript": "7.0.2"
+  }
+}

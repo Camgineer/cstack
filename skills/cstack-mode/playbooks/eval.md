@@ -14,7 +14,7 @@
 
 **Steps:**
 
-1. **Frame.** State what variant is under test and what behavior counts as success. Write the rubric (3-6 concrete criteria) for the judge only. Hold it back from candidates.
+1. **Frame.** State what variant is under test and what behavior counts as success. Write the rubric (3-6 concrete criteria) for the judge only. Hold it back from candidates. When the variant restricts how work is done, make one criterion what the restriction could cost, scored mechanically where possible, such as planted defects the output must catch.
 2. **Set up sanitized environments.** Per-candidate working dir with the variant in place. Give each candidate its own scratch and output paths too. Confirm each candidate has every capability the variant uses, such as **Delegate**. When one is missing, run candidates as top-level sessions or mark that step untested. Plant any context an organic task would have: a project skeleton, the skills the candidate would naturally read. Before the first run, deny each candidate every outward capability (publishing, sending files, messaging, every connector), and give it its own config and a throwaway git identity, because a headless candidate inherits the parent's tools and accounts. After the runs, list any outward side effects that still happened and report them to the user.
 3. **Author one organic prompt.** What a user would type. No leakage of what's being measured.
 4. **Spawn N parallel candidates** on different models per the **arena** skill's Phase B. Each works in its own sanitized dir. Same prompt to each.

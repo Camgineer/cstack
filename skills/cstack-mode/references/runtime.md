@@ -5,6 +5,7 @@ Read this contract before running a workflow from this plugin. Then read the hos
 - Claude Code: [hosts/claude-code.md](hosts/claude-code.md)
 - Codex: [hosts/codex.md](hosts/codex.md)
 - Cursor: [hosts/cursor.md](hosts/cursor.md)
+- Intent: [hosts/intent.md](hosts/intent.md)
 
 Identify the harness from your own tool list and system prompt. In the host notes, `<plugin>` stands for the `name` field of the plugin manifest you were loaded from. When none of the notes fits, apply this contract alone and inspect the tools you have.
 

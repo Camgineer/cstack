@@ -1,6 +1,6 @@
 # CStack
 
-This is a portable engineering toolkit for coding agents. It runs the same workflows in Claude Code, Codex, and Cursor: investigate, design, build, verify, and review. It builds on [PStack by Lauren Tan (poteto)](https://github.com/cursor/plugins/tree/main/pstack) and ships 55 skills.
+This is a portable engineering toolkit for coding agents. It runs the same workflows in Claude Code, Codex, Cursor, and Intent: investigate, design, build, verify, and review. It builds on [PStack by Lauren Tan (poteto)](https://github.com/cursor/plugins/tree/main/pstack) and ships 55 skills.
 
 The toolkit holds process only. It has nothing about who uses it or which repositories they work in. Keep personal context in your agent's own memory.
 
@@ -26,6 +26,14 @@ codex plugin add PLUGIN@PLUGIN
 
 **Cursor.** Add the repository through Cursor's plugin settings. Cursor reads `.cursor-plugin/plugin.json` at the repository root.
 
+**Intent.** Intent loads no plugins, so this command fetches the latest plugin, keeps a copy in `~/.local/share/cstack`, and links its skills and personas into Intent:
+
+```bash
+npx -y github:OWNER/REPO
+```
+
+Run it again to update. Each run replaces the copy, so new and removed skills follow. To work on the plugin itself, run `sh hooks/intent-install.sh` from a clone instead, and Intent links straight to the clone. Intent support is new: the install is checked against Intent's daemon, but no agent session has run under it yet. On the first run, the command also adds the rule that keeps the mode on to Intent's Settings, under Agent Behavior. When it can't reach Intent, it prints the rule for you to paste there. To pick models for the plugin's delegated steps, add a `Models:` block to that rule. Leave the plugin's specialists alone in Intent's specialist editor, which saves its changes into the plugin's files, where the next update replaces them.
+
 On a new computer, run the same commands. Every skill, playbook, and persona comes back with the plugin.
 
 ## Get started
@@ -47,9 +55,28 @@ and verify the exported amounts. Prepare a PR for review.
 
 CStack Mode picks a playbook and loads the skills the task needs. It reports any tool or model the workflow needs that your harness lacks.
 
-In Claude Code and Codex, the mode stays on for the project once you invoke it, including in new sessions and after the context compacts. Run the same command with `off` to turn it off. Codex asks you to review and trust the plugin's hooks first. In Cursor, it stays on in new chats, but can lapse when a long chat compacts.
+In Claude Code and Codex, the mode stays on for the project once you invoke it, including in new sessions and after the context compacts. Run the same command with `off` to turn it off. Codex asks you to review and trust the plugin's hooks first. In Cursor, it stays on in new chats, but can lapse when a long chat compacts. To keep it on every turn, pick `cstack-mode` from the `/` menu with Option+Enter on Mac or Alt+Enter on Windows instead of Enter. That makes it a [Custom Mode](https://cursor.com/docs/agent/prompting#custom-modes), which stays in context until you exit it. Cursor offers Custom Modes in the Agents Window and the CLI.
 
-To turn the mode on in every project, set `CSTACK_MODE=on` in the environment your harness starts from, such as your shell profile or a cloud environment's settings. Claude Code, Codex, and Cursor all read it when a session starts. Unset it to stop. A project you turn off with the `off` command stays off either way.
+To turn the mode on in every project, set `CSTACK_MODE=on` in the environment your harness starts from, such as your shell profile or a cloud environment's settings. Claude Code, Codex, and Cursor all read it when a session starts. Intent ignores it and uses the rule from its install step instead. Unset it to stop. A project you turn off with the `off` command stays off either way.
+
+## Write a prompt
+
+A prompt states what you want and how to tell when it is done. The playbook supplies the steps, so a few plain sentences work better than a step-by-step plan. Put in:
+
+- **The goal.** Say what is wrong, or what you want.
+- **The done check.** Name something that can pass or fail. "Make it better" and "work on it for an hour" are not checks.
+- **The proof to show.** Ask for the real command output, a video of the flow, the stored value, or a before and after number.
+- **What you already know.** Add a symptom, a repro step, a log line, or a link.
+- **The real constraints.** "Reproduce it first", "don't change any code yet", "no behavior change", and "let me review the design first" each change what the agent does.
+
+Leave out the how and the list of skills. The playbook picks both, and a hand-written order drops steps it would keep. Hold back your theory of the cause until the agent restates the problem, because a stated guess narrows its search. For a long thread or a vague report, make the restatement the first step:
+
+```text
+Use cstack-mode to read this thread and restate the underlying issue
+in plain words. Don't change any code yet.
+```
+
+For a change you will leave running, the `align` skill asks you for the goal, the done check, and the proof, and records them in a signed spec. Before you step away, say so, for example "going to bed". The agent then keeps going, and it still pauses before irreversible steps such as a deploy or a force-push.
 
 ## Learn from every PR
 
@@ -113,11 +140,11 @@ flowchart LR
 | Path | Role |
 | --- | --- |
 | `skills/` | The core. Skills in the shared `SKILL.md` format, with no harness tool names. |
-| `agents/` | Persona prompts. Claude Code and Cursor register them as subagents. Codex receives them as instructions. |
+| `agents/` | Persona prompts. Claude Code and Cursor register them as subagents. Codex receives them as instructions. Intent lists them as specialists. |
 | `skills/cstack-mode/references/runtime.md` | The runtime contract. Workflows name capabilities such as "delegate" and "ask the user". |
 | `skills/cstack-mode/references/hosts/` | One host note per harness. Each maps those capabilities to native tools. |
 | `.claude-plugin/`, `.codex-plugin/`, `.agents/plugins/`, `.cursor-plugin/` | Generated manifests. Never edit them by hand. |
-| `hooks/` | Hooks that keep `cstack-mode` on across sessions. Claude Code and Codex load `hooks/hooks.json`, and Cursor loads `hooks/cursor.json`. |
+| `hooks/` | Hooks that keep `cstack-mode` on across sessions. Claude Code and Codex load `hooks/hooks.json`, and Cursor loads `hooks/cursor.json`. `intent-install.sh` links the plugin into Intent, which runs no hooks, and is the command `npx` runs. |
 | `tools/metadata.json` | The single source for the plugin's name, version, and description. |
 | `contrib/` | Optional sources that need one vendor's automation APIs. No manifest loads them. |
 
@@ -166,7 +193,7 @@ The flag guards the command; it does not grant permission. Verify host-specific 
 
 PStack updates arrive through reviewed, agent-assisted imports. An agent compares upstream changes with the recorded baseline, adapts useful changes to the harness-neutral core, and verifies the result in a PR. The plugin can change upstream structure and behavior to suit its own design.
 
-The imported baseline is PStack 0.15.9 at `cursor/plugins@e43c7ee26e0038c6c1fa8380dd34ce86ff94cb2a`. The update from 0.15.5 took `correct`, `benchmark-checklist`, `principle-explain-the-number`, and the agent-friendly `architect` red flags. It left out the performance mantras, the PR heading rewrite, `/goal` and `/loop` scheduling, fresh subagents by default, the rule against reply tokens, the zod-first boundary parsing in `typescript-best-practices`, and the removal of source lines from `technical-writing`. The original import of 0.15.5 remains in Git history at `c31f7ace991843f5576398ad025969465251192c`.
+The imported baseline is PStack 0.15.13 at `cursor/plugins@2cbf58508f40de470d7490b55c51d71241928fa2`. The update from 0.15.9 took the guide's advice on writing a prompt and Cursor's Custom Modes for keeping the mode on. It left out the `poteto-help` skill, because in a pilot the plugin's agent already answered help questions well from the installed skill files, and a typed-only skill would break the rule that hides only principle skills. It also left out the guide pages, because this README is the repository's only human guide. Of the guide's advice, it left out cloud subagents and `/in-cloud`, Cursor Projects, typing `/typescript-best-practices`, and traits for an agent-friendly control CLI. The update from 0.15.5 took `correct`, `benchmark-checklist`, `principle-explain-the-number`, and the agent-friendly `architect` red flags. It left out the performance mantras, the PR heading rewrite, `/goal` and `/loop` scheduling, fresh subagents by default, the rule against reply tokens, the zod-first boundary parsing in `typescript-best-practices`, and the removal of source lines from `technical-writing`. The original import of 0.15.5 remains in Git history at `c31f7ace991843f5576398ad025969465251192c`.
 
 ## License
 

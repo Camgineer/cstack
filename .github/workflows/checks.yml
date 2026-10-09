@@ -36,3 +36,10 @@ jobs:
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: '"${{ runner.temp }}/plugin-tools/bin/bun" tools/version.ts check --base HEAD^1 --title "$TITLE"'
+      - name: Run contrib package tests
+        run: |
+          bun="${{ runner.temp }}/plugin-tools/bin/bun"
+          for manifest in contrib/*/package.json; do
+            dir="$(dirname "$manifest")"
+            (cd "$dir" && "$bun" install --frozen-lockfile --ignore-scripts && "$bun" test)
+          done

@@ -36,9 +36,7 @@ jobs:
           bun="${{ runner.temp }}/plugin-tools/bin/bun"
           for dir in contrib/*/; do
             [[ -f "$dir/package.json" ]] || continue
-            if [[ -f "$dir/bun.lock" ]]; then
-              "$bun" install --cwd "$dir" --frozen-lockfile --ignore-scripts
-            fi
+            "$bun" install --cwd "$dir" --frozen-lockfile --ignore-scripts
             (cd "$dir" && "$bun" test)
           done
       - name: Check that the PR title names a release level and leaves the version alone

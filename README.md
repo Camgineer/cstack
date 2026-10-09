@@ -171,7 +171,7 @@ bun run --cwd skills/cstack-mode/scripts test
 
 | Location | Category | Execution |
 | --- | --- | --- |
-| `tests/unit/` | Watcher policy, parsing, rendering, and query logic with controlled readers | `test:unit` |
+| `tests/unit/` | The watcher through `main`, with a fake GitHub reader and a fake clock | `test:unit` |
 | `tests/integration/` | Real CLI processes, filesystem stores, Git worktrees, and bundled resource links | `test:integration` |
 | `tests/types/` | Compiler checks for valid and invalid watcher states | `typecheck` |
 | `tests/support/` | Shared test fixtures | Loaded by tests |

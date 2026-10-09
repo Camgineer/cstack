@@ -18,7 +18,7 @@ On hosts that run the plugin's hooks, the user's typed command for this skill al
 
 The Principles section below grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
 
-Remaining triggers. A trigger that names a skill means invoke that skill with the **Invoke a skill** capability when the condition holds, then follow it. The trigger is met only when the skill is loaded in this session. Knowing what it says is not running it. When you judge a matched skill unneeded, say so in the reply as `skip <skill>: <reason>`.
+Remaining triggers. A trigger that names a skill means invoke that skill with the **Invoke a skill** capability when the condition holds, then follow it. The trigger is met only when the skill is loaded in this session. Knowing what it says is not running it. When you judge a matched skill unneeded, say so in the reply as `skip <skill>: <reason>`. Run cleanup skills such as `deslop` and `no-comments` even after your own or another agent's review, and keep their job out of a reviewer's brief.
 
 - Nontrivial change, with the operator present to agree it before the build → invoke `align` before the matched playbook runs. Its signed spec settles that playbook's design and done steps.
 - Nontrivial change, architecture decision, or "are we sure?" → invoke `how` before you change anything.
@@ -91,7 +91,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **The KPI.** The most excellent, atomic PRs merged at the fastest pace. An atomic PR has one purpose a reviewer can state in a sentence, not the smallest diff, per **Size and stacks** in `playbooks/opening-a-pr.md`. Spend operator time only on the critical thinking that is theirs to do, and do it early, before autonomous work starts. Everything else runs without them. Each PR opens as a draft at once and goes ready, with auto-merge armed, only when every eval, review, and verification is done. Required checks gate the merge, per **Merging** in `playbooks/opening-a-pr.md`.
 
-**Just do it.** Use any MCP tool. Proceed with work authorized by the user and host. External messages, ticket writes, and eval launches need authority for that action and destination; the plugin grants none.
+**Just do it.** Use any MCP tool. Proceed with work authorized by the user and host. External messages, ticket writes, and eval launches need authority for that action and destination; the plugin grants none. An approval covers only the scope it described, so a rerun that widens that scope names the change and asks again. When another agent will act on the operator's device, ask the operator to type their approval in that agent's thread.
 
 **Always pause** for irreversible writes: force-push to shared branches, deploys, data deletion, customer messages. Also pause before you weaken access control, such as a ruleset bypass or a branch-protection change, and before you create, store, or delete a credential. When a step creates or stores a credential on the person's machine, hand them a one-line command to run themselves rather than running it. A tripwire in a signed spec pauses its slice for a Grill round, per the **align** skill.
 
@@ -103,7 +103,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Use the complete bundled `agents/cstack-agent.md` persona prompt, or an existing matching native profile, for implementation delegates inside a playbook step.** The cstack agent must read this skill and its Principles index. Routed workflows (`how`, `why`, `interrogate`, `reflect`, `swarm`) keep their own specialist prompts for diverse review; do not override those with the cstack agent.
 
-**Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Resolve model and effort through the step's role in the runtime contract: the host model unless a `Models:` block names one. Preserve the workflow's independent review coverage and verify any claimed model diversity.
+**Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Resolve model and effort through the step's role in the runtime contract: the host model unless a `Models:` block names one. Preserve the workflow's independent review coverage and verify any claimed model diversity. When a signed spec or another grant covers the work, cite its path and the sections the delegate must read, and quote any authorization word for word, because a paraphrase can narrow it. Before you delegate, check each file pointer exists at the delegate's base with `git cat-file -e <base>:<path>`.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. After a child that edits returns, re-read each file it touched before you edit that file. Use supported status and resumption tools, and include the current constraints on every follow-up. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
@@ -143,7 +143,7 @@ A large or cross-cutting effort (a migration across many call sites, an ambitiou
 - **Prototype.** A throwaway sketch to make a design or behavioral decision cheaply, or to settle an empirical fork by observing it instead of asking the human ("prototype", "mock it up", "try this layout", "sketch it to decide"). `playbooks/prototype.md`.
 - **Visual parity.** Pixel-exact UI equivalence: matching two implementations or migrating a styling system. `playbooks/visual-parity.md`.
 - **Authoring or modifying a skill.** Writing or editing a SKILL.md. `playbooks/authoring-a-skill.md`.
-- **Eval.** Testing how a skill, structure, or prompt change affects agent behavior before promoting it, including headless agent runs that prove a skill or contract change inside Feature or PR work. `playbooks/eval.md`.
+- **Eval.** Testing how a skill, structure, or prompt change affects agent behavior before promoting it, including headless agent runs and any live end-to-end harness that drives a real host CLI or account to prove a skill, hook, or contract change inside Feature or PR work. `playbooks/eval.md`.
 - **Babysit.** Driving a PR or a stack to merge-ready: conflicts, review threads, CI. `playbooks/babysit.md`.
 - **Shipping.** The half after Babysit. Independently verifying a green stack, then landing the contiguous verified run bottom-up through `gh` by default or Origin when its CLI is available. `playbooks/shipping.md`.
 - **Autonomous run.** A long task to drive to completion without stopping ("run until done", "keep going until X"). `playbooks/autonomous-run.md`.

@@ -187,7 +187,7 @@ Plugin discovery can also be tested in a disposable, credential-free home. After
 bun run --cwd skills/cstack-mode/scripts test:e2e --allow-isolated-install --codex <binary>
 ```
 
-The Cursor harness runs eight short read-only chats on the signed-in Cursor account, each in a throwaway project, and checks that the mode hooks turn the mode on and off. After explicit authorization to spend that account's usage, run:
+The Cursor harness runs eight short chats on the signed-in Cursor account, each in a throwaway project with a separate home, and checks that the mode turns on and off. Six chats are read-only. The two that type the mode command may run only `sh`, which records the choice. After explicit authorization to spend that account's usage, run:
 
 ```bash
 bun run --cwd skills/cstack-mode/scripts test:e2e:cursor --allow-account-runs --model <model>

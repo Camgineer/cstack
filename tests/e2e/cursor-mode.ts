@@ -32,6 +32,7 @@ async function main() {
       cursor: { type: "string", default: "cursor-agent" },
       model: { type: "string" },
       "allow-account-runs": { type: "boolean", default: false },
+      "keep-home": { type: "boolean", default: false },
     },
   });
   if (!values["allow-account-runs"]) {
@@ -41,15 +42,27 @@ async function main() {
   const model = values.model;
   assert(model, "Pass --model with a model the account allows; `cursor-agent --list-models` lists them");
 
-  const status = Bun.spawnSync([cursor, "status"], { stdout: "pipe", stderr: "pipe" });
-  const signedIn = `${status.stdout}${status.stderr}`;
-  assert(/logged in/i.test(signedIn) && !/not logged in/i.test(signedIn), `Cursor is not signed in: ${signedIn.trim()}`);
-  const version = Bun.spawnSync([cursor, "--version"], { stdout: "pipe" }).stdout.toString().trim();
-
   const scratch = await mkdtemp(join(tmpdir(), "cursor-mode-"));
+  // A home of its own hides the person's installed copy of the plugin and their shell startup files,
+  // which would otherwise load beside the candidate and set the variable in every hook.
+  const home = join(scratch, "home");
+  const baseEnv: Record<string, string> = {};
+  for (const [key, value] of Object.entries(process.env)) if (value !== undefined && key !== variable) baseEnv[key] = value;
+  if (!values["keep-home"]) Object.assign(baseEnv, { HOME: home, ZDOTDIR: home });
+  baseEnv.XDG_STATE_HOME = join(scratch, "state");
+  await mkdir(home);
+
+  const status = Bun.spawnSync([cursor, "status"], { env: baseEnv, stdout: "pipe", stderr: "pipe" });
+  const signedIn = `${status.stdout}${status.stderr}`;
+  if (!/logged in/i.test(signedIn) || /not logged in/i.test(signedIn)) {
+    await rm(scratch, { recursive: true, force: true });
+    throw new Error(`Cursor is not signed in${values["keep-home"] ? "" : " with a separate home; pass --keep-home to use the real one"}: ${signedIn.trim()}`);
+  }
+  const version = Bun.spawnSync([cursor, "--version"], { env: baseEnv, stdout: "pipe" }).stdout.toString().trim();
+
   const plugin = join(scratch, pluginName);
   const project = join(scratch, "project");
-  const state = join(scratch, "state");
+  const state = baseEnv.XDG_STATE_HOME;
   const log = join(scratch, "hook-log");
   const checks: Check[] = [];
   try {
@@ -65,15 +78,14 @@ async function main() {
     await writeFile(hookFile, JSON.stringify(hooks, null, 2));
     Bun.spawnSync(["git", "init", "-q", project]);
     await writeFile(join(project, "README.md"), "# Probe project\n");
+    // Recording a typed on or off runs the plugin's mode script, the only command these chats may run.
+    await mkdir(join(project, ".cursor"));
+    await writeFile(join(project, ".cursor/cli.json"), JSON.stringify({ permissions: { allow: ["Shell(sh)"], deny: [] } }));
 
-    const baseEnv: Record<string, string> = {};
-    for (const [key, value] of Object.entries(process.env)) if (value !== undefined && key !== variable) baseEnv[key] = value;
-    baseEnv.XDG_STATE_HOME = state;
-
-    async function run(prompt: string, env: Record<string, string> = {}) {
+    async function run(prompt: string, env: Record<string, string>, readOnly: boolean) {
       const before = new Set(await readdir(log));
       const child = Bun.spawn(
-        [cursor, "-p", "--mode", "ask", "--trust", "--plugin-dir", plugin, "--model", model!, "--output-format", "json", prompt],
+        [cursor, "-p", ...(readOnly ? ["--mode", "ask"] : []), "--trust", "--plugin-dir", plugin, "--model", model!, "--output-format", "json", prompt],
         { cwd: project, env: { ...baseEnv, ...env }, stdin: "ignore", stdout: "pipe", stderr: "pipe" },
       );
       const timer = setTimeout(() => child.kill("SIGKILL"), timeoutMs);
@@ -95,9 +107,9 @@ async function main() {
       return files.length === 0 ? "none" : (await readFile(join(state, pluginName, mode, files[0]!), "utf8")).split("\n")[0]!;
     }
 
-    async function check(name: string, prompt: string, env: Record<string, string>, expect: (reply: string) => boolean | Promise<boolean>) {
+    async function check(name: string, prompt: string, env: Record<string, string>, expect: (reply: string) => boolean | Promise<boolean>, readOnly = true) {
       try {
-        const { reply, hooks: fired } = await run(prompt, env);
+        const { reply, hooks: fired } = await run(prompt, env, readOnly);
         checks.push({ name, passed: await expect(reply), evidence: `reply ${JSON.stringify(reply.slice(0, 300))}; hooks [${fired.join("; ")}]; flag ${await flag()}` });
       } catch (error) {
         checks.push({ name, passed: false, evidence: error instanceof Error ? error.message : String(error) });
@@ -114,9 +126,9 @@ async function main() {
       {}, (reply) => reply.includes("principle-prove-it-works"));
     await check(`${variable}=on turns the mode on in a new chat`, onOrOff, { [variable]: "on" }, isOn);
     await check("no variable and no recorded choice leave the mode off", onOrOff, {}, isOff);
-    await check(`typed /${mode} records on for the project`, `/${mode}`, {}, async () => (await flag()) === "on");
+    await check(`typed /${mode} records on for the project`, `/${mode}`, {}, async () => (await flag()) === "on", false);
     await check("the recorded choice turns the mode on in the next chat", onOrOff, {}, isOn);
-    await check(`typed /${mode} off records off for the project`, `/${mode} off`, {}, async () => (await flag()) === "off");
+    await check(`typed /${mode} off records off for the project`, `/${mode} off`, {}, async () => (await flag()) === "off", false);
     await check(`a project turned off stays off under ${variable}=on`, onOrOff, { [variable]: "on" }, isOff);
   } finally {
     await rm(scratch, { recursive: true, force: true });

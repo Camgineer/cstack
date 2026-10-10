@@ -8,6 +8,7 @@
     "test:unit": "bun test ../../../tests/unit",
     "test:integration": "bun test ../../../tests/integration",
     "test:e2e": "bun ../../../tests/e2e/plugin-discovery.ts",
+    "test:e2e:cursor": "bun ../../../tests/e2e/cursor-mode.ts",
     "typecheck": "tsc --project tsconfig.json",
     "sync:hosts": "bun ../../../tools/sync-hosts.ts",
     "check:hosts": "bun ../../../tools/sync-hosts.ts --check"

@@ -73,7 +73,7 @@ Each live lane owns an isolated worktree at the PR head. Worktrees isolate files
 - [ ] `git fetch origin <head-branch> && git checkout <head SHA>`.
 - [ ] <Start the backend and the surface. Wait for ready.>
 - [ ] <Deliver input only through the control skill's commands. Name the read-only diagnostics.>
-- [ ] Save every screenshot to `/tmp/swarm-<pr-id>/worker-<n>/<slug>.png` and return the paths with the report.
+- [ ] Save every screenshot to `tmp/<task>/swarm-<pr-id>/worker-<n>/<slug>.png` inside the project and return the paths with the report, per [Scratch files](../SKILL.md#scratch-files).
 
 ## <Task as a verb phrase> (<PR id>)
 
@@ -119,8 +119,8 @@ Each live lane owns an isolated worktree at the PR head. Worktrees isolate files
 
 **Review gate.** The operator reviews before merge.
 
-- [ ] Copy lane <n> screenshots into `<media path>/<pr-id>-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of the change on its isolated runtime instance or during its exclusive serialized run. Save it as `<media path>/<pr-id>-review.mp4`.
+- [ ] Copy lane <n> screenshots into `tmp/<task>/<pr-id>-review-<slug>.png`.
+- [ ] Record a 30 to 60 second video of the change on its isolated runtime instance or during its exclusive serialized run. Save it as `tmp/<task>/<pr-id>-review.mp4`.
 - [ ] Post the screenshots and the video in chat. Mark the PR ready per **Readiness** in `playbooks/opening-a-pr.md` and stop. Wait for the operator's click.
 
 **Merge.**

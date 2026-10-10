@@ -55,3 +55,5 @@ Keep tests that protect a concrete failure in supported behavior. Write each one
 ## Shared branches and PRs
 
 Before you commit to, push to, or dispatch work on a branch or PR that another thread may own, fetch its upstream and read the current head. Name one owning thread per PR.
+
+If a requested history rewrite is blocked, such as a rebase that needs a force push, report the blocker and ask before you substitute another operation.

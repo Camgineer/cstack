@@ -55,6 +55,8 @@ A command runner runs on the person's machine, so only the person's own file may
 | `explore` | Read-only search delegates that read code, docs, or history and report findings: how's explorers, why's investigators, recall's and automate-me's history readers, maintain-verification-skill's source wave, grill-with-docs's investigator, multi-phase-plan's code readers, session-pickup's transcript reader, worktree-cleanup's history readers, and swarm workers on an exploration brief. A delegate that edits, runs or drives the app, verifies, or measures is not on it. A lane that needs a connector or history tool its runner cannot reach is a missing lane, never a null result |
 | `image` | The Image generation playbook, on hosts whose note maps no **Generate an image** capability. It has no host-model fallback. |
 
+Resolve `explore` for each read-only search delegate in the table even when its workflow does not repeat the role name.
+
 Each line is `<role>: <runner>, <option>, ...`. The runner is `native`, the host's own Delegate capability, or a command that runs another agent CLI, such as `codex exec`, `claude -p`, or `cursor-agent -p`. Options are `model <id>`, `effort <level>`, `fast`, and any other setting the runner documents. An option left out takes the runner's default. A role can list several runners separated by `;`. A single step uses the first. For roles other than `explore`, a panel or set of lanes gives one runner to each seat in order; the seats left over run on the host's model. A `review` line with one runner fills one interrogate seat and the host fills the other two. An `explore` line's runners repeat across its lanes in order, so a one-runner line runs every lane.
 
 Resolve a role before each delegated step:

@@ -22,13 +22,13 @@ Run two companion skills for the whole session, every round:
 
 Keep one long-lived spec. Use the **Shared document** capability for a separate grill document titled `Grill: <topic>`, linked from the spec. Each grill covers one round or one slice and holds open questions only. When that capability has no route, ask in the reply alone. Use an existing spec or create an untracked working file for settled decisions.
 
-Tell people how to answer in chat or by commenting on a question's heading or sentence. Put an index of open questions at the top, with each question's number, owner, and title. Give every listed question its own section with its owner, view, and recommendation. A held question also names what it waits on.
+Tell people how to answer in chat or by commenting on a question's heading or sentence. Put an index of open questions at the top, with each question's number, owner, and title. Give every listed question its own section with its owner. An asked question has a view and its recommendation first. A held question names the question or fact it waits on and gets its view and recommendation when it is asked.
 
-With more than one person, assign each person a distinct marker and tell them the mapping once. Start each question with its owner's marker. Use all the owners' markers for a joint decision. With one person, name them as the owner. Keep question numbers unchanged and never reuse a settled number.
+With more than one person, assign each person a distinct marker and tell them the mapping once. Start each question with its owner's marker. Use all the owners' markers for a joint decision. With one person, name them as the owner. Keep question numbers unchanged across every grill of one spec. Never reuse a settled number within that spec.
 
 ## Rounds
 
-Work the design tree in rounds. The **frontier** holds decisions whose prerequisites are settled. Ask a frontier question when the work it blocks is next. Hold the rest with their prerequisites or the later work they block. A question that depends on another open answer waits for a later round.
+Work the design tree in rounds. The **frontier** holds decisions whose prerequisites are settled. Ask a frontier question when the work it blocks is next. A **held question** waits on a named question or fact in the same grill. Keep it open with that prerequisite until it can be asked. List questions for a later slice in the spec against that slice, outside the current grill. Give that slice its own small grill when its work is next.
 
 Ask each round in the grill document and in the reply. Leave **Ask** unused for a round. A structured question carries too little context, and in a shared chat one person's submit skips the questions meant for others.
 
@@ -56,6 +56,8 @@ Add each new question to the grill document before showing it in the reply. When
 
 An answer in chat or in the document settles the same question. Check who answered and which question they answered. Another person's agreement does not settle the owner's question. Record that agreement in the spec and keep the question open for its owner.
 
+Reply in its thread to every comment from a person that you act on. If the comment does not settle the question, say what you recorded and what remains for its owner. Keep the question and its thread open.
+
 When the owner answers, do these in the same turn:
 
 1. Write the decision into the spec with who decided it and when.
@@ -65,11 +67,11 @@ When the owner answers, do these in the same turn:
 
 A partial or ambiguous answer keeps the question open. State what remains for its owner. A joint question stays open until every owner answers.
 
-When the last question settles, leave the grill document empty and mark it done. The spec keeps the decisions and agreements. Clear the settled questions from its waiting list.
+When the last question settles, leave no question in the grill document and mark it done. The spec keeps the decisions and agreements. Clear the settled questions from its waiting list.
 
 ## Pending owner
 
-When a person in the conversation says that an owner is unavailable, keep their question open and record the recommended option as waiting on them in the spec. Continue reversible work on that option only within existing authorization. This is the exception to waiting for every pick. Sign-off gates and work that needs the owner's authority still wait. Silence alone does not make an owner unavailable. While an available owner has not picked, build only the parts every option shares.
+While an owner has not picked, build only the parts every option shares. When that owner is away, keep their question open and record the recommended option as waiting on them in the spec. Continue reversible work on that option within existing authorization. This exception needs no statement from another person that the owner is unavailable. Sign-off gates and work that needs the owner's authority still wait.
 
 ## First round
 
@@ -91,4 +93,4 @@ When a decision belongs to someone outside the session, grill the send, not the 
 
 ## Done
 
-A grill is done only when every branch of the design tree is visited, nothing is left silently assumed, and every question is settled. When a grill document exists, leave it empty and marked done. Put every resolved term in `GLOSSARY.md` and offer every qualifying decision as an ADR. Held questions keep it open. When all remaining questions are held, report what each waits on and pause the round. A finished grill does not authorize the build. Get the plan's required owners to confirm shared understanding before acting beyond **Pending owner**'s existing authorization.
+A grill is done only when every branch of its round or slice's design tree is visited, nothing is left silently assumed, and every question in that grill is settled. When a grill document exists, leave it with no question and mark it done. Put every resolved term in `GLOSSARY.md` and offer every qualifying decision as an ADR. Held questions in this grill keep it open. When all remaining questions are held, report what each waits on and pause the round. A finished grill does not authorize the build. Get the plan's required owners to confirm shared understanding before work beyond the existing authorization described in **Pending owner**.

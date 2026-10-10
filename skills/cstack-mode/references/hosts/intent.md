@@ -20,6 +20,7 @@ The plugin reaches an Intent agent by two routes. Intent's own skill catalog and
 | --- | --- |
 | **Delegate** | `ws.agent.delegate` through the `workspace_api` tool ([bindings, read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-acp/src/mcp_server/bindings/agent.rs#L729-L745)). Put the brief in `agentInstructions`; no task note is needed. Pass `specialist: "cstack-agent"` or `specialist: "comment-sicko"` for a bundled persona. Put a routed workflow's own prompt in the brief, because `behaviorPrompt` does not arrive. Intent removes Claude Code's native `Task` subagent tool ([read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/agent_session.rs#L1838-L1866)). See **Delegation limits** below. Read results with `ws.agent.readConversation`. It returns the delegate's tool calls too, so take the last text block ([read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-acp/src/mcp_server/bindings/agent.rs#L1519-L1549)). A delegate's `ws.agent.reportToParent` report arrives in the parent's completion event ([read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/agent_ops.rs#L9596-L9705)). |
 | **Ask** | `ws.app.question.ask`, when the session's structured-questions feature is on. A delegated agent cannot ask structured questions. Intent rejects every `app.question.*` call from a delegate ([read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-acp/src/mcp_server/dispatch.rs#L962-L967)). Otherwise ask in the reply and continue on reversible work. |
+| **Shared document** | Intent notes and comments through `workspace_api`. Use the workspace's one Spec note (`noteId: "spec"`) and a grill task note. See **Grill documents** below. |
 | **Plan** | Intent tasks: `ws.note.listTasks` to read them and `ws.task.update` to change status. |
 | **Invoke a skill** | Intent lists each installed skill in the system prompt with its `location`. Read that `SKILL.md`. A provider that has its own copy of the plugin offers each skill a second time, through the provider's skill tool. Use the copy in Intent's list, because the provider's copy can be an older release. The installer links no `principle-*` skill, so the installer's own links put none in the list. Another skill root or the provider's own catalog can still list one. Read each principle at `<plugin-root>/skills/<name>/SKILL.md`. |
 | **History** | `ws.agent.readConversation` for other agents in the workspace. Otherwise use a transcript or digest the user supplies. |
@@ -101,6 +102,60 @@ Commit and PR route (plugin workflow). In Intent this route replaces the **Workt
 
 The clean-sandbox rule applies to every agent because Intent attempts merge-back when any sandboxed agent goes idle ([read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/lib.rs#L6828-L6846)). Another agent's leftover scratch files reached the workspace branch in a generic dirty-state commit (relayed, one run on 2026-10-10).
 
-An agent's own sandbox was emptied while it waited on agents it had delegated to (relayed, more than one run, cause not established). A guess at the cause is that Intent reclaims a sandbox when the agent's turn ends or its delegation group settles.
+An agent's own sandbox was emptied while it waited on agents it had delegated to (relayed, more than one run, cause not established). A guess at the cause is that Intent reclaims a sandbox when the agent's turn ends or its delegation group settles. To continue in an existing checkout within your assigned scope, call `ws.host.exec` with no `cwd`, `command: "sh"`, and `args: ["-c", "cd '<absolute path>' && <command>"]`. Read files with your provider's file tools using absolute paths. Both recovery routes worked after sandbox loss (relayed). The command route is read from source in the [default-directory function](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/host_exec.rs#L328-L357) and its [applying branch](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/host_exec.rs#L463-L470).
 
 Headless runs. `intentd` runs without the desktop app. The `intentd` on `PATH` is a small launcher that downloads the daemon on the first `serve` under a new `HOME`. On macOS it keeps the daemon at `~/Library/Application Support/intentd/sitter/versions/<version>/intentd`. Run that versioned binary directly when the launcher's download fails, or to pin the release under test. Where the download fails behind a proxy, fetch the asset that the [stable channel manifest](https://github.com/intent-hq/intentd-releases/releases/download/channel-stable/stable.json) lists, check it against the manifest's sha256, and run the `intentd` inside it. Start `intentd serve` with a disposable `HOME`, and keep the socket path short enough for the Unix socket limit. The socket sits under `HOME` on macOS (observed) and under `XDG_DATA_HOME` on Linux (not rerun at this release). `intentd status` shows the socket path and whether the daemon is up. Create a workspace with `intentd call workspace.create --params '{"title":"probe"}'`. Then `intentd call skill.list` and `intentd call specialist.list`, each given that workspace's id as `workspaceId`, show what Intent's agents see, with no provider signed in. `specialist.list` returns a project's specialist files only with `includeProject: true` ([read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-transport/src/router.rs#L4684-L4693), and relayed). On a failed call, `intentd call` prints an error line after the JSON, so parse stdout alone.
+
+## Grill documents
+
+Follow [grill-with-docs](../../../grill-with-docs/SKILL.md) for grill and align rounds, including rounds by a delegated agent.
+
+Use the workspace's one Spec note for the spec and align draft. Put goal, status, what waits on each person, grills, and decisions first. Put the tier's template sections and evidence after them. Notes and the Spec are [documented by Intent](https://intentapp.dev/docs#context).
+
+Create each grill through an `@@@task` block under the Spec's Grills section with `ws.note.add`. Title it `Grill: <topic>`. Read `createdTasks` and `warnings` from the result. Set the grill task to `in_progress` with `ws.task.updateNoteStatus`. Its task link shows `[/]` while open and `[x]` when complete ([status mapping, read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/note_ops.rs#L434-L441)). Share the returned note link in the reply.
+
+Read threads with `ws.comment.list(noteId, { includeComments: true, status: "open" })` and their full comments with `ws.comment.getThread`. Reply in the thread with `ws.comment.respond`. These routes are in [the comment binding, read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-acp/src/mcp_server/bindings/comment.rs). Ask people to anchor a comment on a heading or a sentence. A comment in one table cell works through the API, but a selection across cells can fail to anchor (relayed, app selection untested). A code-block comment puts literal anchor markers inside the code (relayed).
+
+Read and handle existing comments before starting the watch. Then schedule a background hook with `ws.hook.schedule`, `delayMs: 60000`, and `perpetual: true`. Choose `ttlMs` for the expected wait plus a margin. Its code lists comments on the open grill notes, keeps the ids of comments from people in `hookState`, and wakes the agent only for an unseen one. Cancel it with `ws.hook.cancel` when the grills end. On a wake, read each reported comment and reply in its thread even when another agent has replied since it was posted.
+
+The `delayMs` hook expires within 24 hours, and re-arming starts with no state, so read and handle existing comments again before scheduling it.
+
+The following pattern stayed quiet through test agents' comments and woke an agent for a person's comment on 2026-10-10 (relayed observation, one 0.10.33 workspace). Replace the note id with the open grill note ids:
+
+```js
+const ids = ["<open-grill-note-id>"];
+const seen = (hookState && hookState.seen) || null;
+const now = {};
+const fresh = [];
+for (const id of ids) {
+	const th = await ws.comment.list(id, { includeComments: true });
+	for (const t of (th.threads || [])) for (const c of (t.comments || [])) {
+		if (c.authorType !== "user") continue;
+		now[c.id] = 1;
+		if (seen && !seen[c.id]) fresh.push({
+			noteId: id,
+			commentId: c.id,
+			on: String(t.targetedText || "").slice(0, 80),
+			by: c.author,
+			text: String(c.content || "").slice(0, 400)
+		});
+	}
+}
+if (!seen) return { dispatch: false, state: { seen: now } };
+if (fresh.length) return {
+	dispatch: true,
+	message: "New comments from a person: " + JSON.stringify(fresh),
+	state: { seen: now }
+};
+return { dispatch: false, state: { seen: now } };
+```
+
+The `authorType` filter excludes ordinary agent comments even if an agent replies in the same thread before the next check. It does not authenticate a person. An agent can supply any comment author, so confirm the decider from the conversation's known participants and label synthetic comments as test inputs (relayed from a probe). Agent comments and replies also publish `comment:added` as System ([event publication](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/lib.rs#L14256-L14272) and [excludeSelf filter](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/event_subscriptions.rs#L336-L340), read from source). The hook filters the comments themselves rather than those event actors.
+
+Settle an answer in the same turn. Write it into the Spec's Decisions with its question number, owner, and date. Reply where it arrived, including each open thread on the question. Resolve those threads before removing the question's section. The comment binding has no resolve method. Get `<workspace-id>` from `ws.workspace.info()`. The probe saw the resolve logged under the machine owner's name (relayed). Use the daemon route below, which preserves the note text (relayed, and [read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/lib.rs#L27877-L27883)):
+
+```sh
+intentd call comment.resolveThread --params '{"workspaceId":"<workspace-id>","noteId":"<grill-note-id>","threadId":"<thread-id>"}'
+```
+
+Use `ws.note.edit` and `ws.note.add` for small edits. Read `rawContent` with `ws.note.read` before a necessary full replacement, and keep every `<!--anchor:...:start-->` and `<!--anchor:...:end-->` marker. A rewrite that drops those markers detaches comments for good, while their threads still list as open (relayed, and [anchor pass, read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/lib.rs#L10994-L11097)). After its threads are closed, read the raw note and copy the exact section text from its heading up to the next heading, including its comment markers, into `ws.note.edit`'s `old`. Use an empty `new` to remove the section and its anchors. For a final section, copy through the end of the note. An agent observed this small edit remove settled sections and their markers in one 0.10.33 workspace on 2026-10-10 (relayed observation). After each write, read back the raw note, check that headings appear once, and check that code fences come in pairs. Once all questions are removed, set the grill task with no remaining question to `complete` with `ws.task.updateNoteStatus`.

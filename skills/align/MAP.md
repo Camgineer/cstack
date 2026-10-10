@@ -1,6 +1,6 @@
 # Map mode
 
-Use a map when the way to the destination is foggy and the effort is too big for one session. The map settles decisions; it builds nothing. The pull to just do the work is the sign you have reached the edge of the map. It ends when no ticket is left, and the Full spec is drafted from it.
+Before charting, complete align's [Ground](SKILL.md#1-ground) step. Use a map when the remaining way to the destination is foggy and the effort is too big for one session. The map settles the remaining decisions; it builds nothing. The pull to just do the work is the sign you have reached the edge of the map. It ends when no ticket is left, and the Full spec is drafted from it.
 
 ## The map
 

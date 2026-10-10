@@ -1,6 +1,6 @@
 ---
 name: reflect
-description: Run three parallel reviewers and a synthesizer over a session to find durable lessons, and route each to an edit on a skill, a principle, or the repo's agent guidance. Use for reflect, retro, or just before you mark your own PR ready.
+description: Run three parallel reviewers and a synthesizer over a session to find durable lessons, and route each to an edit on a skill, a principle, or the repo's agent guidance. Use for reflect, retro, or a recap after you mark your own PR ready.
 metadata:
   source: "The tooling reviewer's environment lens adapts the retro categories from mattpocock/skills, https://github.com/mattpocock/skills"
 ---
@@ -31,7 +31,7 @@ Use the host's supported thread/history tools to identify the active conversatio
 
 In PR retro, read the building session through the **History** capability when it is not the active one. Then add the PR's record to the artifact. Read it through the forge: each review thread and how it ended, each red check and the commit that fixed it, and each reverted or abandoned commit. Wait for every review agent still running on the PR and fold in its findings, or list it as pending in the artifact. With no building session, label the artifact as PR record only and name the missing history.
 
-Then, in PR retro, check the evidence for a signal. A signal is a human correction, a red check, a proven review finding, an abandoned approach, or information the session searched for more than once. With no signal, comment `Retro: no lessons` on the PR, report the same line, and stop. That comment, or the `Retro: lessons in <lessons PR link>` comment from step 5, is the PR's retro record, and the retro gate below reads it.
+Then, in PR retro, check the evidence for a signal. A signal is a human correction, a red check, a proven review finding, an abandoned approach, or information the session searched for more than once. With no signal, comment `Retro: no lessons` on the PR, report the same line, and stop. That comment, or the `Retro: lessons in <lessons PR link>` comment from step 5, is the PR's retro record. It never gates readiness or merging.
 
 ### 2. Spawn three reviewers in parallel
 
@@ -87,14 +87,10 @@ Short list, no preamble:
 - Backlog filed to the authorized tracker: `<issue title>` (`<tags>`). One line each.
 - Dropped: one line per rejected finding + reason from the synthesizer.
 
-## Retro gate
+## Retro status
 
-On a GitHub repository, the retro gate makes the retro record a merge requirement. Its `Retro` status stays pending until the PR has a retro record, and a lessons PR passes on its own. Install it only when the user asks, because it changes the repository's CI:
+The optional GitHub reporter publishes an informational `Retro` status. It returns success whether or not a recap exists. Its description shows the record when present and says a recap is pending otherwise. The recap never gates readiness or merging.
 
-1. In its own PR, copy `gate/retro.yml` to `.github/workflows/retro.yml` and `gate/retro-gate.jq` to `.github/retro-gate.jq`.
-2. After that PR merges, ask a repository admin to add `Retro` to the default branch's required status checks. Only an admin can change that setting.
+Install it only when the user asks, because it changes the repository's CI. In its own PR, copy `gate/retro.yml` to `.github/workflows/retro.yml` and `gate/retro-gate.jq` to `.github/retro-gate.jq`. To update an older gate, replace those same files with these shipped copies. The `gate/` paths keep their names so existing installations can update in place. An existing required `Retro` status then passes without a recap. No branch-rule change is needed. An admin may remove that redundant required check separately.
 
-The gate is the `Retro` commit status, not the `retro` workflow job. The job passes once it has posted the status, while the status stays pending until the record exists. Until `Retro` is a required check, a PR armed for auto-merge at ready can merge before its retro runs.
-
-The gate needs `gh` and `jq`, which GitHub-hosted runners include. On another forge, the retro record stays a comment with no gate.
-
+The reporter needs `gh` and `jq`, which GitHub-hosted runners include. On another forge, keep the recap as a comment.

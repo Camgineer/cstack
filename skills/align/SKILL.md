@@ -17,9 +17,9 @@ Open a todolist with one entry per step: Ground, Tier, Grill, Draft, Advise, Sig
 
 ## 1. Ground
 
-Before any design question, check whether the operator can use what exists today. Run or inspect the existing command, installation, or output that the request builds on. In your first reply after align is invoked, report what you checked and what you found.
+Before any design question, check whether the operator can use what exists today. Inspect the existing command, installation, or output that the request builds on. When a read-only check is available, run it within the operator's authorization. In your first reply after align is invoked, report what you checked and what you found.
 
-When what exists works, state that nothing blocks the operator today and continue. When it is broken, missing, or not set up, name that as the block and say why. Keep the requested change for the design round. It is never the block, and building it is never the quick path.
+When the request builds on nothing existing, report that and continue with design. When what exists works, state that nothing blocks the operator today and continue. When it is broken, missing, or not set up, name that as the block and say why. Keep the requested change for the design round. It is never the block, and building it is never the quick path.
 
 For a block, look for an existing command or workflow that restores use. Name the thinnest path and its observable check. When an existing path or a thin slice restores use within the operator's authorization, take it before the map or the first Grill round. Deliver a thin slice through the matched build playbook, with its scope and verification agreed first. Run the check, then design and harden behind it. Record the check result, and the PR only when a slice was delivered, in the spec's Verification plan when drafted, or in the reply for Inline. Treat a delivered thin slice as completed work when planning the remaining stack.
 

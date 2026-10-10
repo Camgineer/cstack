@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { cpSync, lstatSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, linkSync, cpSync, lstatSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
@@ -1122,5 +1122,71 @@ test("a legacy link to a prior checkout is recorded before its target can be rep
     expect(installRecord(home).entries).toContainEqual({ path: join(skills, "how"), kind: "link", target: join(old, "skills/how") });
     expect(install(home, from).status).toBe(0);
     expect(readlinkSync(join(skills, "how"))).toBe(join(next, "skills/how"));
+  });
+});
+
+
+test("copy updates preserve hard-linked personal backups and the previous record", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const plugin = dirname(dirname(from));
+    const sourceFile = join(plugin, "hooks/example.txt");
+    writeFileSync(sourceFile, "Original.\n", { mode: 0o644 });
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    const data = join(home, ".local/share/cstack");
+    const installed = join(data, "hooks/example.txt");
+    const backup = join(home, "personal-backup.txt");
+    const recordBackup = join(home, "record-backup.json");
+    const recordBefore = readFileSync(join(data, "install-record.json"), "utf8");
+    linkSync(installed, backup);
+    linkSync(join(data, "install-record.json"), recordBackup);
+    writeFileSync(sourceFile, "Replacement.\n");
+    chmodSync(sourceFile, 0o600);
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    expect(readFileSync(installed, "utf8")).toBe("Replacement.\n");
+    expect(lstatSync(installed).mode & 0o777).toBe(0o600);
+    expect(readFileSync(backup, "utf8")).toBe("Original.\n");
+    expect(lstatSync(backup).mode & 0o777).toBe(0o644);
+    expect(readFileSync(recordBackup, "utf8")).toBe(recordBefore);
+    expect(installRecord(home).schemaVersion).toBe(1);
+  });
+});
+
+function beforeRecordInstall(home: string) {
+  const from = fetchedPackage(home);
+  const plugin = dirname(dirname(from));
+  cpSync(join(root, "tests/fixtures/intent-deliver-before-record.sh"), join(plugin, "hooks/intent-deliver.sh"));
+  writeFileSync(join(plugin, "skills/how/SKILL.md"), "---\nname: how\n---\nOlder release.\n");
+  expect(install(home, join(plugin, "hooks/intent-deliver.sh")).status).toBe(0);
+  return from;
+}
+
+test.each(["missing", "unreadable"])("a pre-record package upgrade with a %s record replaces the whole copy and protects host files", (state) => {
+  withHome((home) => {
+    const from = beforeRecordInstall(home);
+    const plugin = dirname(dirname(from));
+    const data = join(home, ".local/share/cstack");
+    const own = join(home, ".intent/skills/why");
+    rmSync(own);
+    writeFileSync(own, "My own host skill.\n");
+    if (state === "unreadable") writeFileSync(join(data, "install-record.json"), "broken json");
+    writeFileSync(join(data, "hooks/retired.txt"), "Earlier release.\n");
+    copyPlugin(plugin);
+    const nextSkill = "---\nname: how\n---\nNew release.\n";
+    writeFileSync(join(plugin, "skills/how/SKILL.md"), nextSkill);
+    const result = commandRun(home, ["--hosts", "intent"], from);
+    expect(result.status).toBe(0);
+    expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe(nextSkill);
+    expect(readFileSync(join(data, "hooks/intent-deliver.sh"), "utf8")).toBe(readFileSync(join(root, "hooks/intent-deliver.sh"), "utf8"));
+    expect(existsSync(join(data, "hooks/retired.txt"))).toBe(false);
+    expect(readFileSync(own, "utf8")).toBe("My own host skill.\n");
+    expect(installRecord(home).entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
+    expect(installRecord(home).entries.every((entry: { path: string }) => !entry.path.startsWith(data + "/"))).toBe(true);
+    expect(result.stdout).not.toContain("left your own SKILL.md");
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    writeFileSync(join(plugin, "skills/how/SKILL.md"), "---\nname: how\n---\nLater release.\n");
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe("---\nname: how\n---\nLater release.\n");
+    expect(readFileSync(own, "utf8")).toBe("My own host skill.\n");
   });
 });

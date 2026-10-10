@@ -281,11 +281,15 @@ async function main() {
     commandTimeout = Number(values["timeout-ms"]);
     if (!Number.isSafeInteger(commandTimeout) || commandTimeout < 1) throw new Error("--timeout-ms must be a positive integer.");
   }
+  const execute = (...command) => {
+    if (values["report-only"]) throw new Error("Report-only cannot install, update, move, or deliver the plugin.");
+    return run(...command);
+  };
   if (values["deliver-intent-source"] !== undefined) {
     const packageSource = source(values["deliver-intent-source"]);
     if (!packageSource || basename(dirname(root)) !== "node_modules" || existsSync(join(root, ".git"))) throw new Error("Intent package delivery requires a fetched GitHub package.");
     deliveryChild = true;
-    const output = await run("sh", [join(root, "hooks/intent-deliver.sh")]);
+    const output = await execute("sh", [join(root, "hooks/intent-deliver.sh")]);
     process.stdout.write(JSON.stringify(intentDelivery(output, packageSource)) + "\n");
     return;
   }
@@ -339,7 +343,7 @@ async function main() {
           for (const [index, [binary, args, cwd]] of operation.commands.entries()) {
             try {
               const key = JSON.stringify([binary, args, cwd ?? null]);
-              const output = completed.get(key) ?? await run(binary, args, cwd, operation.migrate ? operation.commands.slice(index) : undefined);
+              const output = completed.get(key) ?? await execute(binary, args, cwd, operation.migrate ? operation.commands.slice(index) : undefined);
               completed.set(key, output);
               if (id === "intent") {
                 const outcome = operation.delivery === "fetched" ? fetchedDelivery(output, chosenSource) : intentDelivery(output, chosenSource);
@@ -368,7 +372,7 @@ async function main() {
         if (problem) action = `${problem} ${messages}`;
         else if (changed) action = `Updated. New sessions use version ${versions(after)}. Sessions already open keep the old version until you start them again. ${messages}${action}`;
         else if (operation.pending) action = `No installed version changed. ${messages}${operation.pending}`;
-        else if (after.copies.length) action = `Already current at ${versions(after)}. ${messages}${after.native ? "Native installation and version are unknown." : ""}`;
+        else if (after.copies.length) action = `Already current at ${versions(after)}. ${messages}${id === "cursor" ? action : ""}`;
         else action = `${id === "intent" ? "No files changed." : "Marketplace checked."} ${messages}${id === "cursor" ? action : ""}`;
       }
     }

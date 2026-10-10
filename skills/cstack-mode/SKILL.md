@@ -14,6 +14,18 @@ When the user invokes this skill with the argument `off`, stop applying it and r
 
 On hosts that run the plugin's hooks, the user's typed command for this skill also keeps the mode on for the project in later sessions, and the argument `off` keeps it off. The host note says whether the mode also survives `/clear` and compaction. Wherever the plugin's hooks run, an environment variable set to `on` turns the mode on in every project the user has not turned off. Its name is `<plugin>-mode` in capitals, with `_` for `-`. If the user asks in plain words to turn the mode off, run `sh <plugin-root>/hooks/mode.sh off` from the project directory.
 
+## Scratch files
+
+Keep every scratch file you create for your work inside the project, under `tmp/<task>/`, with a folder named for the task. Scratch includes a probe file, a temporary file a command needs, a throwaway repository, a log, a download, a screenshot, a resume note, and a local prototype. This keeps the files where you can remove them and the person can open them.
+
+A prototype that a PR or issue will link to is published on a throwaway branch, per [Prototype](playbooks/prototype.md). Local-only prototypes stay in `tmp/<task>/`.
+
+Before the first scratch write, run `git check-ignore -q tmp/<task>/probe` from the project root. If it fails, create `tmp/<task>/.gitignore` containing `*` and repeat the check. Continue only when it succeeds. Keep scratch out of commits.
+
+A test suite's own temporary directories are not scratch. Leave them where the suite puts them.
+
+On the turn you learn the work was merged or dropped, remove your task folder before replying. If someone still needs files from it, keep those files and say in the reply what you kept and for whom.
+
 ## Non-negotiables
 
 The Principles section below grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
@@ -41,7 +53,7 @@ Remaining triggers. A trigger that names a skill means invoke that skill with th
 - Bugbot or the agentic security review commented → skeptical posture. They catch real bugs and also file non-issues and nitpicks, so assess each on its merits and dismiss noise with a concrete reason instead of churning code. Triage fix / dismiss / ask per `references/bugbot-triage.md`.
 - The operator corrects the same agent mistake a second time → invoke `correct`, which fixes the repo instead of adding another instruction.
 - Broken skill mid-task → fix it in its own PR. Don't block. Don't silently work around it.
-- Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "keep going until X") → invoke `show-me-your-work` for a decision trail. Commit it when stakes need an auditable record. Keep it local otherwise.
+- Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "keep going until X") → invoke `show-me-your-work` for a decision trail. Follow **Scratch files** for the trail's location and cleanup.
 
 ## Principles
 

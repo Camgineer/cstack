@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 const scripts = resolve(import.meta.dir, "../../skills/cstack-mode/scripts");
 
@@ -46,7 +46,7 @@ test.each(["orch/orch.ts", "watch-pr/watch-pr"])(
   },
 );
 
-test("worktree audit preserves a path with spaces and checks merges against the remote default branch", () => {
+test.each(["supplied", "default"])("worktree audit uses the %s scratch folder and preserves paths and merge checks", (folder) => {
   inTemporaryDirectory((directory) => {
     const repository = join(directory, "billing repository");
     const worktree = join(directory, "invoice export worktree");
@@ -62,6 +62,8 @@ test("worktree audit preserves a path with spaces and checks merges against the 
       if (result.status !== 0) throw new Error(`fixture git ${args[0]} failed\n${result.stderr}`);
     }
     git("init", "-b", "trunk");
+    writeFileSync(join(repository, ".gitignore"), "tmp/\n");
+    git("add", ".gitignore");
     git("-c", "user.name=Fixture", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "fixture");
     git("update-ref", "refs/remotes/origin/trunk", "HEAD");
     git("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/trunk");
@@ -69,10 +71,22 @@ test("worktree audit preserves a path with spaces and checks merges against the 
     const bins = join(directory, "bin");
     mkdirSync(bins);
     const gh = join(bins, "gh");
-    writeFileSync(gh, "#!/bin/sh\nprintf '[]'\n");
+    const scratch = join(repository, "tmp", folder === "supplied" ? "audit with spaces" : "worktree-audit");
+    const capture = join(directory, "temporary files observed");
+    mkdirSync(scratch, { recursive: true });
+    writeFileSync(gh, `#!/bin/sh
+: > "$AUDIT_CAPTURE"
+for path in "$AUDIT_SCRATCH"/*; do
+  [ -f "$path" ] || continue
+  printf '%s\\n' "$path" >> "$AUDIT_CAPTURE"
+done
+printf '[]'
+`);
     chmodSync(gh, 0o755);
-    const result = spawnSync("bash", [join(scripts, "worktree-audit.sh"), repository], {
-      env: { ...env, PATH: `${bins}:${process.env.PATH ?? ""}` },
+    const args = [join(scripts, "worktree-audit.sh"), repository];
+    if (folder === "supplied") args.push(scratch);
+    const result = spawnSync("bash", args, {
+      env: { ...env, PATH: `${bins}:${process.env.PATH ?? ""}`, AUDIT_SCRATCH: scratch, AUDIT_CAPTURE: capture },
       encoding: "utf8",
       timeout: 10_000,
     });
@@ -83,6 +97,9 @@ test("worktree audit preserves a path with spaces and checks merges against the 
       expect.any(String), expect.any(String), "YES", "clean", "no-remote", "-", "review-history", realpathSync(worktree),
     ]);
     expect(existsSync(worktree)).toBe(true);
+    const observed = readFileSync(capture, "utf8").trim().split("\n").filter(Boolean);
+    expect(observed.map((path) => realpathSync(dirname(path)))).toEqual([realpathSync(scratch)]);
+    expect(readdirSync(scratch)).toEqual([]);
   });
 });
 

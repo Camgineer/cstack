@@ -1,5 +1,5 @@
 interface:
   display_name: "Principle Fix Root Causes"
-  short_description: "Apply when debugging. Trace each symptom to its root cause and fix it there; reproduce first, ask why until you..."
+  short_description: "Apply when fixing any defect: a reported bug, one you found mid-task, or one a check or reviewer flagged. Trace it..."
 policy:
   allow_implicit_invocation: false

@@ -49,7 +49,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Core**
 
-- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, deciding how much code a change needs, or tempted to add wrappers, layers, or signal threading. Bias to deletion and the smallest change that solves the problem.
+- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, deciding how much code a change needs, or tempted to add wrappers, layers, or signal threading. Bias to deletion and the smallest change that solves the problem. For a bug, the problem is its whole class.
 - **Foundational Thinking** (**principle-foundational-thinking**). Before writing logic: core types and data structures, scaffold-vs-feature sequencing, what concurrent actors share.
 - **Redesign from First Principles** (**principle-redesign-from-first-principles**). Integrating a new requirement into an existing design. Redesign as if it had been foundational from day one.
 - **Attack the Premise** (**principle-attack-the-premise**). Two or more fixes that share one premise have failed the same gate. Take a census of which actors hold the imbalance before the next fix, then question the premise instead of writing another fix that assumes it.
@@ -73,7 +73,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 **Verification**
 
 - **Prove It Works** (**principle-prove-it-works**). After a task, before declaring done. Verify against the real artifact, not a proxy or "it compiles".
-- **Fix Root Causes** (**principle-fix-root-causes**). Debugging. Trace each symptom to its root cause, reproduce first, ask why until you reach it.
+- **Fix Root Causes** (**principle-fix-root-causes**). Fixing any defect, whether reported, found mid-task, or flagged by a check or reviewer. Reproduce, ask why until you reach the root cause, then name the class of bug and fix the class once at the most upstream chokepoint every instance passes through, inside the scope the workflow allows.
 - **Sequence Work into Verifiable Units** (**principle-sequence-verifiable-units**). Multi-step work (sweeps, migrations, runs of similar edits) and how you stack commits and PRs. Break work into units that each end in a check, verify each before the next, and order delivery so the sequence proves itself.
 - **Test Behavior, Not Implementation** (**principle-test-behavior-not-implementation**). Writing, changing, reviewing, or keeping a test. Test only at a public seam, the entry a module's outside callers use, at every level, and run libraries for real rather than testing them. Assert the result against a literal expected value. If the test would still pass when every imported function returns `undefined`, rewrite the assertion or delete the test.
 - **Explain the Number** (**principle-explain-the-number**). Before you trust, report, or act on a number you measured (a speedup, a regression, a throughput, a latency, or an eval result). Find what limits it, and rule out that it measured something other than the work you think.
@@ -91,7 +91,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **The KPI.** The most excellent, atomic PRs merged at the fastest pace. An atomic PR has one purpose a reviewer can state in a sentence, not the smallest diff, per **Size and stacks** in `playbooks/opening-a-pr.md`. Spend operator time only on the critical thinking that is theirs to do, and do it early, before autonomous work starts. Everything else runs without them. Each PR opens as a draft at once and goes ready, with auto-merge armed, only when every eval, review, and verification is done. Required checks gate the merge, per **Merging** in `playbooks/opening-a-pr.md`.
 
-**Just do it.** Use any MCP tool. Proceed with work authorized by the user and host. External messages, ticket writes, and eval launches need authority for that action and destination; the plugin grants none.
+**Just do it.** Use any MCP tool. Proceed with work authorized by the user and host. External messages, ticket writes, and eval launches need authority for that action and destination; the plugin grants none. An approval covers only the scope it described, so a rerun that widens that scope names the change and asks again. When another agent will act on the operator's device, ask the operator to type their approval in that agent's thread.
 
 **Always pause** for irreversible writes: force-push to shared branches, deploys, data deletion, customer messages. Also pause before you weaken access control, such as a ruleset bypass or a branch-protection change, and before you create, store, or delete a credential. When a step creates or stores a credential on the person's machine, hand them a one-line command to run themselves rather than running it. A tripwire in a signed spec pauses its slice for a Grill round, per the **align** skill.
 
@@ -143,7 +143,7 @@ A large or cross-cutting effort (a migration across many call sites, an ambitiou
 - **Prototype.** A throwaway sketch to make a design or behavioral decision cheaply, or to settle an empirical fork by observing it instead of asking the human ("prototype", "mock it up", "try this layout", "sketch it to decide"). `playbooks/prototype.md`.
 - **Visual parity.** Pixel-exact UI equivalence: matching two implementations or migrating a styling system. `playbooks/visual-parity.md`.
 - **Authoring or modifying a skill.** Writing or editing a SKILL.md. `playbooks/authoring-a-skill.md`.
-- **Eval.** Testing how a skill, structure, or prompt change affects agent behavior before promoting it, including headless agent runs that prove a skill or contract change inside Feature or PR work. `playbooks/eval.md`.
+- **Eval.** Testing how a skill, structure, or prompt change affects agent behavior before promoting it, including headless agent runs and any live end-to-end harness that drives a real host CLI or account to prove a skill, hook, or contract change inside Feature or PR work. `playbooks/eval.md`.
 - **Babysit.** Driving a PR or a stack to merge-ready: conflicts, review threads, CI. `playbooks/babysit.md`.
 - **Shipping.** The half after Babysit. Independently verifying a green stack, then landing the contiguous verified run bottom-up through `gh` by default or Origin when its CLI is available. `playbooks/shipping.md`.
 - **Autonomous run.** A long task to drive to completion without stopping ("run until done", "keep going until X"). `playbooks/autonomous-run.md`.

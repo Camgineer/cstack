@@ -59,3 +59,5 @@ Before you commit to, push to, or dispatch work on a branch or PR that another t
 If a requested history rewrite is blocked, such as a rebase that needs a force push, report the blocker and ask before you substitute another operation.
 
 Recover from a bad local reset with the reflog (`HEAD@{1}`). Create no backup or archive branch.
+
+Before you mark a PR ready, read the `Retro` commit status on its head SHA by that context name. A green `retro` job does not show it. Write the retro record as a comment or in the description, so the head SHA does not change.

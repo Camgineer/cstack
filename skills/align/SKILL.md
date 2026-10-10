@@ -68,7 +68,7 @@ Show the whole spec, with each advisor note and how it was settled, and ask for 
 
 ## 7. Hand off
 
-1. Open the bottom PR of the stack as a draft right at sign-off, with the signed spec as its description, per `../cstack-mode/playbooks/opening-a-pr.md`. Push the first slice's first commit to make that possible. Each PR above it names the criteria it proves and links the spec. Every PR stays a draft until it is merge-ready.
+1. Open the bottom PR of the stack as a draft right at sign-off, with the signed spec as its description, per `../cstack-mode/playbooks/opening-a-pr.md`. Push the first slice's first commit to make that possible. Each PR above it names the criteria it proves and links the spec. Mark each PR ready as soon as its independent agent review and verification pass per **Readiness** in that playbook. CI, the retro, and the person's sign-off on merging do not hold readiness.
 2. Run the slices through the **Autonomous run** playbook (`../cstack-mode/playbooks/autonomous-run.md`). Its exit condition is every acceptance criterion VERIFIED with its agreed evidence in the PR. Each iteration runs the **Feature** playbook for one slice, with `how` and `architect` marked `skip: settled in spec`.
 3. Inside the envelope, decide, log the decision via the **show-me-your-work** skill, and report it in the PR.
 4. When a tripwire fires, stop the affected slice, run a Grill round on that branch only, run step 5 on the changed section, and get it signed. Then resume. Unaffected slices keep running.

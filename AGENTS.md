@@ -12,7 +12,7 @@ Before drafting or editing text, identify its audience and read and apply the re
 
 This applies to replies, documentation, PR descriptions, commit messages, code comments, UI copy, prompts, personas, skills, playbooks, and references. Classify each text by who consumes it, rather than by its filename. When changing a skill, also read [Skill mechanics](skills/writing-for-agents/SKILL-MECHANICS.md).
 
-Before returning or saving the text, review it against the applicable guidance. Keep the full guidance in the linked skills and load it when writing work begins.
+Before returning or saving the text, review it against the applicable guidance. Before a handoff or PR description states a fact, check it against the source in this session, and mark any fact you did not check. Keep the full guidance in the linked skills and load it when writing work begins.
 
 Preserve agent inputs, license notices, and source provenance. Keep task reports and review evidence outside the repository or in the pull request.
 
@@ -51,3 +51,13 @@ When importing an upstream update, compare the recorded PStack baseline, the tar
 ## Test scope
 
 Keep tests that protect a concrete failure in supported behavior. Write each one at a public seam per [Test Behavior, Not Implementation](skills/principle-test-behavior-not-implementation/SKILL.md). Prefer real CLI, filesystem, and Git fixtures where practical. Verify agent workflow quality through realistic task execution. Reconsider a test when it only repeats implementation details or checks document wording. To prove a change to Codex hook behavior, extend the Codex harness in `tests/e2e/` and run `test:e2e` once the user authorizes it, rather than building a one-off probe. A fresh worktree needs `bun install --cwd skills/cstack-mode/scripts --frozen-lockfile --ignore-scripts` before any check runs. To run one test, run `bun test ../../../tests/<dir>/<file> -t <pattern>` from `skills/cstack-mode/scripts`.
+
+## Shared branches and PRs
+
+Before you commit to, push to, or dispatch work on a branch or PR that another thread may own, fetch its upstream and read the current head. Name one owning thread per PR.
+
+If a requested history rewrite is blocked, such as a rebase that needs a force push, report the blocker and ask before you substitute another operation.
+
+Recover from a bad local reset with the reflog (`HEAD@{1}`). Create no backup or archive branch.
+
+Before you mark a PR ready, read the `Retro` commit status on its head SHA by that context name. A green `retro` job does not show it. Write the retro record as a comment or in the description, so the head SHA does not change.

@@ -14,7 +14,7 @@ A **context pointer** is a reference held in the agent's context that names some
 A pointer does two jobs: state what the material is, and list the **branches** that should trigger reaching it (a branch is a distinct case the document handles, so different runs take different paths through it). Every word of an always-loaded pointer costs on every turn, so it earns even harder pruning than the body:
 
 - **Front-load the leading word**: the pointer is where it does its triggering work.
-- **Keep each trigger reachable.** A branch fires only on a condition the agent can observe while it holds the pointer. "When the mode lapsed" never fires, because a lapsed agent no longer reads the text; "when the user says the mode lapsed" does. When the failure is the document's own load path, put the material where the reader still looks, such as the user-facing README.
+- **Keep each trigger reachable.** A branch fires only on a condition the agent can observe while it holds the pointer. "When the mode lapsed" never fires, because a lapsed agent no longer reads the text; "when the user says the mode lapsed" does. When the failure is the document's own load path, put the material where the reader still looks, such as the user-facing README. A rule that binds a step in another document is named at that step. A central table can index the steps that use it, but it cannot be the only bridge to a step that never mentions it.
 - **One trigger per branch.** Synonyms that rename a single branch are one branch written twice; collapse them and keep only genuinely distinct branches.
 - **Cut identity the body already carries.**
 

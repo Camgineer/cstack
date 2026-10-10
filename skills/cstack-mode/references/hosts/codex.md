@@ -20,7 +20,7 @@ User instructions file. `~/.codex/AGENTS.md`, which Codex loads in every project
 
 Model roles. A `native` role passes its model and reasoning effort through the subagent tool's fields when this session's schema has them. Otherwise use a custom agent file in `~/.codex/agents/` or `.codex/agents/` that sets `model` and `model_reasoning_effort`.
 
-Plugin root. Two levels above a loaded skill's `SKILL.md`, per the runtime contract.
+Plugin root. Three levels above a loaded skill's `SKILL.md`, per the runtime contract. That is the directory that holds `skills/` and `hooks/`.
 
 Invocation policy. Codex reads explicit-only policy from `agents/openai.yaml` beside a skill's `SKILL.md`, not from frontmatter. A project skill that sets `disable-model-invocation: true` also needs that file with `policy.allow_implicit_invocation: false`. The plugin generates its own copies from frontmatter, so edit the frontmatter in the plugin source and regenerate.
 

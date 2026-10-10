@@ -289,6 +289,37 @@ test("the public command reports all hosts without running an update", () => {
   });
 });
 
+test.each(["public", "internal"])("report-only blocks Intent writes through public and internal entry paths (%s)", (route) => {
+  withHome((home) => {
+    hosts(home);
+    const from = fetchedPackage(home);
+    writeFileSync(join(home, "bin/intentd"), `#!/bin/sh
+case "$2" in
+  rules.get) printf '{"enabled":false,"content":""}' ;;
+  rules.update) printf '%s\\n' "$4" > "${join(home, "rule-update")}"; printf '{}' ;;
+esac
+`, { mode: 0o755 });
+    const args = route === "internal" ? ["--deliver-intent-source", "github:example/toolkit"] : ["--hosts", "intent"];
+    const preview = commandRun(home, ["--report-only", ...args], from);
+    expect(preview.status).toBe(route === "internal" ? 2 : 0);
+    if (route === "internal") expect(preview.stderr).toContain("Report-only cannot install, update, move, or deliver the plugin.");
+    else expect(preview.stdout).toContain("Report only. No install, update, or move was run.");
+    expect(existsSync(join(home, ".local/share/cstack"))).toBe(false);
+    expect(existsSync(join(home, ".intent/skills"))).toBe(false);
+    expect(existsSync(join(home, ".intent/specialists"))).toBe(false);
+    expect(existsSync(join(home, "rule-update"))).toBe(false);
+    const delivery = commandRun(home, args, from);
+    expect(delivery.status).toBe(0);
+    expect(readFileSync(join(home, ".intent/skills/cstack-mode/SKILL.md"), "utf8")).toBe(readFileSync(join(root, "skills/cstack-mode/SKILL.md"), "utf8"));
+    expect(JSON.parse(readFileSync(join(home, "rule-update"), "utf8"))).toEqual({
+      workspaceId: "global",
+      ruleType: "workspace",
+      enabled: true,
+      content: "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session.",
+    });
+  });
+}, 15000);
+
 test("without a terminal or with --yes, only installed hosts update through their configured sources", () => {
   for (const args of [[], ["--yes"]]) withHome((home) => {
     hosts(home, { claude: true, codex: "git" });
@@ -718,7 +749,9 @@ test("a second run reports every unchanged installed host as already current wit
     for (const [host, version] of [["Intent", "1.5.0"], ["Claude Code", "9.0.0"], ["Codex", "9.0.0"], ["Cursor", "9.0.0 (Claude import)"]]) {
       const row = second.stdout.split("\n").find((line) => line.startsWith(host + " "));
       expect(row).toContain(`Already current at ${version}.`);
-      expect(row).not.toMatch(/Updated\.|[Rr]estart|[Ss]tart a new|New sessions|Open Cursor|Run setup/);
+      expect(row).not.toMatch(/Updated\.|[Rr]estart|[Ss]tart a new|New sessions|Run setup/);
+      if (host === "Cursor") expect(row).toContain("Open Cursor Customize, find cstack, and select Install or update. Native installation and version are unknown.");
+      else expect(row).not.toContain("Open Cursor");
     }
     expect(second.stdout).toContain("left your own cstack-agent.md as it is. Nothing is needed for your own files.");
     expect(readFileSync(join(specialists, "cstack-agent.md"), "utf8")).toBe("My specialist.\n");

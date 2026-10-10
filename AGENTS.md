@@ -51,3 +51,7 @@ When importing an upstream update, compare the recorded PStack baseline, the tar
 ## Test scope
 
 Keep tests that protect a concrete failure in supported behavior. Write each one at a public seam per [Test Behavior, Not Implementation](skills/principle-test-behavior-not-implementation/SKILL.md). Prefer real CLI, filesystem, and Git fixtures where practical. Verify agent workflow quality through realistic task execution. Reconsider a test when it only repeats implementation details or checks document wording. To prove a change to Codex hook behavior, extend the Codex harness in `tests/e2e/` and run `test:e2e` once the user authorizes it, rather than building a one-off probe. A fresh worktree needs `bun install --cwd skills/cstack-mode/scripts --frozen-lockfile --ignore-scripts` before any check runs. To run one test, run `bun test ../../../tests/<dir>/<file> -t <pattern>` from `skills/cstack-mode/scripts`.
+
+## Shared branches and PRs
+
+Before you commit to, push to, or dispatch work on a branch or PR that another thread may own, fetch its upstream and read the current head. Name one owning thread per PR.

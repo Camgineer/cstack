@@ -6,7 +6,10 @@
 2. Validate the skill and sweep its rules.
    - Frontmatter has `name` and `description`, referenced files exist, and cross-skill links resolve.
    - Place each new rule in the file agents read at the decision it governs. Find that file from a pilot run's opened files or the workflow's routing. Put the rule's leading word there, and add the case that failed only when the rule is unclear without it.
+   - Before you adopt a new leading word, search the skills tree for it, and pick another word when it already means something else there.
    - When the edit adds, changes, or redefines a rule that other skills restate, or changes when an agent stops, acts, or reports instead of fixing, sweep for the rules it overrides. Search by the rule's object and its synonyms, not only the new rule's own words. Cover trunk and the open and recently merged PRs in the same area.
+   - When the edit widens what an agent may change, also sweep by meaning for every rule that limits scope, such as a brief's assigned paths, a signed spec's out-of-scope list and tripwires, babysit's ban on changing stack topology, and no-comments' fence.
+   - Count the mode's principle index lines and an overridden principle's description as restatements, because a run may act on the index line without opening the leaf.
    - Rewrite an overridden rule on trunk in this PR when the new rule replaces it everywhere. Otherwise add an explicit exception at that rule, pointing to the new rule. Comment on an open PR whose rule the edit overrides.
    - Rerun the sweep each time the branch takes in trunk commits, by merge or rebase.
    - Done when every hit is rewritten, excepted, or commented on, and the hit list goes to the fresh-context reviewer in **Readiness** in `playbooks/opening-a-pr.md`, which hunts contradictions by meaning across it.

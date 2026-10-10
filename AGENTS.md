@@ -51,3 +51,11 @@ When importing an upstream update, compare the recorded PStack baseline, the tar
 ## Test scope
 
 Keep tests that protect a concrete failure in supported behavior. Write each one at a public seam per [Test Behavior, Not Implementation](skills/principle-test-behavior-not-implementation/SKILL.md). Prefer real CLI, filesystem, and Git fixtures where practical. Verify agent workflow quality through realistic task execution. Reconsider a test when it only repeats implementation details or checks document wording. To prove a change to Codex hook behavior, extend the Codex harness in `tests/e2e/` and run `test:e2e` once the user authorizes it, rather than building a one-off probe. A fresh worktree needs `bun install --cwd skills/cstack-mode/scripts --frozen-lockfile --ignore-scripts` before any check runs. To run one test, run `bun test ../../../tests/<dir>/<file> -t <pattern>` from `skills/cstack-mode/scripts`.
+
+## Coordinator memory
+
+`docs/` holds the long-term memory of the coordinator thread that owns this repository. Read all three files when you start or resume coordinator work, and read the one named below when its condition holds.
+
+- [docs/CONTEXT.md](docs/CONTEXT.md): how releases, the Retro check, and the coordinator model work. Read it before your first change here. Update it when one of its facts stops being true.
+- [docs/DECISIONS.md](docs/DECISIONS.md): dated process decisions and their reasons. Read it before you propose a change to process. Add an entry when the operator makes or approves a decision.
+- [docs/STATUS.md](docs/STATUS.md): open pull requests, blockers, and next steps. Read it before you plan or pick up work. Update it in a docs pull request of its own when a pull request opens, changes state, merges, or closes.

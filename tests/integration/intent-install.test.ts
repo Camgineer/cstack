@@ -451,13 +451,13 @@ test("Cursor refreshes its marketplace and a shared Claude import updates once",
   });
 });
 
-test("missing or malformed npx metadata still allows a provider update and never supplies a local checkout", () => {
-  for (const lock of ["missing", "malformed"]) withHome((home) => {
+test.each(["missing", "malformed", "null", "[]", '{"packages":[]}', '{"packages":{"":{"dependencies":{"cstack":{"url":"github:example/toolkit"}}},"node_modules/cstack":{"resolved":["github:example/toolkit"]}}}'])("unavailable npx source metadata keeps provider updates and no-source actions (%s)", (lock) => {
+  withHome((home) => {
     hosts(home, { claude: true });
     const from = fetchedPackage(home);
     const file = join(home, "npx/cache/package-lock.json");
     if (lock === "missing") rmSync(file);
-    else writeFileSync(file, "not JSON");
+    else writeFileSync(file, lock === "malformed" ? "not JSON" : lock);
     const result = commandRun(home, ["--hosts", "intent,claude,codex"], from);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("No GitHub source supplied.");
@@ -502,5 +502,189 @@ test("one local Codex copy without a source does not hold back its Git copy", ()
       ["codex", "plugin", "marketplace", "upgrade", "remote"],
       ["codex", "plugin", "add", "cstack@remote"],
     ]);
+  });
+});
+
+test.each(["inspection", "update"])("a termination-resistant host times out, cleans up its child, and continues (%s)", (phase) => {
+  withHome((home) => {
+    hosts(home, { codex: "git" });
+    rmSync(join(home, "bin/claude"));
+    writeFileSync(join(home, "bin/claude"), [
+      "#!/usr/bin/env node",
+      "const fs = require('node:fs'); const { spawn } = require('node:child_process');",
+      "if (" + JSON.stringify(phase) + " === 'update' && process.argv[3] === 'list') { console.log('[{\"id\":\"cstack@cstack\",\"scope\":\"user\",\"version\":\"1.0.0\"}]'); process.exit(0); }",
+      "fs.writeFileSync(process.env.HOME+'/hung-pid', String(process.pid));",
+      "const child = spawn(process.execPath, ['-e', \"process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);\"], {stdio:'inherit'});",
+      "fs.writeFileSync(process.env.HOME+'/descendant-pid', String(child.pid));",
+      "process.on('SIGTERM', () => {});",
+      "console.log('waiting for the fixture service');",
+      "setInterval(() => {}, 1000);",
+    ].join("\n"), { mode: 0o755 });
+    try {
+      const result = spawnSync("sh", [entry, "--hosts", "claude,codex", "--timeout-ms", "500"], {
+        env: { PATH: join(home, "bin"), HOME: home }, encoding: "utf8", timeout: 4000, killSignal: "SIGKILL",
+      });
+      expect(result.status).toBe(1);
+      expect(result.stdout).toContain("timed out");
+      expect(result.stdout).toContain("waiting for the fixture service");
+      expect(result.stdout).toContain(phase === "inspection" ? "plugin list --json" : "plugin update cstack@cstack --scope user");
+      expect(result.stdout).toContain("Retry with npx --yes github:OWNER/REPO --hosts claude");
+      expect(result.stdout).toMatch(/Codex\s+yes\s+yes\s+2.0.0\s+9.0.0/);
+      expect(mutations(home)).toEqual([
+        ["codex", "plugin", "marketplace", "upgrade", "cstack"],
+        ["codex", "plugin", "add", "cstack@cstack"],
+      ]);
+      for (const file of ["hung-pid", "descendant-pid"]) {
+        const pid = Number(readFileSync(join(home, file), "utf8"));
+        let stopped = false;
+        try {
+          process.kill(pid, 0);
+          const stat = `/proc/${pid}/stat`;
+          stopped = existsSync(stat) && /^.*\) Z /.test(readFileSync(stat, "utf8"));
+        } catch { stopped = true; }
+        expect(stopped).toBe(true);
+      }
+    } finally {
+      for (const file of ["hung-pid", "descendant-pid"]) {
+        const pidFile = join(home, file);
+        if (existsSync(pidFile)) { try { process.kill(Number(readFileSync(pidFile, "utf8")), "SIGKILL"); } catch {} }
+      }
+    }
+  });
+});
+
+test("a failing host retains its stdout and stderr in the final table", () => {
+  withHome((home) => {
+    hosts(home, { codex: "git" });
+    rmSync(join(home, "bin/claude"));
+    writeFileSync(join(home, "bin/claude"), `#!/bin/sh
+if [ "$2" = list ]; then
+  printf '[{"id":"cstack@cstack","scope":"user","version":"1.0.0"}]'
+else
+  echo 'Failure detail on stdout'
+  echo 'Failure detail on stderr' >&2
+  exit 7
+fi
+`, { mode: 0o755 });
+    const result = commandRun(home, ["--yes"]);
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Failure detail on stdout");
+    expect(result.stdout).toContain("Failure detail on stderr");
+    expect(result.stdout.indexOf("Failure detail")).toBeGreaterThan(result.stdout.indexOf("Host"));
+    expect(result.stdout).toMatch(/Codex\s+yes\s+yes\s+2.0.0\s+9.0.0/);
+  });
+});
+
+function intentFetch(home: string, lock: "valid" | "missing" | "unchanged") {
+  const from = fetchedPackage(home);
+  const packageRoot = resolve(from, "../..");
+  const metadata = JSON.parse(readFileSync(join(packageRoot, "tools/metadata.json"), "utf8"));
+  writeFileSync(join(packageRoot, "tools/metadata.json"), JSON.stringify({ ...metadata, version: "1.5.0" }, null, 2));
+  if (lock === "missing") rmSync(join(home, "npx/cache/package-lock.json"));
+  if (lock === "unchanged") {
+    writeFileSync(join(packageRoot, "hooks/intent-deliver.sh"), "#!/bin/sh\nleft='left your own cstack-agent.md as it is'\nprintf '%s\\n' \"$left\"\n");
+  }
+  writeFileSync(join(home, "bin/npx"), `#!/bin/sh
+printf '%s\\n' "$*" >> "$HOME/fetch-calls"
+shift 3
+exec sh '${from}' "$@"
+`, { mode: 0o755 });
+}
+
+test("an explicit Intent source preserves personal files and rule actions in the outer table", () => {
+  withHome((home) => {
+    hosts(home);
+    intentFetch(home, "valid");
+    const specialists = join(home, ".intent/specialists");
+    mkdirSync(specialists, { recursive: true });
+    writeFileSync(join(specialists, "cstack-agent.md"), "My specialist.\n");
+    writeFileSync(join(home, "bin/intentd"), `#!/bin/sh\nprintf '{"enabled":false,"content":"a disabled personal rule"}'\n`, { mode: 0o755 });
+    const result = commandRun(home, ["--hosts", "intent", "--source", "other/fork"]);
+    expect(result.status).toBe(0);
+    const intent = result.stdout.split("\n").find((line) => /^Intent\s/.test(line));
+    expect(intent).toContain("Updated.");
+    expect(intent).toContain("left your own cstack-agent.md as it is");
+    expect(intent).toContain("Nothing is needed for your own files.");
+    expect(intent).toContain("To keep the mode on, paste this into Intent's Settings");
+    expect(intent).toContain("Before any other step");
+    expect(readFileSync(join(specialists, "cstack-agent.md"), "utf8")).toBe("My specialist.\n");
+    expect(readFileSync(join(home, "fetch-calls"), "utf8").trim().split("\n")).toHaveLength(1);
+  });
+});
+
+test("an explicit Intent source delivers without another package lockfile", () => {
+  withHome((home) => {
+    hosts(home);
+    intentFetch(home, "missing");
+    const result = commandRun(home, ["--hosts", "intent", "--source", "other/fork"]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/Intent\s+yes\s+yes\s+-\s+1.5.0\s+Updated/);
+    expect(readFileSync(join(home, ".intent/skills/cstack-mode/SKILL.md"), "utf8")).toBe(readFileSync(join(root, "skills/cstack-mode/SKILL.md"), "utf8"));
+    expect(readFileSync(join(home, "fetch-calls"), "utf8").trim().split("\n")).toHaveLength(1);
+  });
+});
+
+test("Intent reports unchanged delivery and its preserved files without claiming an update", () => {
+  withHome((home) => {
+    hosts(home);
+    intentFetch(home, "unchanged");
+    const result = commandRun(home, ["--hosts", "intent", "--source", "other/fork"]);
+    expect(result.status).toBe(0);
+    const intent = result.stdout.split("\n").find((line) => /^Intent\s/.test(line));
+    expect(intent).toContain("No files changed.");
+    expect(intent).not.toContain("Updated.");
+    expect(intent).toContain("left your own cstack-agent.md as it is");
+    expect(intent).not.toContain("Start a new Intent agent");
+  });
+});
+
+test("Claude project copies keep their directories and a shared user copy updates once", () => {
+  withHome((home) => {
+    hosts(home, { cursorMarket: true });
+    const projectA = join(home, "project A");
+    const projectB = join(home, "project B");
+    mkdirSync(projectA);
+    mkdirSync(projectB);
+    writeFileSync(join(home, "copies.json"), JSON.stringify([
+      { id: "cstack@cstack", scope: "project", projectPath: projectA, version: "1.0.0" },
+      { id: "cstack@cstack", scope: "project", projectPath: projectB, version: "2.0.0" },
+      { id: "cstack@cstack", scope: "user", version: "3.0.0" },
+    ]));
+    mkdirSync(join(home, ".claude/plugins"), { recursive: true });
+    writeFileSync(join(home, ".claude/settings.json"), JSON.stringify({ enabledPlugins: { "cstack@cstack": true } }));
+    writeFileSync(join(home, ".claude/plugins/installed_plugins.json"), JSON.stringify({ plugins: {
+      "cstack@cstack": [{ scope: "user", version: "3.0.0", installPath: join(home, "provider-copy") }],
+    } }));
+    rmSync(join(home, "bin/claude"));
+    writeFileSync(join(home, "bin/claude"), [
+      "#!/usr/bin/env node",
+      "const fs = require('node:fs'); const path = require('node:path');",
+      "const home = process.env.HOME; const args = process.argv.slice(2);",
+      "const file = path.join(home, 'copies.json'); const copies = JSON.parse(fs.readFileSync(file));",
+      "if (args[1] === 'list') console.log(JSON.stringify(copies));",
+      "else {",
+      "  fs.appendFileSync(path.join(home, 'project-calls'), JSON.stringify({args,cwd:process.cwd()})+'\\n');",
+      "  const scope = args[args.indexOf('--scope')+1];",
+      "  for (const copy of copies) if (copy.scope === scope && (scope === 'user' || fs.realpathSync(copy.projectPath) === process.cwd())) copy.version = '9.0.0';",
+      "  fs.writeFileSync(file, JSON.stringify(copies));",
+      "  if (scope === 'user') { const registry = path.join(home, '.claude/plugins/installed_plugins.json'); const state = JSON.parse(fs.readFileSync(registry)); state.plugins['cstack@cstack'][0].version = '9.0.0'; fs.writeFileSync(registry, JSON.stringify(state)); }",
+      "  console.log('updated');",
+      "}",
+    ].join("\n"), { mode: 0o755 });
+    const result = commandRun(home, ["--hosts", "claude,cursor"]);
+    expect(result.status).toBe(0);
+    expect(JSON.parse(readFileSync(join(home, "copies.json"), "utf8"))).toEqual([
+      { id: "cstack@cstack", scope: "project", projectPath: projectA, version: "9.0.0" },
+      { id: "cstack@cstack", scope: "project", projectPath: projectB, version: "9.0.0" },
+      { id: "cstack@cstack", scope: "user", version: "9.0.0" },
+    ]);
+    const calls = readFileSync(join(home, "project-calls"), "utf8").trim().split("\n").map((line) => JSON.parse(line));
+    expect(calls).toEqual([
+      { args: ["plugin", "update", "cstack@cstack", "--scope", "project"], cwd: realpathSync(projectA) },
+      { args: ["plugin", "update", "cstack@cstack", "--scope", "project"], cwd: realpathSync(projectB) },
+      { args: ["plugin", "update", "cstack@cstack", "--scope", "user"], cwd: process.cwd() },
+    ]);
+    expect(result.stdout).toMatch(/Claude Code\s+yes\s+yes\s+1.0.0, 2.0.0, 3.0.0\s+9.0.0, 9.0.0, 9.0.0/);
+    expect(result.stdout).toMatch(/Cursor\s+yes\s+yes\s+3.0.0 \(Claude import\)\s+9.0.0 \(Claude import\)/);
   });
 });

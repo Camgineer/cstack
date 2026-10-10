@@ -1,6 +1,6 @@
 # Decisions
 
-Dated decisions about how work on this repository runs, with the reason for each. Read this before you propose a change to process, so you do not reopen a settled question without new evidence.
+Dated decisions about how work on this repository runs, with the reason for each. Reopen one only with new evidence.
 
 ## Format
 
@@ -19,7 +19,7 @@ Record a decision the operator made or approved. Record the coordinator's own re
 
 ### 2026-10-09. Stale pull requests go to the operator, and no agent closes one
 
-- **Why.** Closing discards someone's work and is the operator's call under the merge gate. An agent can misjudge whether a quiet branch still matters.
+- **Why.** Closing discards someone's work and is the operator's call, like a merge. An agent can misjudge whether a quiet branch still matters.
 - **Reverses when.** The operator names a rule for closing, such as an age limit, that an agent can apply without judgment.
 
 ### 2026-10-09. #114 and #115 are optional until the operator rules to close or keep them
@@ -30,7 +30,7 @@ Record a decision the operator made or approved. Record the coordinator's own re
 ### 2026-10-09. The coordinator's long-term memory lives in `docs/`, not in a chat
 
 - **Why.** A chat thread ends, compacts, or moves hosts, and the next coordinator cannot read it. Tracked files survive all three and reach every child through its worktree.
-- **Reverses when.** The operator rules that status updates should not ship in plugin releases and picks another home for them.
+- **Reverses when.** The operator picks another home. The pull request that added `docs/` asks whether status updates should ship in plugin releases.
 
 ### 2026-10-09. One coordinator thread owns the repository, delegates all code, and never merges
 

@@ -54,8 +54,8 @@ Keep tests that protect a concrete failure in supported behavior. Write each one
 
 ## Coordinator memory
 
-`docs/` holds the long-term memory of the coordinator thread that owns this repository. Read all three files when you start or resume coordinator work, and read the one named below when its condition holds.
+`docs/` holds the long-term memory of the coordinator thread that owns this repository. Read all three files when you start or resume coordinator work.
 
-- [docs/CONTEXT.md](docs/CONTEXT.md): how releases, the Retro check, and the coordinator model work. Read it before your first change here. Update it when one of its facts stops being true.
-- [docs/DECISIONS.md](docs/DECISIONS.md): dated process decisions and their reasons. Read it before you propose a change to process. Add an entry when the operator makes or approves a decision.
-- [docs/STATUS.md](docs/STATUS.md): open pull requests, blockers, and next steps. Read it before you plan or pick up work. Update it in a docs pull request of its own when a pull request opens, changes state, merges, or closes.
+- [docs/CONTEXT.md](docs/CONTEXT.md) explains how a change reaches users, the Retro status, and the coordinator model. Read it when a brief from the coordinator is your first work here. Correct it in the same pull request when your work shows one of its facts is wrong.
+- [docs/DECISIONS.md](docs/DECISIONS.md) logs dated process decisions and their reasons. Read it before you propose a change to process. Add an entry when the operator makes or approves a decision.
+- [docs/STATUS.md](docs/STATUS.md) indexes open pull requests, blockers, and next steps. Read it before you plan or pick up work. Update it in a docs pull request of its own when another pull request opens, changes state, merges, or closes. A pull request that only updates it gets no row.

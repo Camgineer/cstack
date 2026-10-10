@@ -1,0 +1,37 @@
+{
+  "sources": [
+    {
+      "url": "https://www.nngroup.com/articles/animation-duration/",
+      "read": "2026-10-10",
+      "adaptations": [
+        "Short feedback, longer panel transitions, shorter exits, and ease-out motion."
+      ]
+    },
+    {
+      "url": "https://emilkowal.ski/ui/great-animations",
+      "read": "2026-10-10",
+      "adaptations": [
+        "Responsive, interruptible motion, springs, reduced-motion feedback, and composited web properties."
+      ]
+    }
+  ],
+  "unread_sources": [
+    {
+      "url": "https://www.youtube.com/watch?v=Fy0aCDmgnxg",
+      "reason": "The retrieved page exposed no video or transcript."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=AJdEqssNZ-U",
+      "reason": "The fetch returned HTTP 429."
+    },
+    {
+      "url": "https://m3.material.io/styles/motion/easing-and-duration/tokens-specs",
+      "reason": "The retrieved page required JavaScript and exposed no token specifications."
+    }
+  ],
+  "adaptations": [
+    "Written in the plugin's own words. No source text or code copied.",
+    "Game and sound rules follow the approved scope, with no claims attributed to unread sources.",
+    "Fallback token values are starting choices, not a vendor token specification."
+  ]
+}

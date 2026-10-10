@@ -4,7 +4,7 @@ Build to these gates and judge against them. Each gate names how it is checked: 
 
 ## System
 
-- Every colour, font, size, space, radius, shadow, and duration is a named token. **scan**
+- Every colour, font, size, space, radius, and shadow is a named token. **scan**
 - One design system per project. Use its components before writing a custom one. **look**
 - Copy uses the project's glossary terms, and the same object has the same name and look everywhere. **look**
 
@@ -32,20 +32,19 @@ Build to these gates and judge against them. Each gate names how it is checked: 
 ## States
 
 - Every state from the inventory renders. **DOM**
-- Focus-visible is always visible, appears instantly, and has 3:1 contrast. **DOM**
+- Focus-visible is always visible and has 3:1 contrast. **DOM**
 - Disabled controls look disabled and stay legible. **look**
 - An error message says what happened, why, and how to recover. **look**
 - Empty states say what goes here and how to add it. **look**
 
-## Interaction and motion
+## Interaction
 
 - Touch targets are at least 44 by 44 CSS pixels. **DOM**
 - Every control is reachable by keyboard in reading order. **DOM**
 - A field has a visible label. Placeholder text is only an example. **DOM**
 - Hover-only effects sit behind `@media (hover: hover)`. **scan**
-- Transitions run 150 to 300 ms and animate only `transform` and `opacity`, with named properties. **scan**
-- Motion stops under `prefers-reduced-motion: reduce`. **DOM**
-- Actions the user repeats many times a day happen without animation. **look**
+
+For motion and sound, apply [feel](../../feel/SKILL.md#5-verify-and-review).
 
 ## Robustness
 

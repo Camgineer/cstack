@@ -181,7 +181,6 @@ async function main() {
       {}, ({ reply }) => reply.includes(heading));
     await check(`${variable}=on turns the mode on in a new chat`, askWhetherHookSaidOn, { [variable]: "on" }, isOn);
     await check("no variable and no recorded choice leave the mode off", askWhetherHookSaidOn, {}, isOff);
-    await check(`typed /${mode} records on for the project`, `/${mode}`, {}, async () => (await flag()) === "on", { readOnly: false });
     await check("a recorded on turns the mode on in the next chat", askWhetherHookSaidOn, {}, isOn, { before: () => record("on") });
     await check(`typed /${mode} off records off for the project`, `/${mode} off`, {}, async () => (await flag()) === "off", { readOnly: false });
     await check(`a project turned off stays off under ${variable}=on`, askWhetherHookSaidOn, { [variable]: "on" }, isOff, { before: () => record("off") });

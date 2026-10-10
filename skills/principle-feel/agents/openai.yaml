@@ -1,0 +1,5 @@
+interface:
+  display_name: "Principle Feel"
+  short_description: "Apply to a website, app, game, UI, or tool with a visual or terminal interface. State changes have perceptible..."
+policy:
+  allow_implicit_invocation: false

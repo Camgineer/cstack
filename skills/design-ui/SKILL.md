@@ -21,17 +21,19 @@ Find what the project already decided:
 - The design system package, if the project uses one. Use its components rather than re-creating them.
 - Two or three existing components closest to the one you are building.
 
-Write a short system note with `path:line` citations: colours (including greys), type scale, spacing scale, radii, shadows, motion durations, and the components you will reuse.
+Write a short system note with `path:line` citations: colours (including greys), type scale, spacing scale, radii, shadows, and the components you will reuse.
 
 When the project has no system, define a compact one in a single tokens file before any UI code, and say in the reply that you chose it.
 
-Done when every colour, font, size, space, radius, and duration the change needs maps to a named token. Add a missing token to the tokens file first, then use it.
+Done when every colour, font, size, space, and radius the change needs maps to a named token. Add a missing token to the tokens file first, then use it.
 
 ## 2. Inventory the states
 
 Breadboard the screen. List each place, each affordance in it, and where that affordance leads. An affordance with no destination is an unmade decision.
 
 For each component, decide every state that applies: default, hover, focus-visible, active, disabled, loading, empty, error, and success. Then decide the failure paths: validation errors, a server error, offline, a timeout, very long content, and one item versus many.
+
+Invoke [feel](../feel/SKILL.md) for motion tokens, transitions between these states, and sound.
 
 Done when every affordance names a destination and every state has a decision. A missing state that changes what the user sees is a product call. Pick a default, build it, and name it in the reply.
 

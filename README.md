@@ -6,35 +6,40 @@ The toolkit holds process only. It has nothing about who uses it or which reposi
 
 ## Install
 
-In the commands below, `OWNER/REPO` is the GitHub repository you install from. `PLUGIN` is the `name` field in [tools/metadata.json](tools/metadata.json).
-
-**Claude Code.** Add the repository as a marketplace, then install the plugin:
-
-```bash
-claude plugin marketplace add OWNER/REPO
-claude plugin install PLUGIN@PLUGIN
-```
-
-Inside a session, `/plugin marketplace add OWNER/REPO` and `/plugin install PLUGIN@PLUGIN` do the same.
-
-**Codex.** Clone the repository, add the checkout as a marketplace, then add the plugin:
-
-```bash
-codex plugin marketplace add /path/to/checkout
-codex plugin add PLUGIN@PLUGIN
-```
-
-**Cursor.** Add the repository through Cursor's plugin settings. Cursor reads `.cursor-plugin/plugin.json` at the repository root.
-
-**Intent.** This command fetches the latest plugin, keeps a copy in `~/.local/share/cstack`, and links its skills and personas into Intent:
+Run one command from a terminal. Replace `OWNER/REPO` with the GitHub repository you install from:
 
 ```bash
 npx -y github:OWNER/REPO
 ```
 
-Run it again to update. Each run replaces the copy, so new and removed skills follow. To work on the plugin itself, run `sh hooks/intent-install.sh` from a clone instead, and Intent links straight to the clone. Intent support is new. On the first run, the command also adds the rule that keeps the mode on to Intent's Settings, under Agent Behavior, as the first paragraph of your own rule text there. When it can't reach Intent, it prints the rule for you to paste there. To pick models for the plugin's delegated steps, add a `Models:` block to that rule. Leave the plugin's specialists alone in Intent's specialist editor. Intent's edit call saves through the installed link into the plugin's files, where the next update replaces them. Whether the desktop editor uses that call has not been checked.
+The command detects Intent, Claude Code, Codex, and Cursor and asks which hosts to install or update. Hosts that already have the plugin are selected by default. Enter a comma-separated list, such as `intent,claude,codex`, or `none`. The final table shows which hosts are present, which have the plugin, the versions before and after, and any next action.
 
-On a new computer, run the same commands. Every skill, playbook, and persona comes back with the plugin.
+To update installed hosts without the question:
+
+```bash
+npx -y github:OWNER/REPO --yes
+```
+
+Without a terminal, the command updates installed hosts only. To choose hosts explicitly or inspect the plan without changes:
+
+```bash
+npx -y github:OWNER/REPO --hosts intent,claude,codex
+npx -y github:OWNER/REPO --report-only
+```
+
+Claude Code and Codex use their own plugin commands. Updates follow each host's configured source. A fresh install or a Codex copy registered from a local folder uses a best-effort read of the GitHub source from npx's adjacent package lockfile. If that file is missing or has an unsupported shape, no source is inferred.
+
+The command announces a Codex move before it unregisters the local marketplace and adds the GitHub one. Report-only mode also says when a move would be needed. `--source OWNER/REPO` overrides the inferred source for operations that need one. Without a source, other updates continue and the table gives the command to retry.
+
+The table compares installed copies, versions, and available sources before and after the run. An unchanged copy says it is already current and needs no session action. For an updated copy, new sessions use the new version. Sessions already open keep the old version until you start them again.
+
+Each host command has a hard two-minute limit. Use `--timeout-ms MS` to change it. A timeout or failure keeps the available command output and the native command to retry in that host's result, then continues with the other hosts.
+
+Cursor's CLI can add or refresh a marketplace. To install or finish an update, open **Customize**, find the plugin, and select **Install** or update. The command reports native Cursor installation and version as unknown because its CLI has no installed-plugin list. It also detects enabled user plugins that Cursor imports from Claude Code and updates those through Claude Code. The final table labels their versions as Claude imports.
+
+Intent keeps the fetched package in `~/.local/share/cstack` and links its visible skills. On the first install it adds the mode rule under **Settings**, **Agent Behavior**. If it cannot reach Intent, it prints the rule to paste there. Updates leave that rule alone. Your own files stay untouched, and the table says they were left as they are. Run `setup` to configure specialists and other settings. Installing does not create specialists.
+
+A failure in one host does not stop the others. The command exits nonzero for command or inspection failures. Preserving your own file is a successful result. On a new computer, run the same command and select the hosts you want.
 
 ## Get started
 

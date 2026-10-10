@@ -20,7 +20,7 @@ Run two companion skills for the whole session, every round:
 
 ## Set up the documents
 
-Keep one long-lived spec. Use the **Shared document** capability for a separate grill document titled `Grill: <topic>`, linked from the spec. Each grill covers one round or one slice and holds open questions only. When that capability has no route, ask in the reply alone. Use an existing spec or create an untracked working file for settled decisions.
+Keep one long-lived spec with a waiting list for open decisions. Use the **Shared document** capability for a separate grill document titled `Grill: <topic>`, linked from the spec. Each grill covers one round or one slice and holds open questions only. When that capability has no route, ask in the reply alone. Use an existing spec or create an untracked working file for settled decisions.
 
 Tell people how to answer in chat or by commenting on a question's heading or sentence. Put an index of open questions at the top, with each question's number, owner, and title. Give every listed question its own section with its owner. An asked question has a view and its recommendation first. A held question names the question or fact it waits on and gets its view and recommendation when it is asked.
 
@@ -60,7 +60,7 @@ Reply in its thread to every comment from a person that you act on. If the comme
 
 When the owner answers, do these in the same turn:
 
-1. Write the decision into the spec with who decided it and when.
+1. Write the decision into the spec with its question number, who decided it, and when.
 2. Reply where the answer was given. Reply in each thread on that question, and close each thread once the question is fully settled.
 3. Remove the settled question's index entry and section from the grill document. Keep comment anchors until their threads are closed, using the host's route.
 4. Recompute the frontier. Update any affected open question in the document, then show the change in the reply.
@@ -71,7 +71,7 @@ When the last question settles, leave no question in the grill document and mark
 
 ## Pending owner
 
-While an owner has not picked, build only the parts every option shares. When that owner is away, keep their question open and record the recommended option as waiting on them in the spec. Continue reversible work on that option within existing authorization. This exception needs no statement from another person that the owner is unavailable. Sign-off gates and work that needs the owner's authority still wait.
+While an owner has not picked, build only the parts every option shares. When those parts are built and the owner has still not answered, keep their question open and record the recommended option as waiting on them in the spec. Continue reversible work on that option within existing authorization. If an owner says they are away, apply this exception at once. Sign-off gates and work that needs the owner's authority still wait.
 
 ## First round
 

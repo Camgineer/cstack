@@ -26,17 +26,19 @@ type Chat = { reply: string; hooks: string[] };
 
 // Cursor's CLI also loads the plugins Claude Code installed, unless the project's .claude/settings.json turns one off.
 async function turnOffInstalledCopies(project: string) {
-  const installed: { plugins?: Record<string, { installPath?: string }[]> } = await readFile(join(homedir(), ".claude/plugins/installed_plugins.json"), "utf8").then(JSON.parse, () => ({}));
-  const copies = Object.entries(installed.plugins ?? {}).filter(([id]) => id.split("@")[0] === pluginName);
+  const installed: unknown = await readFile(join(homedir(), ".claude/plugins/installed_plugins.json"), "utf8").then(JSON.parse).catch(() => null);
+  const plugins: Record<string, unknown> = typeof installed === "object" && installed !== null && "plugins" in installed && typeof installed.plugins === "object" && installed.plugins !== null ? { ...installed.plugins } : {};
+  const copies = Object.entries(plugins).filter(([id]) => id.split("@")[0] === pluginName);
   await mkdir(join(project, ".claude"));
   await writeFile(join(project, ".claude/settings.json"), JSON.stringify({ enabledPlugins: Object.fromEntries(copies.map(([id]) => [id, false])) }));
-  return copies.flatMap(([, installs]) => installs.flatMap((install) => install.installPath ?? []));
+  return copies.map(([id]) => id);
 }
 
 async function copiesTheHarnessCannotTurnOff() {
   const root = join(homedir(), ".cursor/plugins");
-  const found = new Bun.Glob(`{local/*,cache/*/*/*}/skills/${mode}/SKILL.md`).scan({ cwd: root });
-  return (await Array.fromAsync(found).catch(() => [])).map((path) => join(root, path, "../../.."));
+  const found = await Promise.all(["local/*", "cache/*/*/*"].map((copy) =>
+    Array.fromAsync(new Bun.Glob(`${copy}/skills/${mode}/SKILL.md`).scan({ cwd: root, followSymlinks: true })).catch(() => [])));
+  return found.flat().map((path) => join(root, path, "../../.."));
 }
 
 async function main() {
@@ -77,7 +79,7 @@ async function main() {
   const log = join(scratch, "hook-log");
   const transcripts = await mkdtemp(join(tmpdir(), "cursor-mode-transcripts-"));
   const checks: Check[] = [];
-  let installedCopies = {};
+  let installedCopies: { turnedOff: string[]; stillLoaded: string[] } = { turnedOff: [], stillLoaded: [] };
   try {
     await Promise.all([mkdir(project), mkdir(state), mkdir(log)]);
     await cp(source, plugin, { recursive: true, filter: (path) => ![".git", "node_modules"].includes(basename(path)) });
@@ -121,7 +123,7 @@ async function main() {
         const result = events.findLast((event) => event.type === "result")?.result;
         assert(typeof result === "string", `No final result in: ${stdout}`);
         const calls = events.filter((event) => event.type === "tool_call" && event.subtype === "started").map((event) => JSON.stringify(event.tool_call));
-        const otherCopies = [...new Set(calls.flatMap((call) => call.match(copyPath) ?? []))].filter((path) => /^[/~$]/.test(path) && !candidateRoots.some((root) => path.startsWith(`${root}/`)));
+        const otherCopies = [...new Set(calls.flatMap((call) => call.match(copyPath) ?? []))].filter((path) => /^[/~]/.test(path) && !candidateRoots.some((root) => path.startsWith(`${root}/`)));
         const fired = (await readdir(log)).filter((name) => !before.has(name) && name.endsWith(".env")).sort();
         const hookEnv = await Promise.all(fired.map(async (name) => `${name.split("-")[0]}: ${(await readFile(join(log, name), "utf8")).trim().replaceAll("\n", ", ")}`));
         return { reply: result.trim(), hooks: hookEnv, tools: calls.map((call) => call.slice(0, 400)), otherCopies };
@@ -142,21 +144,23 @@ async function main() {
     async function check(name: string, prompt: string, env: Record<string, string>, expect: (chat: Chat) => boolean | Promise<boolean>, readOnly = true) {
       try {
         const { reply, hooks: fired, tools, otherCopies } = await run(prompt, env, readOnly);
-        const passed = otherCopies.length === 0 && (await expect({ reply, hooks: fired }));
+        const passed = otherCopies.length === 0 && installedCopies.stillLoaded.length === 0 && (await expect({ reply, hooks: fired }));
         checks.push({ name, passed, evidence: `reply ${JSON.stringify(reply.slice(0, 300))}; tools [${tools.join("; ")}]; other copies named in tool calls [${otherCopies.join("; ")}]; hooks [${fired.join("; ")}]; flag ${await flag()}` });
       } catch (error) {
         checks.push({ name, passed: false, evidence: error instanceof Error ? error.message : String(error) });
       }
     }
 
+    const principle = join(plugin, "skills/principle-prove-it-works/SKILL.md");
+    const heading = /^# (.+)$/m.exec(await readFile(principle, "utf8"))?.[1];
     const isOn = ({ reply }: Chat) => /^\W*ON\b/.test(reply) && candidateScripts.some((script) => reply.includes(script));
     const isOff = ({ reply, hooks: fired }: Chat) => /^\W*OFF\W*$/.test(reply) && fired.some((hook) => hook.startsWith("sessionStart:"));
     await check("skills: the mode and setup skills load, principles stay hidden",
       `List the names of every skill you can use whose name starts with ${mode}, setup, or principle-, comma-separated, and nothing else. Use no tools.`,
       {}, ({ reply }) => reply.includes(mode) && reply.includes("setup") && !reply.includes("principle-"));
     await check("plugin files: the agent reads a principle file from the plugin",
-      `Read ${join(plugin, "skills/principle-prove-it-works/SKILL.md")} and reply with only the value of its name field.`,
-      {}, ({ reply }) => reply.includes("principle-prove-it-works"));
+      `Read ${principle} and reply with only the text of its first heading.`,
+      {}, ({ reply }) => heading !== undefined && reply.includes(heading));
     await check(`${variable}=on turns the mode on in a new chat`, askWhetherHookSaidOn, { [variable]: "on" }, isOn);
     await check("no variable and no recorded choice leave the mode off", askWhetherHookSaidOn, {}, isOff);
     await check(`typed /${mode} records on for the project`, `/${mode}`, {}, async () => (await flag()) === "on", false);

@@ -22,7 +22,7 @@ Run two companion skills for the whole session, every round:
 
 Keep one long-lived spec. Use the **Shared document** capability for a separate grill document titled `Grill: <topic>`, linked from the spec. Each grill covers one round or one slice and holds open questions only. When that capability has no route, ask in the reply alone and keep settled decisions in the spec.
 
-Tell people how to answer in chat or by commenting on a question's heading or sentence. Put an index of open questions at the top, with each question's number, owner, and title. Give every listed question its own section. A held question names what it waits on.
+Tell people how to answer in chat or by commenting on a question's heading or sentence. Put an index of open questions at the top, with each question's number, owner, and title. Give every listed question its own section with its owner, view, and recommendation. A held question also names what it waits on.
 
 With more than one person, assign each person a distinct marker and tell them the mapping once. Start each question with its owner's marker. Use all the owners' markers for a joint decision. With one person, name them as the owner. Keep question numbers unchanged and never reuse a settled number.
 

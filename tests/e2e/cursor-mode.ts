@@ -10,7 +10,6 @@ const source = join(import.meta.dir, "../..");
 const pluginName: string = JSON.parse(readFileSync(join(source, "tools/metadata.json"), "utf8")).name;
 const mode = `${pluginName}-mode`;
 const variable = mode.toUpperCase().replaceAll("-", "_");
-const timeoutMs = 300_000;
 
 const observer = `#!/bin/sh
 f="$2/$1-$(date +%s)-$$"
@@ -22,7 +21,7 @@ case $1 in beforeSubmitPrompt) printf '{"continue":true}\\n' ;; *) printf '{}\\n
 const askWhetherHookSaidOn = `If your context says that ${mode} is on for this project, reply with the word ON and then the path of the mode script that context names, and nothing else. Otherwise reply with only the word OFF. Use no tools.`;
 
 type Check = { name: string; passed: boolean; evidence: string };
-type Chat = { reply: string; hooks: string[] };
+type Chat = { reply: string; modeScriptSays: string };
 
 // Cursor's CLI also loads the plugins Claude Code installed, unless the project's .claude/settings.json turns one off.
 async function turnOffInstalledCopies(project: string) {
@@ -47,6 +46,7 @@ async function main() {
     options: {
       cursor: { type: "string", default: "cursor-agent" },
       model: { type: "string" },
+      "timeout-seconds": { type: "string", default: "300" },
       "allow-account-runs": { type: "boolean", default: false },
     },
   });
@@ -56,6 +56,8 @@ async function main() {
   const cursor = values.cursor;
   const model = values.model;
   assert(model, "Pass --model with a model the account allows; `cursor-agent --list-models` lists them");
+  const timeoutMs = Number(values["timeout-seconds"]) * 1000;
+  assert(timeoutMs > 0, "Pass --timeout-seconds with the number of seconds to wait for each chat");
 
   const scratch = await mkdtemp(join(tmpdir(), "cursor-mode-"));
   // On macOS the person's ~/.zshenv set the variable in Cursor's hooks, so an empty ZDOTDIR keeps zsh from reading it.
@@ -107,17 +109,21 @@ async function main() {
         [cursor, "-p", ...(readOnly ? ["--mode", "ask"] : []), "--trust", "--plugin-dir", plugin, "--model", model!, "--output-format", "stream-json", prompt],
         { cwd: project, env: { ...baseEnv, ...env }, stdin: "ignore", stdout: "pipe", stderr: "pipe" },
       );
+      const output = Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
       let timer: Timer | undefined;
-      const timedOut = new Promise<never>((_, reject) => {
+      const timedOut = new Promise<null>((resolve) => {
         timer = setTimeout(() => {
           child.kill("SIGKILL");
-          reject(new Error(`Cursor gave no result within ${timeoutMs / 1000}s`));
+          resolve(null);
         }, timeoutMs);
       });
+      const transcript = join(transcripts, `${String(checks.length + 1).padStart(2, "0")}.jsonl`);
       try {
-        const output = Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
-        const [code, stdout, stderr] = await Promise.race([output, timedOut]);
-        await writeFile(join(transcripts, `${String(checks.length + 1).padStart(2, "0")}.jsonl`), `${stdout}${stderr}`);
+        const finished = await Promise.race([output, timedOut]);
+        // A process the CLI started can hold the pipes open after the kill, so wait only briefly for what it wrote.
+        const [code, stdout, stderr] = finished ?? (await Promise.race([output, Bun.sleep(5000).then(() => [null, "", ""] as const)]));
+        await writeFile(transcript, `${stdout}${stderr}`);
+        assert(finished, `Cursor gave no result within ${timeoutMs / 1000}s; ${transcript} holds what it wrote`);
         assert.equal(code, 0, `Cursor exited with code ${code}: ${stderr || stdout}`);
         const events: Record<string, unknown>[] = stdout.trim().split("\n").map((line) => JSON.parse(line));
         const result = events.findLast((event) => event.type === "result")?.result;
@@ -137,38 +143,48 @@ async function main() {
       return files.length === 0 ? "none" : (await readFile(join(state, pluginName, mode, files[0]!), "utf8")).split("\n")[0]!;
     }
 
-    function record(choice: "on" | "off") {
-      Bun.spawnSync(["sh", candidateScripts[0]!, choice], { cwd: project, env: baseEnv, stdout: "ignore", stderr: "ignore" });
+    function modeScript(command: "on" | "off" | "status", env: Record<string, string>) {
+      const script = Bun.spawnSync(["sh", candidateScripts[0]!, command], { cwd: project, env: { ...baseEnv, ...env }, stdout: "pipe", stderr: "pipe" });
+      return script.exitCode === 0 ? script.stdout.toString().trim() : `failed with code ${script.exitCode}: ${script.stderr.toString().trim()}`;
     }
 
-    async function check(name: string, prompt: string, env: Record<string, string>, expect: (chat: Chat) => boolean | Promise<boolean>, readOnly = true) {
+    function record(choice: "on" | "off") {
+      const said = modeScript(choice, {});
+      assert(said.startsWith(`${mode} is ${choice} for `), `The harness could not record ${choice} before this chat: the candidate's mode script ${said}`);
+    }
+
+    async function check(name: string, prompt: string, env: Record<string, string>, expect: (chat: Chat) => boolean | Promise<boolean>, { readOnly = true, before = () => {} } = {}) {
       try {
+        before();
         const { reply, hooks: fired, tools, otherCopies } = await run(prompt, env, readOnly);
-        const passed = otherCopies.length === 0 && installedCopies.stillLoaded.length === 0 && (await expect({ reply, hooks: fired }));
-        checks.push({ name, passed, evidence: `reply ${JSON.stringify(reply.slice(0, 300))}; tools [${tools.join("; ")}]; other copies named in tool calls [${otherCopies.join("; ")}]; hooks [${fired.join("; ")}]; flag ${await flag()}` });
+        const modeScriptSays = modeScript("status", env);
+        // Only the candidate's hooks file names the observer, so a chat where it never ran shows nothing about the candidate.
+        const candidateLoaded = fired.some((hook) => hook.startsWith("sessionStart:"));
+        const passed = candidateLoaded && otherCopies.length === 0 && installedCopies.stillLoaded.length === 0 && (await expect({ reply, modeScriptSays }));
+        checks.push({ name, passed, evidence: `reply ${JSON.stringify(reply.slice(0, 300))}; tools [${tools.join("; ")}]; other copies named in tool calls [${otherCopies.join("; ")}]; hooks [${fired.join("; ")}]${candidateLoaded ? "" : " (the candidate's session hook did not fire, so the check fails)"}; flag ${await flag()}; mode script status ${JSON.stringify(modeScriptSays)}` });
       } catch (error) {
         checks.push({ name, passed: false, evidence: error instanceof Error ? error.message : String(error) });
       }
     }
 
     const principle = join(plugin, "skills/principle-prove-it-works/SKILL.md");
-    const heading = /^# (.+)$/m.exec(await readFile(principle, "utf8"))?.[1];
-    const isOn = ({ reply }: Chat) => /^\W*ON\b/.test(reply) && candidateScripts.some((script) => reply.includes(script));
-    const isOff = ({ reply, hooks: fired }: Chat) => /^\W*OFF\W*$/.test(reply) && fired.some((hook) => hook.startsWith("sessionStart:"));
+    // The file's own heading repeats its folder name, so a token marks a reply that came from reading the candidate's copy.
+    const heading = `Probe ${crypto.randomUUID().slice(0, 8)}`;
+    await writeFile(principle, (await readFile(principle, "utf8")).replace(/^# .+$/m, `# ${heading}`));
+    const isOn = ({ reply }: Chat) => /^\W*ON\b/.test(reply) && candidateRoots.some((root) => reply.includes(`${root}/`));
+    const isOff = ({ reply, modeScriptSays }: Chat) => /^\W*OFF\W*$/.test(reply) && modeScriptSays.startsWith(`${mode} is off for `);
     await check("skills: the mode and setup skills load, principles stay hidden",
       `List the names of every skill you can use whose name starts with ${mode}, setup, or principle-, comma-separated, and nothing else. Use no tools.`,
       {}, ({ reply }) => reply.includes(mode) && reply.includes("setup") && !reply.includes("principle-"));
     await check("plugin files: the agent reads a principle file from the plugin",
       `Read ${principle} and reply with only the text of its first heading.`,
-      {}, ({ reply }) => heading !== undefined && reply.includes(heading));
+      {}, ({ reply }) => reply.includes(heading));
     await check(`${variable}=on turns the mode on in a new chat`, askWhetherHookSaidOn, { [variable]: "on" }, isOn);
     await check("no variable and no recorded choice leave the mode off", askWhetherHookSaidOn, {}, isOff);
-    await check(`typed /${mode} records on for the project`, `/${mode}`, {}, async () => (await flag()) === "on", false);
-    record("on");
-    await check("a recorded on turns the mode on in the next chat", askWhetherHookSaidOn, {}, isOn);
-    await check(`typed /${mode} off records off for the project`, `/${mode} off`, {}, async () => (await flag()) === "off", false);
-    record("off");
-    await check(`a project turned off stays off under ${variable}=on`, askWhetherHookSaidOn, { [variable]: "on" }, isOff);
+    await check(`typed /${mode} records on for the project`, `/${mode}`, {}, async () => (await flag()) === "on", { readOnly: false });
+    await check("a recorded on turns the mode on in the next chat", askWhetherHookSaidOn, {}, isOn, { before: () => record("on") });
+    await check(`typed /${mode} off records off for the project`, `/${mode} off`, {}, async () => (await flag()) === "off", { readOnly: false });
+    await check(`a project turned off stays off under ${variable}=on`, askWhetherHookSaidOn, { [variable]: "on" }, isOff, { before: () => record("off") });
   } finally {
     await rm(scratch, { recursive: true, force: true });
   }

@@ -46,7 +46,7 @@ Remaining triggers. A trigger that names a skill means invoke that skill with th
 - Before commit → invoke `deslop`.
 - Before review → invoke `no-comments`.
 - Building, restyling, or polishing a UI, or critiquing its design → invoke `design-ui`.
-- Work with a surface a person sees or touches → read **principle-feel** and invoke `feel` for its motion and sound steps.
+- The task builds, changes, reviews, or verifies a surface a person sees or touches → read **principle-feel** and invoke `feel` for its motion and sound steps.
 - Shipping UI / IDE / CLI → invoke the matching control skill: `control-cli` for CLIs and TUIs, `control-ui` for browser, Electron, and web UIs, or the project's own verification skill. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
 - Running a benchmark, measuring perf yourself, or reporting a speedup or regression you measured → invoke `benchmark-checklist` before you report or act on the number.
 - Any PR-status request → the **Babysit** playbook (`playbooks/babysit.md`), rather than a similarly named host shortcut. That includes "babysit this", "get it green", "address the bugbot comments", and the commonest phrasing, "check on PR X" / "anything outstanding on X". Never triggered by merely opening a PR. Declare its mode before polling. The playbook's step 1 owns the request-to-mode mapping. Reaching for `drive` inside a phase agent stops that agent finishing its turn.

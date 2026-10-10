@@ -13,7 +13,7 @@ Read [the feel principle](../principle-feel/SKILL.md). Run only the branches the
 
 Find the project's named duration, easing, and spring tokens. Use them in every motion call. Define missing values in the project's token file, never at the call site.
 
-When the project has no motion tokens, propose this small fallback set to the person before adopting it. These are starting values to tune on the real surface.
+When the project has no motion tokens, show the person this named fallback set with its values. Ask whether to adopt it, and end that reply there. Add the set to the project only after a yes. On a no, ask which values to name instead.
 
 | Token | Value |
 | --- | --- |

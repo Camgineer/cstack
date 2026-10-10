@@ -6,6 +6,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | --- | --- |
 | **Delegate** | Codex's native subagent tools. Their names and fields differ between the local CLI, the desktop app, and cloud tasks, so read the schemas in this session. Codex does not register plugin agents, so pass the complete persona file from `agents/` as the child's instructions. |
 | **Ask** | The user-question tool when the session exposes one. Otherwise ask in the reply and continue on reversible work. |
+| **Shared document** | None mapped. Ask grill and align rounds in the reply alone, per [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native plan tool. |
 | **Invoke a skill** | `$<plugin>:<skill>`. Skills marked explicit-only in `agents/openai.yaml` stay out of the default selector, but their files remain readable. |
 | **History** | Thread and history tools when the session exposes them. Otherwise use a transcript or digest the user supplies. |

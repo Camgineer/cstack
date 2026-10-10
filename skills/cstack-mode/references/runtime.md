@@ -18,7 +18,8 @@ Each workflow uses these capabilities by name. Use the native tool the host note
 | Capability | Meaning in a workflow |
 | --- | --- |
 | **Delegate** | Spawn a subagent with a brief, a role, and a scope. Check its status, wait for it, and resume it. |
-| **Ask** | Put a structured question with options to the user. |
+| **Ask** | Put a structured question with options to the user. Grill and align rounds use **Shared document** and the reply instead, per [grill-with-docs](../../grill-with-docs/SKILL.md). |
+| **Shared document** | Keep a document the people in the conversation can read and comment on. Read authors and replies, reply in a thread, close it, and watch for new comments. |
 | **Plan** | Keep a visible todolist of the workflow's steps. |
 | **Invoke a skill** | Load a bundled skill by name with the host's skill mechanism, then follow it. A workflow step that names a skill ("invoke `how`", "the **how** skill") is a call to make at that step, not background reading. The step is done only when the skill is loaded, or when the reply records `skip <skill>: <reason>`. A `principle-*` skill is the exception: read its `SKILL.md` file. |
 | **History** | Read authorized past conversations for the current project. |

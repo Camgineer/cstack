@@ -80,9 +80,11 @@ For a change you will leave running, the `align` skill asks you for the goal, th
 
 ## Learn from every PR
 
-Before an agent marks a PR ready to merge, it runs a retro with the `reflect` skill. Lessons for your repository go to its `AGENTS.md`, and lessons for the plugin go to a draft for the plugin's repository. The lessons land in one PR that goes through the same review and merge rules as any other PR. A PR with nothing to learn gets a `Retro: no lessons` comment.
+An agent marks a PR ready as soon as independent agent review and end-to-end verification pass. CI and the retro do not hold readiness. A failing check is fixed while the PR stays ready. Merging stays with a person unless a `Merging: auto` line asks agents to arm auto-merge.
 
-On GitHub, you can make the retro a merge requirement. Ask an agent to install the retro gate, then add the `Retro` status check to your default branch's required checks.
+After marking ready, the builder writes a recap with the `reflect` skill. Lessons for your repository go to its `AGENTS.md`, and lessons for the plugin go to a draft for the plugin's repository. The lessons land in one PR that goes through the same review and merge rules as any other PR. A PR with nothing to learn gets a `Retro: no lessons` comment.
+
+On GitHub, the optional `Retro` status reports the recap and passes even when no recap exists. To update an older retro gate, ask an agent to replace it with the plugin's current reporter. The recap never blocks readiness or merging.
 
 ## Keep yourself the only author
 

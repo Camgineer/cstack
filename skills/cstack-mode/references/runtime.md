@@ -30,7 +30,7 @@ When a capability is missing, use the workflow's stated fallback. Without a fall
 
 ## Delegation
 
-Give each child the least permission it needs. Investigators get read-only scope for both files and connected apps. A filesystem sandbox does not grant connector write authority. Assign exclusive writable paths or isolated worktrees before parallel edits. If the spawn tool has no working-directory field, name the prepared worktree in the brief and have the child verify its directory before writing. Schedule lanes within actual capacity and report any missing coverage.
+Give each child the least permission it needs. Investigators get read-only scope for repository files and connected apps. Read-only scope protects repository files and connected apps. An agent with read-only scope still runs local checks, and runs probes in a throwaway directory within the brief's allowed paths. A filesystem sandbox does not grant connector write authority. Assign exclusive writable paths or isolated worktrees before parallel edits. If the spawn tool has no working-directory field, name the prepared worktree in the brief and have the child verify its directory before writing. Schedule lanes within actual capacity and report any missing coverage.
 
 The bundled personas live in `agents/` at the plugin root. `agents/cstack-agent.md` is the implementation delegate. It must read CStack Mode and its Principles index. `agents/comment-sicko.md` is the comment reviewer. When the host registers plugin agents, spawn them by name. Otherwise pass the complete persona file as the child's instructions. Routed workflows such as How, Why, Interrogate, and Reflect use their own specialist reference prompts.
 

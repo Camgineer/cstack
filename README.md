@@ -124,7 +124,7 @@ Some workflows need extra tools. The Bun helpers need their locked dependencies,
 
 ## How the repository is laid out
 
-One core serves every harness. Each harness gets a thin adapter that uses its own native plugin format.
+One core serves every harness. Each harness that loads plugins gets a thin adapter that uses its own native plugin format.
 
 ```mermaid
 flowchart LR

@@ -27,9 +27,9 @@ The plugin reaches an Intent agent by two routes. Intent's own skill catalog and
 
 ## Grill documents
 
-Follow [grill-with-docs](../../../grill-with-docs/SKILL.md) for grill and align rounds, including rounds by a delegated agent. The **Ask** route stays unused for those rounds.
+Follow [grill-with-docs](../../../grill-with-docs/SKILL.md) for grill and align rounds, including rounds by a delegated agent.
 
-Use the workspace's one Spec note for the spec and align draft. Put goal, status, what waits on each person, grills, and decisions first. Put the tier's template sections and evidence after them. Notes and the living spec are [documented by Intent](https://intentapp.dev/docs#context).
+Use the workspace's one Spec note for the spec and align draft. Put goal, status, what waits on each person, grills, and decisions first. Put the tier's template sections and evidence after them. Notes and the Spec are [documented by Intent](https://intentapp.dev/docs#context).
 
 Create each grill through an `@@@task` block under the Spec's Grills section with `ws.note.add`. Title it `Grill: <topic>`. Read `createdTaskNoteIds` and `warnings` from the result. Set the grill task to `in_progress` with `ws.task.updateNoteStatus`. Its task link shows `[/]` while open and `[x]` when complete ([status mapping, read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/note_ops.rs#L434-L441)). Share the returned note link in the reply.
 
@@ -43,7 +43,7 @@ Settle an answer in the same turn. Write it into the Spec's Decisions with its o
 intentd call comment.resolveThread --params '{"workspaceId":"<workspace-id>","noteId":"<grill-note-id>","threadId":"<thread-id>"}'
 ```
 
-Use `ws.note.edit` and `ws.note.add` for small edits. Read `rawContent` with `ws.note.read` before a necessary full replacement, and keep every `<!--anchor:...:start-->` and `<!--anchor:...:end-->` marker. A rewrite that drops those markers detaches comments for good, while their threads still list as open (relayed, and [anchor pass, read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/lib.rs#L10994-L11097)). After each write, read back the raw note, check that headings appear once, and check that code fences come in pairs. Once all questions are removed, set the empty grill task to `complete` with `ws.task.updateNoteStatus`.
+Use `ws.note.edit` and `ws.note.add` for small edits. Read `rawContent` with `ws.note.read` before a necessary full replacement, and keep every `<!--anchor:...:start-->` and `<!--anchor:...:end-->` marker. A rewrite that drops those markers detaches comments for good, while their threads still list as open (relayed, and [anchor pass, read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/lib.rs#L10994-L11097)). Remove a settled section and its anchors with a small edit only after its threads are closed. After each write, read back the raw note, check that headings appear once, and check that code fences come in pairs. Once all questions are removed, set the empty grill task to `complete` with `ws.task.updateNoteStatus`.
 
 Delegation limits. Depth counts from the agent the person started, which is depth 0, and `ws.agent.status` on your own id shows yours as `metadata.delegationDepth`. An agent at depth 2 cannot delegate ([the delegate guard, read from source](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/agent_ops.rs#L10561-L10577)). A depth-2 agent quoted the same error (relayed). The call fails with this text:
 

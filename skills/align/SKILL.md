@@ -32,7 +32,7 @@ State a tier with a one-line reason drawn from blast radius and reversibility, a
 
 ## 3. Grill
 
-Run the **grill-with-docs** skill with the tier's spec sections as the design tree, in template order. Problem and definition of done are the root. Every later section hangs off them. Follow its document, reply, and answer-settlement method for every round. Use the **Shared document** capability when mapped, and ask in the reply alone otherwise.
+Run the **grill-with-docs** skill with the tier's spec sections as the design tree, in template order. Problem and definition of done are the root. Every later section hangs off them. Follow its document, reply, and answer-settlement method for every round.
 
 - **Designs.** In the Full tier, run the **architect** skill with checkpoint, and stop at its checkpoint: no implementation and no commit. Its synthesized design and the runner-up shapes become the options for the high- and low-level design questions.
 - **Acceptance criteria.** Each one is behavioral, observable, and checkable on its own: "running `export --tag work` writes only rows tagged work", never "export works". Name interfaces and types, not file paths. Give each an ID: `AC-1`, `AC-2`.

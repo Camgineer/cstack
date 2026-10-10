@@ -79,10 +79,10 @@ Check source-control access through available git, `gh`, or authorized connector
 
 Aim for a complete **coverage map**, not a minimal one. Document the null, don't skip the search.
 
-Launch all matching investigators in a single message so they run concurrently. Don't ask one agent to cover multiple MCPs.
+Start all matching investigators together so they run concurrently. Don't ask one agent to cover multiple MCPs.
 
 Subagent config (each):
-- Persona: generic native investigator; apply the workflow reference prompt.
+- Persona: generic investigator; apply the workflow reference prompt.
 - Model role: `why investigators`, from the `explore` role per **Model roles** in the runtime contract.
 - Scope: read-only source and connector investigation. Use supported read-only tools; never add write permissions to retain MCP access.
 

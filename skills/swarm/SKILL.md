@@ -8,7 +8,7 @@ Read [the runtime contract](../cstack-mode/references/runtime.md) before executi
 
 # Swarm
 
-Fan out N parallel native workers. They may cover separate slices, race the same brief, or mix both. The parent waits, aggregates, and returns one report.
+Fan out N parallel workers. They may cover separate slices, race the same brief, or mix both. The parent waits, aggregates, and returns one report.
 
 ## Start
 
@@ -23,13 +23,13 @@ Open a todolist with one entry per phase before launching anything.
 
 1. State the done predicate and the artifact or report the swarm must return.
 2. Choose the shape. Partition into slices, race N workers on identical briefs, or mix both. For a race or mixed shape, declare `first pass`, `rank all`, or `best-of` before spawning.
-3. Set N from the user or derive it from the shape. N is total workers, not the native concurrency limit.
+3. Set N from the user or derive it from the shape. N is total workers, not the runner's concurrency limit.
 4. Resolve the `swarm workers` model through the runtime contract. Workers on an exploration brief use the `explore` role. An exploration brief asks a worker only to search code, docs, or history and report findings. A worker that edits, runs or drives the app, verifies, or measures is on another brief. Inherit for other workers unless the user chose a supported override. Validate effort separately and report rejected IDs. For a model race, name each arm's supported model up front.
 5. Give each worker its own writable output when it writes. When workers verify or measure commits, each brief names the exact SHAs. A measurement brief also names the method (sample count, what one sample is, order). The worker records both in its result.
 
 ## Phase B: Fan out
 
-Spawn all N workers through the native tools, using the selected role and explicit scope. Run within actual native capacity, with exclusive writable paths or worktrees. Pass only the fields the host's spawn tool exposes.
+Start all N workers through the selected runner per the runtime contract, with explicit scope. Run within available capacity, with exclusive writable paths or worktrees. For a native runner, pass only the fields the host's spawn tool exposes.
 
 When a worker needs a non-default branch, prepare its isolated worktree at that exact ref before spawning. Pass the working directory through a supported field when available; otherwise include it in the brief and require the child to verify it before writing.
 

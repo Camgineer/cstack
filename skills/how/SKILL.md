@@ -33,9 +33,9 @@ When in doubt, take the simple path.
 
 ## Step 2a. Explore (complex questions only)
 
-Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Spawn all explorers in a single message:
+Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Start all explorers together:
 
-- Persona: generic native investigator; apply the workflow reference prompt.
+- Persona: generic investigator; apply the workflow reference prompt.
 - Model role: `how explorer`, from the `explore` role per **Model roles** in the runtime contract.
 - Scope: read-only; use the supported sandbox and no connector writes.
 

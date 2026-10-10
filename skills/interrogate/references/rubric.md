@@ -31,6 +31,7 @@ Answering this often requires looking beyond the changed files. Read the surroun
 - Type casts that silence a modeling error
 - If you see a workaround, ask: why is the workaround needed? What would a proper fix look like?
 - A fix in module A that should really be a fix in module B's contract
+- A fix at the site where the bug surfaced while sibling sites share its cause. Name the class and the upstream chokepoint that would close it once
 - Instructions where structure would be better: if the fix is a comment saying "don't do X" or a convention someone has to remember, ask whether it could instead be a type constraint, a lint rule, or a runtime check that makes the wrong thing impossible
 
 ## Structural Integrity

@@ -638,7 +638,8 @@ test("Intent reports unchanged delivery and its preserved files without claiming
   });
 });
 
-test("Claude project copies keep their directories and a shared user copy updates once", () => {
+test.each(["success", "first project fails"])("Claude project copies keep their directories and a shared user copy updates once (%s)", (scenario) => {
+  const failFirst = scenario === "first project fails";
   withHome((home) => {
     hosts(home, { cursorMarket: true });
     const projectA = join(home, "project A");
@@ -665,6 +666,7 @@ test("Claude project copies keep their directories and a shared user copy update
       "else {",
       "  fs.appendFileSync(path.join(home, 'project-calls'), JSON.stringify({args,cwd:process.cwd()})+'\\n');",
       "  const scope = args[args.indexOf('--scope')+1];",
+      "  if (" + JSON.stringify(failFirst) + " && scope === 'project' && process.cwd() === " + JSON.stringify(realpathSync(projectA)) + ") { console.log('first project failed'); process.exit(7); }",
       "  for (const copy of copies) if (copy.scope === scope && (scope === 'user' || fs.realpathSync(copy.projectPath) === process.cwd())) copy.version = '9.0.0';",
       "  fs.writeFileSync(file, JSON.stringify(copies));",
       "  if (scope === 'user') { const registry = path.join(home, '.claude/plugins/installed_plugins.json'); const state = JSON.parse(fs.readFileSync(registry)); state.plugins['cstack@cstack'][0].version = '9.0.0'; fs.writeFileSync(registry, JSON.stringify(state)); }",
@@ -672,9 +674,9 @@ test("Claude project copies keep their directories and a shared user copy update
       "}",
     ].join("\n"), { mode: 0o755 });
     const result = commandRun(home, ["--hosts", "claude,cursor"]);
-    expect(result.status).toBe(0);
+    expect(result.status).toBe(failFirst ? 1 : 0);
     expect(JSON.parse(readFileSync(join(home, "copies.json"), "utf8"))).toEqual([
-      { id: "cstack@cstack", scope: "project", projectPath: projectA, version: "9.0.0" },
+      { id: "cstack@cstack", scope: "project", projectPath: projectA, version: failFirst ? "1.0.0" : "9.0.0" },
       { id: "cstack@cstack", scope: "project", projectPath: projectB, version: "9.0.0" },
       { id: "cstack@cstack", scope: "user", version: "9.0.0" },
     ]);
@@ -684,7 +686,8 @@ test("Claude project copies keep their directories and a shared user copy update
       { args: ["plugin", "update", "cstack@cstack", "--scope", "project"], cwd: realpathSync(projectB) },
       { args: ["plugin", "update", "cstack@cstack", "--scope", "user"], cwd: process.cwd() },
     ]);
-    expect(result.stdout).toMatch(/Claude Code\s+yes\s+yes\s+1.0.0, 2.0.0, 3.0.0\s+9.0.0, 9.0.0, 9.0.0/);
+    expect(result.stdout).toMatch(failFirst ? /Claude Code\s+yes\s+yes\s+1.0.0, 2.0.0, 3.0.0\s+1.0.0, 9.0.0, 9.0.0/ : /Claude Code\s+yes\s+yes\s+1.0.0, 2.0.0, 3.0.0\s+9.0.0, 9.0.0, 9.0.0/);
+    if (failFirst) expect(result.stdout).toContain("first project failed");
     expect(result.stdout).toMatch(/Cursor\s+yes\s+yes\s+3.0.0 \(Claude import\)\s+9.0.0 \(Claude import\)/);
   });
 });

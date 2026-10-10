@@ -343,7 +343,7 @@ test("a failing host leaves its retry command and the other hosts still update",
     const result = commandRun(home, ["--yes"]);
     expect(result.status).toBe(1);
     expect(result.stdout).toContain("fixture failure");
-    expect(result.stdout).toContain("Retry with npx --yes github:OWNER/REPO --hosts claude");
+    expect(result.stdout).toMatch(/Retry with .*claude'? plugin update cstack@cstack --scope user\./);
     expect(result.stdout).toMatch(/Claude Code\s+yes\s+yes\s+1.0.0\s+1.0.0/);
     expect(result.stdout).toMatch(/Codex\s+yes\s+yes\s+2.0.0\s+9.0.0/);
     expect(mutations(home)).toEqual([
@@ -528,7 +528,7 @@ test.each(["inspection", "update"])("a termination-resistant host times out, cle
       expect(result.stdout).toContain("timed out");
       expect(result.stdout).toContain("waiting for the fixture service");
       expect(result.stdout).toContain(phase === "inspection" ? "plugin list --json" : "plugin update cstack@cstack --scope user");
-      expect(result.stdout).toContain("Retry with npx --yes github:OWNER/REPO --hosts claude");
+      expect(result.stdout).toMatch(phase === "inspection" ? /Retry with .*claude'? plugin list --json\./ : /Retry with .*claude'? plugin update cstack@cstack --scope user\./);
       expect(result.stdout).toMatch(/Codex\s+yes\s+yes\s+2.0.0\s+9.0.0/);
       expect(mutations(home)).toEqual([
         ["codex", "plugin", "marketplace", "upgrade", "cstack"],
@@ -784,3 +784,22 @@ test("updated hosts explain which sessions use the new version", () => {
     }
   });
 });
+
+test("Intent detects changed package files at the same version and an identical repeat is current", () => {
+  withHome((home) => {
+    hosts(home);
+    intentFetch(home, "valid");
+    const args = ["--hosts", "intent", "--source", "other/fork"];
+    expect(commandRun(home, args).status).toBe(0);
+    const changed = "# A changed skill from the fetched branch\n";
+    writeFileSync(join(home, "npx/cache/node_modules/cstack/skills/how/SKILL.md"), changed);
+    const update = commandRun(home, args);
+    expect(update.status).toBe(0);
+    expect(readFileSync(join(home, ".intent/skills/how/SKILL.md"), "utf8")).toBe(changed);
+    expect(update.stdout).toMatch(/Intent\s+yes\s+yes\s+1.5.0\s+1.5.0\s+Updated\./);
+    const repeat = commandRun(home, args);
+    expect(repeat.status).toBe(0);
+    expect(repeat.stdout).toMatch(/Intent\s+yes\s+yes\s+1.5.0\s+1.5.0\s+Already current at 1.5.0\./);
+    expect(repeat.stdout).not.toContain("New sessions");
+  });
+}, 15000);

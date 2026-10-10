@@ -44,7 +44,7 @@ function intentCommand() {
   return null;
 }
 
-function run(binary, args, cwd) {
+function run(binary, args, cwd, retryCommands = [[binary, args, cwd]]) {
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, { cwd, detached: !deliveryChild && process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
@@ -64,7 +64,7 @@ function run(binary, args, cwd) {
       if (problem) {
         stop();
         child.unref();
-        reject(new Error(`${commandLine([binary, args, cwd])} failed. ${problem} ${stdout.trim()} ${stderr.trim()} Retry with ${commandLine([binary, args, cwd])}.`.replace(/\s+/g, " ")));
+        reject(new Error(`${commandLine([binary, args, cwd])} failed. ${problem} ${stdout.trim()} ${stderr.trim()} Retry with ${retryCommands.map(commandLine).join(" && ")}.`.replace(/\s+/g, " ")));
       } else resolve(stdout);
     };
     const timer = setTimeout(() => finish(`timed out after ${commandTimeout}ms.`), commandTimeout);
@@ -336,10 +336,10 @@ async function main() {
         let problem;
         try {
           const problems = [];
-          for (const [binary, args, cwd] of operation.commands) {
+          for (const [index, [binary, args, cwd]] of operation.commands.entries()) {
             try {
               const key = JSON.stringify([binary, args, cwd ?? null]);
-              const output = completed.get(key) ?? await run(binary, args, cwd);
+              const output = completed.get(key) ?? await run(binary, args, cwd, operation.migrate ? operation.commands.slice(index) : undefined);
               completed.set(key, output);
               if (id === "intent") {
                 const outcome = operation.delivery === "fetched" ? fetchedDelivery(output, chosenSource) : intentDelivery(output, chosenSource);

@@ -803,3 +803,43 @@ test("Intent detects changed package files at the same version and an identical 
     expect(repeat.stdout).not.toContain("New sessions");
   });
 }, 15000);
+
+test.each([
+  ["retained", "plugin marketplace add other/fork"],
+  ["dropped", "plugin marketplace add other/fork"],
+  ["retained", "plugin add cstack@cstack"],
+  ["dropped", "plugin add cstack@cstack"],
+])("a failed Codex move gives the remaining recovery steps (plugin %s, fails %s)", (removal, failingCommand) => {
+  const dropsPlugin = removal === "dropped";
+  withHome((home) => {
+    hosts(home, { codex: "local" });
+    const host = join(home, "bin/host.mjs");
+    const standIn = readFileSync(host, "utf8").replace(
+      "else if (args[2] === 'remove') state.markets = [];",
+      `else if (args[2] === 'remove') { state.markets = []; ${dropsPlugin ? "state.codex = [];" : ""} }`,
+    ).replace(
+      "let result = {};",
+      "if (host === 'codex' && args.join(' ') === " + JSON.stringify(failingCommand) + " && !state.failedOnce) { state.failedOnce = true; writeFileSync(file,JSON.stringify(state)); console.error('fixture move failed'); process.exit(7); }\nlet result = {};",
+    );
+    writeFileSync(host, standIn);
+    const result = commandRun(home, ["--hosts", "codex", "--source", "other/fork"]);
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("fixture move failed");
+    const row = result.stdout.split("\n").find((line) => line.startsWith("Codex "));
+    const binary = `'${join(home, "bin/codex")}'`;
+    const recovery = failingCommand.startsWith("plugin marketplace")
+      ? `${binary} plugin marketplace add other/fork && ${binary} plugin add cstack@cstack`
+      : `${binary} plugin add cstack@cstack`;
+    expect(row).toContain(`Retry with ${recovery}.`);
+    const state = JSON.parse(readFileSync(join(home, "state.json"), "utf8"));
+    expect(state.codex.length).toBe(dropsPlugin ? 0 : 1);
+    expect(state.markets.length).toBe(failingCommand.startsWith("plugin marketplace") ? 0 : 1);
+    const retry = row?.split("Retry with ").at(-1)?.replace(/\.\s*$/, "");
+    if (!retry) throw new Error("The failed move did not give a retry command.");
+    const restored = spawnSync("sh", ["-c", retry], { env: { PATH: join(home, "bin"), HOME: home }, encoding: "utf8" });
+    expect(restored.status).toBe(0);
+    const after = JSON.parse(readFileSync(join(home, "state.json"), "utf8"));
+    expect(after.codex).toEqual([{ name: "cstack", pluginId: "cstack@cstack", marketplaceName: "cstack", version: "9.0.0", marketplaceSource: { sourceType: "git", source: "configured" } }]);
+    expect(after.markets).toEqual([{ name: "cstack", marketplaceSource: { sourceType: "git", source: "other/fork" } }]);
+  });
+});

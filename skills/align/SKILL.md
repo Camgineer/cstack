@@ -42,7 +42,7 @@ State a tier with a one-line reason drawn from blast radius and reversibility, a
 
 ## 3. Grill
 
-Run the **grill-with-docs** skill with the tier's spec sections as the design tree, in template order. Problem and definition of done are the root. Every later section hangs off them.
+Run the **grill-with-docs** skill with the tier's spec sections as the design tree, in template order. Problem and definition of done are the root. Every later section hangs off them. Follow its document, reply, and answer-settlement method for every round.
 
 - **Designs.** In the Full tier, run the **architect** skill with checkpoint, and stop at its checkpoint: no implementation and no commit. Its synthesized design and the runner-up shapes become the options for the high- and low-level design questions.
 - **Acceptance criteria.** Each one is behavioral, observable, and checkable on its own: "running `export --tag work` writes only rows tagged work", never "export works". Name interfaces and types, not file paths. Give each an ID: `AC-1`, `AC-2`.
@@ -52,7 +52,7 @@ Run the **grill-with-docs** skill with the tier's spec sections as the design tr
 
 ## 4. Draft
 
-Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md) for the tier, using the glossary's terms. Keep the draft as an untracked working file. When the change adds a setting that names a command to run, add one line naming where that setting may come from, and allow only the operator's own config. An operator's waiver of a safeguard covers their own tools, not content a repository ships.
+Fill [SPEC-TEMPLATE.md](SPEC-TEMPLATE.md) for the tier, using the glossary's terms. Keep the draft in the host's spec document when **Shared document** is mapped. Otherwise keep it as an untracked working file. When the change adds a setting that names a command to run, add one line naming where that setting may come from, and allow only the operator's own config. An operator's waiver of a safeguard covers their own tools, not content a repository ships.
 
 Then run the **cold-implementer check**. Use the **Delegate** capability to give a fresh-context reader the spec and a clean worktree at the fetched trunk SHA, with that SHA named in the brief, and nothing from this conversation. When you have already built shared parts, hand them over as a separate diff labelled as the proposal, so the reader never takes them for trunk. Ask it for every question it would need answered before building. Route each one back: a fact you fill in; a decision, including any edge case the user would see, goes to a Grill round. Repeat until the reader returns no questions.
 

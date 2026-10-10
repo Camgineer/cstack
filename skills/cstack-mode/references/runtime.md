@@ -18,14 +18,15 @@ Each workflow uses these capabilities by name. Use the native tool the host note
 | Capability | Meaning in a workflow |
 | --- | --- |
 | **Delegate** | Spawn a subagent with a brief, a role, and a scope. Check its status, wait for it, and resume it. |
-| **Ask** | Put a structured question with options to the user. |
+| **Ask** | Put a structured question with options to the user. For grill and align rounds, follow [grill-with-docs](../../grill-with-docs/SKILL.md). |
+| **Shared document** | Keep a document the people in the conversation can read and comment on. Read authors and replies, reply in a thread, close it, and watch for new comments. |
 | **Plan** | Keep a visible todolist of the workflow's steps. |
 | **Invoke a skill** | Load a bundled skill by name with the host's skill mechanism, then follow it. A workflow step that names a skill ("invoke `how`", "the **how** skill") is a call to make at that step, not background reading. The step is done only when the skill is loaded, or when the reply records `skip <skill>: <reason>`. A `principle-*` skill is the exception: read its `SKILL.md` file. |
 | **History** | Read authorized past conversations for the current project. |
 | **Continue later** | Wake the work again after the current task ends. |
 | **Generate an image** | Make an image file from a prompt with the host's built-in image tool. |
 
-When a capability is missing, say which workflow step it blocks. Keep going with the steps that do not need it. Never claim a check ran when its capability was missing.
+When a capability is missing, use the workflow's stated fallback. Without a fallback, say which step it blocks. Keep going with the steps that do not need it. Never claim a check ran when its capability was missing.
 
 ## Delegation
 

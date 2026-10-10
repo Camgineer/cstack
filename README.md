@@ -27,7 +27,11 @@ npx -y github:OWNER/REPO --hosts intent,claude,codex
 npx -y github:OWNER/REPO --report-only
 ```
 
-Claude Code and Codex use their own plugin commands. Updates follow each host's configured source. A fresh install or a Codex copy registered from a local folder uses the GitHub source from npx's package metadata. The command announces a Codex move before it unregisters the local marketplace and adds the GitHub one. `--source OWNER/REPO` overrides the inferred source for operations that need one. Without a source, other updates continue and the table gives the command to retry.
+Claude Code and Codex use their own plugin commands. Updates follow each host's configured source. A fresh install or a Codex copy registered from a local folder uses a best-effort read of the GitHub source from npx's adjacent package lockfile. If that file is missing or has an unsupported shape, no source is inferred.
+
+The command announces a Codex move before it unregisters the local marketplace and adds the GitHub one. `--source OWNER/REPO` overrides the inferred source for operations that need one. Without a source, other updates continue and the table gives the command to retry.
+
+Each host command has a hard two-minute limit. Use `--timeout-ms MS` to change it. A timeout or failure keeps the available command output in that host's result and continues with the other hosts.
 
 Cursor's CLI can add or refresh a marketplace. To install or finish an update, open **Customize**, find the plugin, and select **Install** or update. The command reports native Cursor installation and version as unknown because its CLI has no installed-plugin list. It also detects enabled user plugins that Cursor imports from Claude Code and updates those through Claude Code. The final table labels their versions as Claude imports.
 

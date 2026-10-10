@@ -16,11 +16,15 @@ On hosts that run the plugin's hooks, the user's typed command for this skill al
 
 ## Scratch files
 
-Keep every scratch file you create for your work inside the project, under `tmp/<task>/`, with a folder named for the task. Scratch includes a probe file, a temporary file a command needs, a throwaway repository, a log, a download, a screenshot, a resume note, and a prototype. This keeps the files where you can remove them and the person can open them.
+Keep every scratch file you create for your work inside the project, under `tmp/<task>/`, with a folder named for the task. Scratch includes a probe file, a temporary file a command needs, a throwaway repository, a log, a download, a screenshot, a resume note, and a local prototype. This keeps the files where you can remove them and the person can open them.
+
+A prototype that a PR or issue will link to is published on a throwaway branch, per [Prototype](playbooks/prototype.md). Local-only prototypes stay in `tmp/<task>/`.
 
 Before the first scratch write, run `git check-ignore -q tmp/<task>/probe` from the project root. If it fails, create `tmp/<task>/.gitignore` containing `*` and repeat the check. Continue only when it succeeds. Keep scratch out of commits.
 
-A test suite's own temporary directories are not scratch. Leave them where the suite puts them. When the work is merged or dropped, remove your task folder unless a person still reads from it.
+A test suite's own temporary directories are not scratch. Leave them where the suite puts them.
+
+On the turn you learn the work was merged or dropped, remove your task folder before replying. If someone still needs files from it, keep those files and say in the reply what you kept and for whom.
 
 ## Non-negotiables
 

@@ -368,7 +368,7 @@ async function main() {
         }
         const changed = !after.problem && (copyState(before) !== copyState(after) || deliveryChanged);
         const preserved = kept.some((line) => line.startsWith("left your own "));
-        const messages = `${kept.join(". ")}${kept.length ? ". " : ""}${preserved ? "Nothing is needed for your own files. " : ""}`;
+        const messages = `${kept.map((line) => line.replace(/\.$/, "")).join(". ")}${kept.length ? ". " : ""}${preserved ? "Nothing is needed for your own files. " : ""}`;
         if (problem) action = `${problem} ${messages}`;
         else if (changed) action = `Updated. New sessions use version ${versions(after)}. Sessions already open keep the old version until you start them again. ${messages}${action}`;
         else if (operation.pending) action = `No installed version changed. ${messages}${operation.pending}`;

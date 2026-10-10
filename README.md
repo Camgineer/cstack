@@ -37,7 +37,9 @@ Each host command has a hard two-minute limit. Use `--timeout-ms MS` to change i
 
 Cursor's CLI can add or refresh a marketplace. To install or finish an update, open **Customize**, find the plugin, and select **Install** or update. The command reports native Cursor installation and version as unknown because its CLI has no installed-plugin list. It also detects enabled user plugins that Cursor imports from Claude Code and updates those through Claude Code. The final table labels their versions as Claude imports.
 
-Intent keeps the fetched package in `~/.local/share/cstack` and links its visible skills. On the first install it adds the mode rule under **Settings**, **Agent Behavior**. If it cannot reach Intent, it prints the rule to paste there. Updates leave that rule alone. Your own files stay untouched, and the table says they were left as they are. Run `setup` to configure specialists and other settings. Installing does not create specialists.
+Intent keeps the fetched package and `install-record.json` in `~/.local/share/cstack`, or the plugin folder under `XDG_DATA_HOME` when set. The record lists each copied file's content hash and each skill link's exact target. Updates replace or remove an entry only when its current value matches the record. Your own files, edited copies, and unrecorded broken links stay untouched. The table names the files it keeps. A first run without a record recognizes exact links to known skills from an earlier install and records them. It removes nothing from that earlier install. An unreadable record permits no removal.
+
+On the first install Intent adds the mode rule at the top of your personal rule text under **Settings**, **Agent Behavior**. If it cannot reach Intent, it prints the rule to paste there. Updates leave that rule alone. The final table says where the rule went. Run `setup` to configure specialists and other settings. Installing does not create specialists.
 
 A failure in one host does not stop the others. The command exits nonzero for command or inspection failures. Preserving your own file is a successful result. On a new computer, run the same command and select the hosts you want.
 

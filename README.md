@@ -26,13 +26,13 @@ codex plugin add PLUGIN@PLUGIN
 
 **Cursor.** Add the repository through Cursor's plugin settings. Cursor reads `.cursor-plugin/plugin.json` at the repository root.
 
-**Intent.** Intent loads no plugins, so this command fetches the latest plugin, keeps a copy in `~/.local/share/cstack`, and links its skills and personas into Intent:
+**Intent.** This command fetches the latest plugin, keeps a copy in `~/.local/share/cstack`, and links its skills and personas into Intent:
 
 ```bash
 npx -y github:OWNER/REPO
 ```
 
-Run it again to update. Each run replaces the copy, so new and removed skills follow. To work on the plugin itself, run `sh hooks/intent-install.sh` from a clone instead, and Intent links straight to the clone. Intent support is new: the install is checked against Intent's daemon, but no agent session has run under it yet. On the first run, the command also adds the rule that keeps the mode on to Intent's Settings, under Agent Behavior. When it can't reach Intent, it prints the rule for you to paste there. To pick models for the plugin's delegated steps, add a `Models:` block to that rule. Leave the plugin's specialists alone in Intent's specialist editor, which saves its changes into the plugin's files, where the next update replaces them.
+Run it again to update. Each run replaces the copy, so new and removed skills follow. To work on the plugin itself, run `sh hooks/intent-install.sh` from a clone instead, and Intent links straight to the clone. Intent support is new. On the first run, the command also adds the rule that keeps the mode on to Intent's Settings, under Agent Behavior, as the first paragraph of your own rule text there. When it can't reach Intent, it prints the rule for you to paste there. To pick models for the plugin's delegated steps, add a `Models:` block to that rule. Leave the plugin's specialists alone in Intent's specialist editor. Intent's edit call saves through the installed link into the plugin's files, where the next update replaces them. Whether the desktop editor uses that call has not been checked.
 
 On a new computer, run the same commands. Every skill, playbook, and persona comes back with the plugin.
 
@@ -57,7 +57,7 @@ CStack Mode picks a playbook and loads the skills the task needs. It reports any
 
 In Claude Code and Codex, the mode stays on for the project once you invoke it, including in new sessions and after the context compacts. Run the same command with `off` to turn it off. Codex asks you to review and trust the plugin's hooks first. In Cursor, it stays on in new chats, but can lapse when a long chat compacts. To keep it on every turn, pick `cstack-mode` from the `/` menu with Option+Enter on Mac or Alt+Enter on Windows instead of Enter. That makes it a [Custom Mode](https://cursor.com/docs/agent/prompting#custom-modes), which stays in context until you exit it. Cursor offers Custom Modes in the Agents Window and the CLI.
 
-To turn the mode on in every project, set `CSTACK_MODE=on` in the environment your harness starts from, such as your shell profile or a cloud environment's settings. Claude Code, Codex, and Cursor all read it when a session starts. Intent ignores it and uses the rule from its install step instead. Unset it to stop. A project you turn off with the `off` command stays off either way.
+To turn the mode on in every project, set `CSTACK_MODE=on` in the environment your harness starts from, such as your shell profile or a cloud environment's settings. Claude Code, Codex, and Cursor all read it when a session starts. In Intent, a Claude Code or Codex agent also reads it when you installed the plugin in that harness too. Unset it to stop. A project you turn off with the `off` command stays off either way. Intent's rule from its install step is a separate switch. It keeps the mode on in Intent with or without the variable, and neither unsetting the variable nor the `off` command removes it. To turn the mode off in Intent, also delete the rule's paragraph under Settings, Agent Behavior.
 
 ## Write a prompt
 
@@ -80,9 +80,11 @@ For a change you will leave running, the `align` skill asks you for the goal, th
 
 ## Learn from every PR
 
-Before an agent marks a PR ready to merge, it runs a retro with the `reflect` skill. Lessons for your repository go to its `AGENTS.md`, and lessons for the plugin go to a draft for the plugin's repository. The lessons land in one PR that goes through the same review and merge rules as any other PR. A PR with nothing to learn gets a `Retro: no lessons` comment.
+An agent marks a PR ready as soon as independent agent review and end-to-end verification pass. CI and the retro do not hold readiness. A failing check is fixed while the PR stays ready. Merging stays with a person unless a `Merging: auto` line asks agents to arm auto-merge.
 
-On GitHub, you can make the retro a merge requirement. Ask an agent to install the retro gate, then add the `Retro` status check to your default branch's required checks.
+After marking ready, the builder writes a recap with the `reflect` skill. Lessons for your repository go to its `AGENTS.md`, and lessons for the plugin go to a draft for the plugin's repository. The lessons land in one PR that goes through the same review and merge rules as any other PR. A PR with nothing to learn gets a `Retro: no lessons` comment.
+
+On GitHub, the optional `Retro` status reports the recap and passes even when no recap exists. To update an older retro gate, ask an agent to replace it with the plugin's current reporter. The recap never blocks readiness or merging.
 
 ## Keep yourself the only author
 
@@ -144,7 +146,7 @@ flowchart LR
 | `skills/cstack-mode/references/runtime.md` | The runtime contract. Workflows name capabilities such as "delegate" and "ask the user". |
 | `skills/cstack-mode/references/hosts/` | One host note per harness. Each maps those capabilities to native tools. |
 | `.claude-plugin/`, `.codex-plugin/`, `.agents/plugins/`, `.cursor-plugin/` | Generated manifests. Never edit them by hand. |
-| `hooks/` | Hooks that keep `cstack-mode` on across sessions. Claude Code and Codex load `hooks/hooks.json`, and Cursor loads `hooks/cursor.json`. `intent-install.sh` links the plugin into Intent, which runs no hooks, and is the command `npx` runs. |
+| `hooks/` | Hooks that keep `cstack-mode` on across sessions. Claude Code and Codex load `hooks/hooks.json`, and Cursor loads `hooks/cursor.json`. `intent-install.sh` links the plugin into Intent and is the command `npx` runs. Inside Intent, Claude Code and Codex still load `hooks/hooks.json` from their own copy of the plugin. |
 | `tools/metadata.json` | The single source for the plugin's name, version, and description. |
 | `contrib/` | Optional sources that need one vendor's automation APIs. No manifest loads them. |
 

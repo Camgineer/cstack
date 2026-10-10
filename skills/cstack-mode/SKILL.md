@@ -14,6 +14,18 @@ When the user invokes this skill with the argument `off`, stop applying it and r
 
 On hosts that run the plugin's hooks, the user's typed command for this skill also keeps the mode on for the project in later sessions, and the argument `off` keeps it off. The host note says whether the mode also survives `/clear` and compaction. Wherever the plugin's hooks run, an environment variable set to `on` turns the mode on in every project the user has not turned off. Its name is `<plugin>-mode` in capitals, with `_` for `-`. If the user asks in plain words to turn the mode off, run `sh <plugin-root>/hooks/mode.sh off` from the project directory.
 
+## Scratch files
+
+Keep every scratch file you create for your work inside the project, under `tmp/<task>/`, with a folder named for the task. Scratch includes a probe file, a temporary file a command needs, a throwaway repository, a log, a download, a screenshot, a resume note, and a local prototype. This keeps the files where you can remove them and the person can open them.
+
+A prototype that a PR or issue will link to is published on a throwaway branch, per [Prototype](playbooks/prototype.md). Local-only prototypes stay in `tmp/<task>/`.
+
+Before the first scratch write, run `git check-ignore -q tmp/<task>/probe` from the project root. If it fails, create `tmp/<task>/.gitignore` containing `*` and repeat the check. Continue only when it succeeds. Keep scratch out of commits.
+
+A test suite's own temporary directories are not scratch. Leave them where the suite puts them.
+
+On the turn you learn the work was merged or dropped, remove your task folder before replying. If someone still needs files from it, keep those files and say in the reply what you kept and for whom.
+
 ## Non-negotiables
 
 The Principles section below grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
@@ -22,7 +34,7 @@ Remaining triggers. A trigger that names a skill means invoke that skill with th
 
 - Nontrivial change, with the operator present to agree it before the build → invoke `align` before the matched playbook runs. Its signed spec settles that playbook's design and done steps.
 - Nontrivial change, architecture decision, or "are we sure?" → invoke `how` before you change anything.
-- About to use the **Ask** capability on a "which approach", "how should I", or "what should this do" fork → fetch trunk and list open and recently merged PRs in the same area, and drop any option another PR already owns or shipped. Then classify it before you ask. If the answer is a fact you could observe by running something (behavior, timing, layout, output, perf, even whether an eval separates), it is not the human's to answer. Sketch it via the Prototype playbook (`playbooks/prototype.md`) and let the result decide. If the task is a read-only Investigation whose deliverable is a cited answer, stay in it and answer from the evidence rather than building a sketch. Reserve the question for a genuine product or preference call no experiment can settle. Under a full-autonomy grant, decide a call that the grant covers, act on it, and report it, with no reply word and no offer. Under the grant, apply a default for a call that only the operator can make. Report the default with a full explanation and the one word that reverses it. Gates that the operator named and the Always-pause list in Autonomy still need the operator. While a question is open, build only the parts every option shares, and build the option-specific work after the pick. This narrows **Never Block on the Human** for that question only.
+- About to ask a "which approach", "how should I", or "what should this do" question → fetch trunk and list open and recently merged PRs in the same area, and drop any option another PR already owns or shipped. Then classify it before you ask. If the answer is a fact you could observe by running something (behavior, timing, layout, output, perf, even whether an eval separates), it is not the human's to answer. Sketch it via the Prototype playbook (`playbooks/prototype.md`) and let the result decide. If the task is a read-only Investigation whose deliverable is a cited answer, stay in it and answer from the evidence rather than building a sketch. Reserve the question for a genuine product or preference call no experiment can settle. Under a full-autonomy grant, decide a call that the grant covers, act on it, and report it, with no reply word and no offer. Under the grant, apply a default for a call that only the operator can make. Report the default with a full explanation and the one word that reverses it. Gates that the operator named and the Always-pause list in Autonomy still need the operator. While a question is open, build only the parts every option shares, and build the option-specific work after the pick. This narrows **Never Block on the Human** for that question only. When `grill-with-docs`'s **Pending owner** condition holds, follow that rule within the existing authorization.
 - Any code → name the data shape first, and choose its organizing structure per **principle-model-the-domain**.
 - A new module, a new or reshaped public interface, or a design with more than one viable shape → invoke `architect` for parallel design exploration before implementing.
 - Parallel fan-out → invoke `swarm` for coverage matrices, races, gauntlets, and exploration partitions. Invoke `arena` for design or code bakeoffs with base selection and grafting.
@@ -41,7 +53,7 @@ Remaining triggers. A trigger that names a skill means invoke that skill with th
 - Bugbot or the agentic security review commented → skeptical posture. They catch real bugs and also file non-issues and nitpicks, so assess each on its merits and dismiss noise with a concrete reason instead of churning code. Triage fix / dismiss / ask per `references/bugbot-triage.md`.
 - The operator corrects the same agent mistake a second time → invoke `correct`, which fixes the repo instead of adding another instruction.
 - Broken skill mid-task → fix it in its own PR. Don't block. Don't silently work around it.
-- Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "keep going until X") → invoke `show-me-your-work` for a decision trail. Commit it when stakes need an auditable record. Keep it local otherwise.
+- Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "keep going until X") → invoke `show-me-your-work` for a decision trail. Follow **Scratch files** for the trail's location and cleanup.
 
 ## Principles
 
@@ -89,7 +101,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Autonomy
 
-**The KPI.** The most excellent, atomic PRs merged at the fastest pace. An atomic PR has one purpose a reviewer can state in a sentence, not the smallest diff, per **Size and stacks** in `playbooks/opening-a-pr.md`. Spend operator time only on the critical thinking that is theirs to do, and do it early, before autonomous work starts. Everything else runs without them. Each PR opens as a draft at once and goes ready, with auto-merge armed, only when every eval, review, and verification is done. Required checks gate the merge, per **Merging** in `playbooks/opening-a-pr.md`.
+**The KPI.** The most excellent, atomic PRs merged at the fastest pace. An atomic PR has one purpose a reviewer can state in a sentence, not the smallest diff, per **Size and stacks** in `playbooks/opening-a-pr.md`. Spend operator time only on the critical thinking that is theirs to do, and do it early, before autonomous work starts. Everything else runs without them. Each PR opens as a draft and goes ready as soon as independent agent review and end-to-end verification pass, per **Readiness** in `playbooks/opening-a-pr.md`. The builder's runs are evidence, not that verification. CI and the retro never hold readiness. Leave merging to the person unless a `Merging: auto` line asks for auto-merge. Required checks gate merging per **Merging** in that playbook.
 
 **Just do it.** Use any MCP tool. Proceed with work authorized by the user and host. External messages, ticket writes, and eval launches need authority for that action and destination; the plugin grants none. An approval covers only the scope it described, so a rerun that widens that scope names the change and asks again. When another agent will act on the operator's device, ask the operator to type their approval in that agent's thread.
 

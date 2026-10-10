@@ -120,7 +120,7 @@ function expandSkill(command: string): string {
 }
 ```
 
-- For a visual UI, layout, state comparison, or concept too dense for Mermaid, write one focused HTML file — a diagram, an infographic, or a short slide deck, whichever fits the point. Match the product's colors, type, spacing, and components; use real labels and data; support desktop and mobile. Then open it for the user if the host can, and give them its path either way.
+- For a visual UI, layout, state comparison, or concept too dense for Mermaid, write one focused HTML file in `tmp/<task>/` inside the project, per [Scratch files](../cstack-mode/SKILL.md#scratch-files). Choose a diagram, an infographic, or a short slide deck to fit the point. Match the product's colors, type, spacing, and components; use real labels and data; support desktop and mobile. Then open it for the user if the host can, and give them its path either way.
 
 ### guidance
 

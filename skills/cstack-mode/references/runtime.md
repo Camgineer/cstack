@@ -18,18 +18,19 @@ Each workflow uses these capabilities by name. Use the native tool the host note
 | Capability | Meaning in a workflow |
 | --- | --- |
 | **Delegate** | Spawn a subagent with a brief, a role, and a scope. Check its status, wait for it, and resume it. |
-| **Ask** | Put a structured question with options to the user. |
+| **Ask** | Put a structured question with options to the user. For grill and align rounds, follow [grill-with-docs](../../grill-with-docs/SKILL.md). |
+| **Shared document** | Keep a document the people in the conversation can read and comment on. Read authors and replies, reply in a thread, close it, and watch for new comments. |
 | **Plan** | Keep a visible todolist of the workflow's steps. |
 | **Invoke a skill** | Load a bundled skill by name with the host's skill mechanism, then follow it. A workflow step that names a skill ("invoke `how`", "the **how** skill") is a call to make at that step, not background reading. The step is done only when the skill is loaded, or when the reply records `skip <skill>: <reason>`. A `principle-*` skill is the exception: read its `SKILL.md` file. |
 | **History** | Read authorized past conversations for the current project. |
 | **Continue later** | Wake the work again after the current task ends. |
 | **Generate an image** | Make an image file from a prompt with the host's built-in image tool. |
 
-When a capability is missing, say which workflow step it blocks. Keep going with the steps that do not need it. Never claim a check ran when its capability was missing.
+When a capability is missing, use the workflow's stated fallback. Without a fallback, say which step it blocks. Keep going with the steps that do not need it. Never claim a check ran when its capability was missing.
 
 ## Delegation
 
-Give each child the least permission it needs. Investigators get read-only scope for both files and connected apps. A filesystem sandbox does not grant connector write authority. Assign exclusive writable paths or isolated worktrees before parallel edits. If the spawn tool has no working-directory field, name the prepared worktree in the brief and have the child verify its directory before writing. Schedule lanes within actual capacity and report any missing coverage.
+Give each child the least permission it needs. Investigators get read-only scope for repository files and connected apps. Read-only scope protects repository files and connected apps. An agent with read-only scope still runs local checks, and runs probes in `tmp/<task>/` inside the project, within the brief's allowed paths, per [Scratch files](../SKILL.md#scratch-files). A filesystem sandbox does not grant connector write authority. Assign exclusive writable paths or isolated worktrees before parallel edits. If the spawn tool has no working-directory field, name the prepared worktree in the brief and have the child verify its directory before writing. Schedule lanes within actual capacity and report any missing coverage.
 
 The bundled personas live in `agents/` at the plugin root. `agents/cstack-agent.md` is the implementation delegate. It must read CStack Mode and its Principles index. `agents/comment-sicko.md` is the comment reviewer. When the host registers plugin agents, spawn them by name. Otherwise pass the complete persona file as the child's instructions. Routed workflows such as How, Why, Interrogate, and Reflect use their own specialist reference prompts.
 

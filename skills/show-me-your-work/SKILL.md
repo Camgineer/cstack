@@ -1,6 +1,6 @@
 ---
 name: show-me-your-work
-description: 'Keep a reviewable decision trail for long-running or unattended work: a TSV log with one row per decision (what, why, evidence, result). Local by default; commit it when a reviewer needs the trail to trust the result. Use for show-me-your-work, autonomous or multi-phase runs, or work a human reviews after stepping away.'
+description: 'Keep a reviewable decision trail for long-running or unattended work: a TSV log with one row per decision (what, why, evidence, result). Keep it available while a reviewer needs the trail to trust the result. Use for show-me-your-work, autonomous or multi-phase runs, or work a human reviews after stepping away.'
 ---
 
 Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
@@ -45,9 +45,9 @@ A run is one agent conversation, including its later turns and any summary of it
 
 ## Where it lives
 
-By default the log is a working artifact, not committed. Keep it at `decisions.tsv` in the work dir, or `.audit/<task-slug>.tsv` when several efforts run at once, and leave it out of git.
+By default the log is a working artifact, not committed. Keep it at `tmp/<task>/decisions.tsv` inside the project, per [Scratch files](../cstack-mode/SKILL.md#scratch-files).
 
-Commit it only when the work is ambitious enough that a reviewer needs the trail to trust the result.
+Keep it available while a reviewer needs the trail to trust the result.
 
 ## Rules
 
@@ -77,7 +77,7 @@ Every reply for a run that produced a trail ends with an "Attention" section. Le
 
 ## Reviewing the trail
 
-Read top to bottom, follow the evidence pointers, spot-check. GitHub renders a committed TSV as a table. `column -s$'\t' -t decisions.tsv` renders it in a terminal.
+Read top to bottom, follow the evidence pointers, spot-check. GitHub renders a committed TSV as a table. `column -s$'\t' -t 'tmp/<task>/decisions.tsv'` renders it in a terminal.
 
 ## Composing this skill
 

@@ -691,3 +691,96 @@ test.each(["success", "first project fails"])("Claude project copies keep their 
     expect(result.stdout).toMatch(/Cursor\s+yes\s+yes\s+3.0.0 \(Claude import\)\s+9.0.0 \(Claude import\)/);
   });
 });
+
+
+function sharedImport(home: string) {
+  mkdirSync(join(home, ".claude/plugins"), { recursive: true });
+  writeFileSync(join(home, ".claude/settings.json"), JSON.stringify({ enabledPlugins: { "cstack@cstack": true } }));
+  writeFileSync(join(home, ".claude/plugins/installed_plugins.json"), JSON.stringify({ plugins: {
+    "cstack@cstack": [{ scope: "user", version: "1.0.0", installPath: join(home, "provider-copy") }],
+  } }));
+}
+
+test("a second run reports every unchanged installed host as already current without session steps", () => {
+  withHome((home) => {
+    hosts(home, { claude: true, codex: "git", cursorMarket: true });
+    intentFetch(home, "valid");
+    sharedImport(home);
+    const specialists = join(home, ".intent/specialists");
+    mkdirSync(specialists, { recursive: true });
+    writeFileSync(join(specialists, "cstack-agent.md"), "My specialist.\n");
+    const args = ["--hosts", "intent,claude,codex,cursor", "--source", "other/fork"];
+    const first = commandRun(home, args);
+    expect(first.status).toBe(0);
+    expect(first.stdout).toMatch(/Intent\s+yes\s+yes\s+-\s+1.5.0\s+Updated/);
+    const second = commandRun(home, args);
+    expect(second.status).toBe(0);
+    for (const [host, version] of [["Intent", "1.5.0"], ["Claude Code", "9.0.0"], ["Codex", "9.0.0"], ["Cursor", "9.0.0 (Claude import)"]]) {
+      const row = second.stdout.split("\n").find((line) => line.startsWith(host + " "));
+      expect(row).toContain(`Already current at ${version}.`);
+      expect(row).not.toMatch(/Updated\.|[Rr]estart|[Ss]tart a new|New sessions|Open Cursor|Run setup/);
+    }
+    expect(second.stdout).toContain("left your own cstack-agent.md as it is. Nothing is needed for your own files.");
+    expect(readFileSync(join(specialists, "cstack-agent.md"), "utf8")).toBe("My specialist.\n");
+  });
+}, 15000);
+
+test("a Codex source change is updated even when its version stays the same", () => {
+  withHome((home) => {
+    hosts(home, { codex: "local" });
+    const file = join(home, "state.json");
+    const state = JSON.parse(readFileSync(file, "utf8"));
+    state.codex[0].version = "9.0.0";
+    writeFileSync(file, JSON.stringify(state));
+    const result = commandRun(home, ["--hosts", "codex", "--source", "other/fork"]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/Codex\s+yes\s+yes\s+9.0.0\s+9.0.0\s+Updated\./);
+    expect(JSON.parse(readFileSync(file, "utf8")).codex[0].marketplaceSource).toEqual({ sourceType: "git", source: "configured" });
+    expect(result.stdout).toContain("New sessions use version 9.0.0.");
+  });
+});
+
+test.each([
+  ["claude", "plugin update cstack@cstack --scope user"],
+  ["codex", "plugin marketplace upgrade cstack"],
+])("a failed installed %s update offers its native retry without a source placeholder", (host, command) => {
+  withHome((home) => {
+    hosts(home, { claude: true, codex: "git", fail: `${host} ${command}` });
+    const result = commandRun(home, ["--yes"]);
+    expect(result.status).toBe(1);
+    const row = result.stdout.split("\n").find((line) => line.startsWith(host === "claude" ? "Claude Code " : "Codex "));
+    expect(row).toContain("fixture failure");
+    expect(row).toMatch(new RegExp(`Retry with .*${host}'? ${command}\\.`));
+    expect(row).not.toContain("OWNER/REPO");
+    expect(row).not.toContain("Retry with npx");
+  });
+});
+
+test("report-only announces a Codex local-folder move without doing it", () => {
+  withHome((home) => {
+    hosts(home, { codex: "local" });
+    const file = join(home, "state.json");
+    const before = readFileSync(file, "utf8");
+    const result = commandRun(home, ["--hosts", "codex", "--source", "other/fork", "--report-only"]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Would move Codex from its local folder to the GitHub source before updating.");
+    expect(result.stdout).toMatch(/Codex\s+yes\s+yes\s+2.0.0\s+2.0.0/);
+    expect(mutations(home)).toEqual([]);
+    expect(readFileSync(file, "utf8")).toBe(before);
+  });
+});
+
+test("updated hosts explain which sessions use the new version", () => {
+  withHome((home) => {
+    hosts(home, { claude: true, codex: "git", cursorMarket: true });
+    intentFetch(home, "valid");
+    sharedImport(home);
+    const result = commandRun(home, ["--hosts", "intent,claude,codex,cursor", "--source", "other/fork"]);
+    expect(result.status).toBe(0);
+    for (const [host, version] of [["Intent", "1.5.0"], ["Claude Code", "9.0.0"], ["Codex", "9.0.0"], ["Cursor", "9.0.0 (Claude import)"]]) {
+      const row = result.stdout.split("\n").find((line) => line.startsWith(host + " "));
+      expect(row).toContain(`Updated. New sessions use version ${version}. Sessions already open keep the old version until you start them again.`);
+      expect(row).not.toMatch(/[Rr]estart|Start a new/);
+    }
+  });
+});

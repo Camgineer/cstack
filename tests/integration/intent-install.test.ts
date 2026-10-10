@@ -138,7 +138,7 @@ test("run by npx, it leaves a folder of the person's own where its copy would go
 
     const result = npxInstall(home, cache);
     expect(result.status).toBe(2);
-    expect(result.stderr).toBe(`kept ${join(realpathSync(home), ".local/share/cstack")}: it is not a copy of this plugin\n`);
+    expect(result.stderr).toBe(`kept ${mine}: it is not a copy of this plugin\n`);
     expect(readdirSync(mine)).toEqual([]);
     expect(existsSync(join(home, ".intent"))).toBe(false);
   });

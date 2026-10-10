@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
@@ -80,7 +80,7 @@ test("worktree audit preserves a path with spaces and checks merges against the 
     const rows = result.stdout.trim().split("\n").map((line) => line.split("\t"));
     expect(rows).toHaveLength(2);
     expect(rows[1]).toEqual([
-      expect.any(String), expect.any(String), "YES", "clean", "no-remote", "-", "review-history", worktree,
+      expect.any(String), expect.any(String), "YES", "clean", "no-remote", "-", "review-history", realpathSync(worktree),
     ]);
     expect(existsSync(worktree)).toBe(true);
   });

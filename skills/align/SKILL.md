@@ -17,13 +17,13 @@ Open a todolist with one entry per step: Ground, Tier, Grill, Draft, Advise, Sig
 
 ## 1. Ground
 
-A block stops something the operator needs to do today, apart from the change under design, and an existing path or small step can restore that work. In your first reply after align is invoked, before any design question, state what the operator could not do when they asked and why, the thinnest path that removes that block, and the observable check that proves they can proceed.
+A block is something the operator needs to do today and cannot, apart from the change under design. In your first reply after align is invoked, before any design question, state what the operator could not do when they asked and why. When a quick path exists, name the thinnest path and its observable check in that reply.
 
-Look for an existing command or workflow before proposing a build. When an existing path or a thin slice removes the block within the operator's authorization, take it before the map or the first Grill round. Deliver a thin slice through the matched build playbook, with its scope and verification agreed first. Run the check, then design and harden behind it. Record the PR and check result in the spec's Verification plan when drafted, or in the reply for Inline. Treat a delivered thin slice as completed work when planning the remaining stack.
+Look for an existing command or workflow before proposing a build. When an existing path or a thin slice removes the block within the operator's authorization, take it before the map or the first Grill round. Deliver a thin slice through the matched build playbook, with its scope and verification agreed first. Run the check, then design and harden behind it. Record the check result, and the PR only when a slice was delivered, in the spec's Verification plan when drafted, or in the reply for Inline. Treat a delivered thin slice as completed work when planning the remaining stack.
 
-When the path needs a decision or permission, ask only for what unlocks that path first, and leave the check pending. After the answer, take the authorized path and report the check's result.
+When no quick path exists, name the block and say that no quick path exists before design questions, then continue with design. When the path needs a decision or permission, ask only for what unlocks that path first, and leave the check pending. After the operator agrees, take the authorized path and report the check's result. When the operator declines, record that in the reply and continue.
 
-Ground's unblock part is complete when the first reply names the block, the concrete command or slice, and the check before any design question, and a reply reports the check's result. When nothing blocks the operator today, state that and continue.
+Ground's unblock part is done when the first reply states the block before design questions and either reports no quick path or names a concrete command or slice and its check. For an available path, a reply must also report the check's result or the operator's refusal. When nothing blocks the operator today, state that and continue.
 
 Run the **how** skill over every subsystem the change touches. Read `GLOSSARY.md` and the ADRs in that area. Done when you can name each module the change touches and the tests that already cover it.
 

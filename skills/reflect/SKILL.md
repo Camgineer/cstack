@@ -91,6 +91,6 @@ Short list, no preamble:
 
 The optional GitHub reporter publishes an informational `Retro` status. It returns success whether or not a recap exists. Its description shows the record when present and says a recap is pending otherwise. The recap never gates readiness or merging.
 
-Install it only when the user asks, because it changes the repository's CI. In its own PR, copy `gate/retro.yml` to `.github/workflows/retro.yml` and `gate/retro-gate.jq` to `.github/retro-gate.jq`. To update an older gate, replace those same files with these shipped copies. An existing required `Retro` status then passes without a recap; no branch-rule change is needed. An admin may remove that redundant required check separately.
+Install it only when the user asks, because it changes the repository's CI. In its own PR, copy `gate/retro.yml` to `.github/workflows/retro.yml` and `gate/retro-gate.jq` to `.github/retro-gate.jq`. To update an older gate, replace those same files with these shipped copies. The `gate/` paths keep their names so existing installations can update in place. An existing required `Retro` status then passes without a recap. No branch-rule change is needed. An admin may remove that redundant required check separately.
 
 The reporter needs `gh` and `jq`, which GitHub-hosted runners include. On another forge, keep the recap as a comment.

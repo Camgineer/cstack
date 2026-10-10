@@ -41,7 +41,10 @@ test("a lessons PR needs no retro of its own", () => {
 
 test("a lessons PR under a host's attribution comment and byline needs no retro", () => {
   const body = '<!-- host: {"login":"someone"} -->\n_Requested by someone_\n\nLessons from https://github.com/o/r/pull/6\n\n## Accepted';
-  expect(gate({ body, comments: [] }).state).toBe("success");
+  expect(gate({ body, comments: [] })).toEqual({
+    state: "success",
+    description: "Lessons PR, which gets no retro",
+  });
 });
 
 test("a hidden or code lessons line reports a pending recap without gating", () => {
@@ -68,7 +71,7 @@ test("a mention of a lessons PR reports a pending recap without gating", () => {
   });
 });
 
-test("this repository runs the gate the plugin ships", () => {
+test("this repository runs the reporter the plugin ships", () => {
   const root = resolve(import.meta.dir, "../..");
   for (const [installed, shipped] of [
     [".github/workflows/retro.yml", "skills/reflect/gate/retro.yml"],

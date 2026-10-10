@@ -68,7 +68,7 @@ Resolve a role before each delegated step:
 
 Model ID and reasoning effort are separate choices. A requested model is not proof of served identity. Report identity only when host metadata or the runner's output establishes it. Never guess a provider slug.
 
-A panel keeps its default three seats unless the user selected another size. A panel with no role, such as swarm workers on any brief other than exploration, or architect runners, uses the host's model unless the user names models for that run. Call a panel model-diverse only when its seats resolve to different model families, and report a panel whose seats share one family. Independent prompts alone do not make a panel diverse. When the user asks for diversity the host and roles cannot provide, report that and get their choice between a reduced panel and waiting. Treat a rejected model ID as a missing lane.
+A panel keeps its default three seats unless the user selected another size. A panel with no role, such as architect runners, or swarm workers when neither an exploration brief nor the calling workflow gives them one, uses the host's model unless the user names models for that run. Call a panel model-diverse only when its seats resolve to different model families, and report a panel whose seats share one family. Independent prompts alone do not make a panel diverse. When the user asks for diversity the host and roles cannot provide, report that and get their choice between a reduced panel and waiting. Treat a rejected model ID as a missing lane.
 
 ## Skills, resources, and writing
 

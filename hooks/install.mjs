@@ -1,4 +1,5 @@
-import { accessSync, constants, existsSync, readFileSync, realpathSync, readdirSync } from "node:fs";
+import { accessSync, constants, existsSync, readFileSync, realpathSync, readdirSync, lstatSync, readlinkSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join, basename, delimiter } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
@@ -63,7 +64,7 @@ function run(binary, args, cwd) {
       if (problem) {
         stop();
         child.unref();
-        reject(new Error(`${commandLine([binary, args, cwd])} failed. ${problem} ${stdout.trim()} ${stderr.trim()}`.trim()));
+        reject(new Error(`${commandLine([binary, args, cwd])} failed. ${problem} ${stdout.trim()} ${stderr.trim()} Retry with ${commandLine([binary, args, cwd])}.`.replace(/\s+/g, " ")));
       } else resolve(stdout);
     };
     const timer = setTimeout(() => finish(`timed out after ${commandTimeout}ms.`), commandTimeout);
@@ -109,15 +110,35 @@ function packageSource() {
   return null;
 }
 
+function intentContents(plugin) {
+  const hash = createHash("sha256");
+  const visit = (relative) => {
+    const path = join(plugin, relative);
+    if (!existsSync(path)) return;
+    const stat = lstatSync(path);
+    if (stat.isSymbolicLink()) hash.update(JSON.stringify([relative, "link", readlinkSync(path)]));
+    else if (stat.isDirectory()) {
+      hash.update(JSON.stringify([relative, "directory"]));
+      for (const child of readdirSync(path).sort()) if (child !== "node_modules") visit(join(relative, child));
+    } else {
+      const data = readFileSync(path);
+      hash.update(JSON.stringify([relative, "file", data.length])).update(data);
+    }
+  };
+  for (const relative of ["agents", "hooks", "skills", "tools/metadata.json", "LICENSE"]) visit(relative);
+  return hash.digest("hex");
+}
+
 function intentSnapshot() {
   const mode = join(home, ".intent/skills", `${name}-mode`);
   let version = "unknown";
+  let installPath;
   const installed = existsSync(join(mode, "SKILL.md"));
   if (installed) {
-    const plugin = dirname(dirname(realpathSync(mode)));
-    version = jsonFile(join(plugin, "tools/metadata.json"))?.version ?? "unknown";
+    installPath = dirname(dirname(realpathSync(mode)));
+    version = jsonFile(join(installPath, "tools/metadata.json"))?.version ?? "unknown";
   }
-  return { present: Boolean(intentCommand()) || existsSync(join(home, ".intent")), copies: installed ? [{ version }] : [] };
+  return { present: Boolean(intentCommand()) || existsSync(join(home, ".intent")), copies: installed ? [{ version, installPath, content: intentContents(installPath) }] : [] };
 }
 
 async function claudeSnapshot(binary) {
@@ -152,7 +173,8 @@ async function inspect(id, binary) {
     if (id === "codex") return await codexSnapshot(binary);
     return await cursorSnapshot(binary);
   } catch (error) {
-    return { present: Boolean(binary), copies: [], problem: error.message };
+    const args = id === "cursor" ? ["plugin", "marketplace", "list", "--format", "json"] : ["plugin", "list", "--json"];
+    return { present: Boolean(binary), copies: [], problem: error.message.includes("Retry with ") ? error.message : `${error.message} Retry with ${id === "intent" ? retry(id, null) : shell(binary, args)}.` };
   }
 }
 
@@ -161,7 +183,7 @@ function retry(id, chosenSource) {
 }
 
 function plan(id, snapshot, binary, chosenSource, fetchedSource) {
-  if (snapshot.problem) return { commands: [], action: `Could not inspect. ${snapshot.problem} Retry with ${retry(id, chosenSource)}`, failed: true };
+  if (snapshot.problem) return { commands: [], action: `Could not inspect. ${snapshot.problem}`, failed: true };
   if (!snapshot.present) return { commands: [], action: `Install ${labels[id]}, then run ${retry(id, chosenSource)}` };
   if (id === "cursor") {
     const commands = [];
@@ -175,17 +197,17 @@ function plan(id, snapshot, binary, chosenSource, fetchedSource) {
   if (id === "intent") {
     if (!chosenSource) return { commands: [], action: `Run ${retry(id, null)} to deliver the GitHub package` };
     if (fetchedSource?.npm === chosenSource.npm) {
-      return { delivery: "direct", commands: [["sh", [join(root, "hooks/intent-deliver.sh")]]], action: "Start a new Intent agent. Run setup to configure specialists." };
+      return { delivery: "direct", commands: [["sh", [join(root, "hooks/intent-deliver.sh")]]], action: "Run setup to configure specialists." };
     }
-    return { delivery: "fetched", commands: [["npx", ["--yes", `--package=${chosenSource.npm}`, entry, "--deliver-intent-source", chosenSource.npm, "--timeout-ms", String(commandTimeout)]]], action: "Start a new Intent agent. Run setup to configure specialists." };
+    return { delivery: "fetched", commands: [["npx", ["--yes", `--package=${chosenSource.npm}`, entry, "--deliver-intent-source", chosenSource.npm, "--timeout-ms", String(commandTimeout)]]], action: "Run setup to configure specialists." };
   }
   if (!binary) return { commands: [], action: `Put ${id} on PATH, then run ${retry(id, chosenSource)}` };
   if (id === "claude") {
     if (snapshot.copies.length) {
-      return { independent: true, commands: snapshot.copies.map((copy) => [binary, ["plugin", "update", copy.id, "--scope", copy.scope ?? "user"], copy.scope === "project" || copy.scope === "local" ? copy.projectPath : undefined]), action: "Restart Claude Code." };
+      return { independent: true, commands: snapshot.copies.map((copy) => [binary, ["plugin", "update", copy.id, "--scope", copy.scope ?? "user"], copy.scope === "project" || copy.scope === "local" ? copy.projectPath : undefined]), action: "" };
     }
     if (!chosenSource) return { commands: [], action: `Run ${retry(id, null)} to install from GitHub` };
-    return { commands: [[binary, ["plugin", "marketplace", "add", chosenSource.git]], [binary, ["plugin", "install", `${name}@${name}`, "--scope", "user"]]], action: "Restart Claude Code." };
+    return { commands: [[binary, ["plugin", "marketplace", "add", chosenSource.git]], [binary, ["plugin", "install", `${name}@${name}`, "--scope", "user"]]], action: "" };
   }
   const copies = snapshot.copies;
   const commands = [];
@@ -211,12 +233,12 @@ function plan(id, snapshot, binary, chosenSource, fetchedSource) {
       pending.push(`Run ${shell(binary, ["plugin", "add", copy.pluginId])}. This marketplace has no Git refresh command.`);
     }
   }
-  return { commands, migrate, action: [...pending, ...(commands.length ? ["Start a new Codex session. Review and trust its hooks when asked."] : [])].join(" ") };
+  return { commands, migrate, pending: pending.join(" "), action: [...pending, ...(commands.length ? ["Review and trust its hooks when asked."] : [])].join(" ") };
 }
 
 function intentDelivery(output, packageSource) {
   const lines = output.trim().split("\n").filter(Boolean);
-  const changed = lines.some((line) => /^(copied|linked|removed|added) /.test(line));
+  const changed = lines.some((line) => /^(linked|removed|added) /.test(line));
   return { kind: "intent-delivery", source: packageSource.npm, changed, messages: lines.filter((line) => !/^(copied|linked|removed) /.test(line)) };
 }
 
@@ -236,6 +258,13 @@ function versions(snapshot) {
   return snapshot.copies.map((copy) => copy.version ?? "unknown").join(", ") + (snapshot.native ? " (Claude import)" : "");
 }
 
+function copyState(snapshot) {
+  return JSON.stringify(snapshot.copies.map((copy) => {
+    const configured = copy.marketplaceSource ?? snapshot.markets?.find((item) => item.name === copy.marketplaceName)?.marketplaceSource;
+    return [copy.id ?? copy.pluginId ?? copy.name, copy.scope, copy.projectPath, copy.version, copy.installPath, copy.content, configured?.sourceType, configured?.source, copy.source];
+  }).map((copy) => JSON.stringify(copy)).sort());
+}
+
 function table(rows) {
   const cells = [["Host", "Present", "Installed", "Before", "After", "Result and next action"], ...rows];
   const widths = cells[0].map((_, index) => Math.max(...cells.map((row) => row[index].length)));
@@ -245,7 +274,7 @@ function table(rows) {
 async function main() {
   const { values } = parseArgs({ options: { yes: { type: "boolean", short: "y" }, "report-only": { type: "boolean" }, hosts: { type: "string" }, source: { type: "string" }, "timeout-ms": { type: "string" }, "deliver-intent-source": { type: "string" }, help: { type: "boolean", short: "h" } } });
   if (values.help) {
-    process.stdout.write(`Usage: ${entry} [options]\n\nInstall or update the plugin in Intent, Claude Code, Codex, and Cursor.\n\nOptions:\n  -y, --yes             Skip the question and update installed hosts only.\n  --hosts LIST          Select hosts without a question. Use intent,claude,codex,cursor.\n  --source OWNER/REPO   Use this GitHub source instead of npx package metadata.\n  --report-only         Show detection and planned commands. Change nothing.\n  --timeout-ms MS       Limit each host command to MS milliseconds. Default 120000.\n  -h, --help            Show this help.\n\nInstalled hosts are selected by default. Without a terminal, --yes is automatic.\nUpdates use each host's configured source. Fresh installs and a Codex local-folder\nmove use --source or a best-effort read of npx's adjacent package-lock.json.\nWithout a Git source, other updates continue and the table gives a retry command.\nCursor installation needs its Customize page. Intent specialists belong to setup.\n`);
+    process.stdout.write(`Usage: ${entry} [options]\n\nInstall or update the plugin in Intent, Claude Code, Codex, and Cursor.\n\nOptions:\n  -y, --yes             Skip the question and update installed hosts only.\n  --hosts LIST          Select hosts without a question. Use intent,claude,codex,cursor.\n  --source OWNER/REPO   Use this GitHub source instead of npx package metadata.\n  --report-only         Show detection and planned commands. Change nothing.\n  --timeout-ms MS       Limit each host command to MS milliseconds. Default 120000.\n  -h, --help            Show this help.\n\nInstalled hosts are selected by default. Without a terminal, --yes is automatic.\nUpdates use each host's configured source. Fresh installs and a Codex local-folder\nmove use --source or a best-effort read of npx's adjacent package-lock.json.\nWithout a Git source, other updates continue and the table gives a retry command.\nUnchanged copies report their current version and need no session action.\nFor updated copies, new sessions use the new version. Open sessions keep the old\nversion until you start them again.\nCursor installation needs its Customize page. Intent specialists belong to setup.\n`);
     return;
   }
   if (values["timeout-ms"] !== undefined) {
@@ -286,7 +315,7 @@ async function main() {
   for (const id of Object.keys(labels)) {
     const before = snapshots[id];
     let after = before;
-    let action = before.problem ? `Could not inspect. ${before.problem} Retry with ${retry(id, chosenSource)}` : "Not selected.";
+    let action = before.problem ? `Could not inspect. ${before.problem}` : "Not selected.";
     failed ||= Boolean(before.problem);
     if (selected.includes(id)) {
       const operation = plan(id, before, binaries[id], chosenSource, fetchedSource);
@@ -299,12 +328,13 @@ async function main() {
           previewed.add(key);
           return true;
         });
-        action = commands.length ? `Would run ${commands.map(commandLine).join(" ; ")}. ${action}` : action;
+        action = commands.length ? `${operation.migrate ? "Would move Codex from its local folder to the GitHub source before updating. " : ""}Would run ${commands.map(commandLine).join(" ; ")}. ${action}` : action;
       } else if (operation.commands.length) {
         if (operation.migrate) process.stdout.write("Moving Codex from its local folder to the GitHub source before updating.\n");
+        const kept = [];
+        let deliveryChanged = false;
+        let problem;
         try {
-          const kept = [];
-          let changed = false;
           const problems = [];
           for (const [binary, args, cwd] of operation.commands) {
             try {
@@ -313,23 +343,33 @@ async function main() {
               completed.set(key, output);
               if (id === "intent") {
                 const outcome = operation.delivery === "fetched" ? fetchedDelivery(output, chosenSource) : intentDelivery(output, chosenSource);
-                changed ||= outcome.changed;
+                deliveryChanged ||= outcome.changed;
                 kept.push(...outcome.messages);
               }
             } catch (error) {
-              if (!operation.independent) throw error;
-              problems.push(error.message);
+              const message = error.message.includes("Retry with ") ? error.message : `${error.message} Retry with ${commandLine([binary, args, cwd])}.`;
+              if (!operation.independent) throw new Error(message);
+              problems.push(message);
             }
           }
           if (problems.length) throw new Error(problems.join(" "));
-          const preserved = kept.some((line) => line.startsWith("left your own "));
-          action = `${id === "intent" && !changed ? "No files changed." : "Updated."} ${kept.join(". ")}${kept.length ? ". " : ""}${preserved ? "Nothing is needed for your own files. " : ""}${id === "intent" && !changed ? "" : action}`;
         } catch (error) {
           failed = true;
-          action = `${error.message} Retry with ${retry(id, chosenSource)}`;
+          problem = error.message;
         }
         after = await inspect(id, binaries[id]);
-        if (after.problem) { failed = true; action += ` Could not read the resulting version. ${after.problem}`; }
+        if (after.problem) {
+          failed = true;
+          problem = `${problem ?? ""} Could not read the resulting version. ${after.problem}`;
+        }
+        const changed = !after.problem && (copyState(before) !== copyState(after) || deliveryChanged);
+        const preserved = kept.some((line) => line.startsWith("left your own "));
+        const messages = `${kept.join(". ")}${kept.length ? ". " : ""}${preserved ? "Nothing is needed for your own files. " : ""}`;
+        if (problem) action = `${problem} ${messages}`;
+        else if (changed) action = `Updated. New sessions use version ${versions(after)}. Sessions already open keep the old version until you start them again. ${messages}${action}`;
+        else if (operation.pending) action = `No installed version changed. ${messages}${operation.pending}`;
+        else if (after.copies.length) action = `Already current at ${versions(after)}. ${messages}${after.native ? "Native installation and version are unknown." : ""}`;
+        else action = `${id === "intent" ? "No files changed." : "Marketplace checked."} ${messages}${id === "cursor" ? action : ""}`;
       }
     }
     rows.push([labels[id], before.present ? "yes" : "no", after.problem ? "unknown" : after.copies.length ? "yes" : after.native ? "unknown" : "no", versions(before), versions(after), action.replace(/\s+/g, " ")]);

@@ -1164,6 +1164,145 @@ function packageContents(base: string): string[] {
   return result;
 }
 
+function homeSnapshot(base: string): string[] {
+  const rows: string[] = [];
+  const visit = (path: string) => {
+    const full = join(base, path);
+    const stat = lstatSync(full);
+    if (stat.isSymbolicLink()) rows.push(JSON.stringify([path, "link", readlinkSync(full)]));
+    else if (stat.isDirectory()) {
+      rows.push(JSON.stringify([path, "directory"]));
+      for (const child of readdirSync(full).sort()) visit(join(path, child));
+    } else rows.push(JSON.stringify([path, "file", stat.mode & 0o777, readFileSync(full).toString("base64")]));
+  };
+  for (const child of readdirSync(base).sort()) visit(child);
+  return rows;
+}
+
+test.each(["empty object", "wrong name", "directory", "linked metadata", "valid record without metadata", "malformed", "null", "linked tools"])("copy identity refusal preserves unrelated folders with %s", (kind) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const data = join(home, ".local/share/cstack");
+    mkdirSync(join(data, "tools"), { recursive: true });
+    writeFileSync(join(data, "personal.txt"), "My personal file.\n");
+    const metadata = join(data, "tools/metadata.json");
+    if (kind === "empty object") writeFileSync(metadata, "{}");
+    else if (kind === "wrong name") writeFileSync(metadata, '{"name":"other-plugin"}');
+    else if (kind === "directory") mkdirSync(metadata);
+    else if (kind === "linked metadata") symlinkSync(join(root, "tools/metadata.json"), metadata);
+    else if (kind === "malformed") writeFileSync(metadata, "broken json");
+    else if (kind === "null") writeFileSync(metadata, "null");
+    else if (kind === "linked tools") {
+      rmSync(join(data, "tools"), { recursive: true });
+      symlinkSync(join(root, "tools"), join(data, "tools"));
+    } else {
+      const owned = join(home, ".intent/skills/how");
+      mkdirSync(dirname(owned), { recursive: true });
+      symlinkSync(join(data, "skills/how"), owned);
+      writeFileSync(join(data, "install-record.json"), JSON.stringify({ schemaVersion: 1, entries: [{ path: owned, kind: "link", target: join(data, "skills/how") }], modeRule: { location: "Intent's Settings, under Agent Behavior", status: "unchanged" } }));
+    }
+    const before = homeSnapshot(home);
+    const result = install(home, join(dirname(from), "intent-deliver.sh"));
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("it is not a copy of this plugin");
+    expect(readFileSync(join(data, "personal.txt"), "utf8")).toBe("My personal file.\n");
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+test.each(["home", "ancestor", "linked parent", "intent skills", "intent specialists", "codex folder", "record target"])("copy path refusal preserves protected folders at %s", (kind) => {
+  withHome((outer) => {
+    const from = fetchedPackage(outer);
+    let home = join(outer, "home");
+    let data = join(outer, "data/cstack");
+    let xdg = dirname(data);
+    if (kind === "home" || kind === "linked parent") {
+      home = join(outer, "cstack");
+      data = home;
+      xdg = outer;
+    } else if (kind === "ancestor") {
+      data = join(outer, "cstack");
+      home = join(data, "nested/home");
+      xdg = outer;
+    }
+    mkdirSync(home, { recursive: true });
+    copyPlugin(data);
+    if (kind === "linked parent") {
+      xdg = join(outer, "data alias");
+      symlinkSync(outer, xdg);
+    }
+    const host = join(home, ".intent/skills");
+    mkdirSync(host, { recursive: true });
+    writeFileSync(join(home, "personal.txt"), "My home data.\n");
+    writeFileSync(join(host, "personal"), "My host entry.\n");
+    if (kind === "intent skills" || kind === "intent specialists") {
+      const redirected = kind === "intent skills" ? host : join(home, ".intent/specialists");
+      rmSync(redirected, { recursive: true, force: true });
+      mkdirSync(join(data, "host"));
+      writeFileSync(join(data, "host/personal"), "My redirected host entry.\n");
+      symlinkSync(join(data, "host"), redirected);
+    } else if (kind === "codex folder") {
+      mkdirSync(join(data, "host"));
+      writeFileSync(join(data, "host/personal"), "My redirected host entry.\n");
+      symlinkSync(join(data, "host"), join(home, ".codex"));
+    } else if (kind === "record target") {
+      writeFileSync(join(data, "personal-record.json"), "My personal record.\n");
+      symlinkSync(join(data, "personal-record.json"), join(dirname(data), "cstack-install-record.json"));
+    }
+    const before = homeSnapshot(outer);
+    const result = spawnSync("sh", [join(dirname(from), "intent-deliver.sh")], { env: { HOME: home, PATH: join(outer, "bin"), XDG_DATA_HOME: xdg }, encoding: "utf8" });
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("protected");
+    expect(homeSnapshot(outer)).toEqual(before);
+  });
+});
+
+test.each(["after old rename", "after new rename", "after old cleanup"])("interrupted copy swap recovers host ownership %s", (phase) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const shell = join(dirname(from), "intent-deliver.sh");
+    const plugin = dirname(dirname(from));
+    const retired = join(plugin, "skills/retired-review");
+    mkdirSync(retired);
+    writeFileSync(join(retired, "SKILL.md"), "---\nname: retired-review\n---\nRetired skill.\n");
+    expect(install(home, shell).status).toBe(0);
+    const data = join(home, ".local/share/cstack");
+    const link = join(home, ".intent/skills/retired-review");
+    expect(readlinkSync(link)).toBe(join(data, "skills/retired-review"));
+    rmSync(retired, { recursive: true });
+    const preload = join(home, "crash.cjs");
+    writeFileSync(preload, `const fs = require('node:fs');
+const path = require('node:path');
+const phase = ${JSON.stringify(phase)};
+const data = ${JSON.stringify(data)};
+const rename = fs.renameSync;
+fs.renameSync = function(a, b) {
+  const result = rename.apply(this, arguments);
+  if (phase === 'after old rename' && path.basename(b) === 'previous' || phase === 'after new rename' && b === data && path.basename(a) === 'copy') process.kill(process.pid, 'SIGKILL');
+  return result;
+};
+const remove = fs.rmSync;
+fs.rmSync = function(a) {
+  const result = remove.apply(this, arguments);
+  if (phase === 'after old cleanup' && path.basename(a).startsWith('.cstack-install-')) process.kill(process.pid, 'SIGKILL');
+  return result;
+};
+require('node:module').syncBuiltinESMExports();`);
+    const crash = spawnSync("sh", [shell], { env: { HOME: home, PATH: join(home, "bin"), NODE_OPTIONS: "--require " + JSON.stringify(preload) }, encoding: "utf8" });
+    expect(crash.signal).toBe("SIGKILL");
+    const retry = install(home, shell);
+    expect(retry.status).toBe(0);
+    expect(retry.stdout).toContain("Recovered the interrupted plugin copy swap");
+    expect(install(home, shell).status).toBe(0);
+    expect(readdirSync(join(home, ".intent/skills"))).not.toContain("retired-review");
+    expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe(readFileSync(join(plugin, "skills/how/SKILL.md"), "utf8"));
+    const record = JSON.parse(readFileSync(join(dirname(data), "cstack-install-record.json"), "utf8"));
+    expect(record.entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
+    expect(existsSync(join(data, "install-record.json"))).toBe(false);
+    expect(readdirSync(dirname(data)).some((entry) => entry.startsWith(".cstack-install-"))).toBe(false);
+  });
+});
+
 function beforeRecordInstall(home: string) {
   const from = fetchedPackage(home);
   const plugin = dirname(dirname(from));

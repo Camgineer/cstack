@@ -40,7 +40,7 @@ Reuse a child only when the host reports it resumable. Read its status without w
 
 ### Before delegation
 
-Resolve the step's runner first, then check whether that runner can delegate within its current depth and permissions. A command runner and a native runner may have different capabilities. Follow the host note for the check, and make no call that the runner will refuse.
+Resolve the step's runner first. Check that you can start it within your capabilities, depth, and permissions, and that it has the capabilities the step needs. A command runner and a native runner may have different capabilities. Follow the host note for the check, and make no call that the runner will refuse.
 
 When delegation is unavailable, use the workflow's own fallback. Do the step yourself only when that fallback permits it. A builder keeps review and verification independent, and a verifier keeps a blinded subject fresh. Reflect returns its evidence to its parent for the missing readers and synthesizer. With no permitted fallback, return the missing lane and its evidence to your parent, or name them in your reply when you have no parent. Continue the steps that do not need that lane, and record its check as not run.
 
@@ -103,7 +103,7 @@ On hosts that resolve `Models:` lines, resolve a role or a seat before each dele
 1. With no line for the role, delegate on the host's model, as the workflow did before roles existed.
 2. With `native`, delegate and pass the model and effort through the fields the host note names. Report any option the host cannot apply.
 3. With a command, run it non-interactively in the step's working directory or assigned worktree. Write the brief a native delegate would get to a file, with the full text of the persona file when the step names one, and pass it by path or on stdin, never inline on the command line. Close stdin when the brief does not use it. The brief states the step's scope, such as review only for a `review` step, and tells the runner to do the work itself without resolving roles again. Read the runner's `--help` for its print mode and its model, effort, and speed flags, and put a value it has no flag for in the brief. Pass the sandbox and approval flags the line names, plus the write access the step needs, such as file edits for a `build` step. Its final message is the delegate's result.
-4. The runner failed when it is missing, signed out, rejects the model, is denied by host permissions or an approval prompt, waits for input, ends without a final message, or lacks a tool the step needs. A failed runner is a missing lane, never a pass. Discard any edits it left, run the step on the host's model, and name the missing lane in your report and in the PR's evidence.
+4. The runner failed when it is missing, signed out, rejects the model, is denied by host permissions or an approval prompt, waits for input, ends without a final message, or lacks a tool the step needs. A failed runner is a missing lane, never a pass. Discard any edits it left, retry the same handoff on the host's model under [Before delegation](#before-delegation), and name the missing lane in your report and in the PR's evidence.
 
 Model ID and reasoning effort are separate choices. A requested model is not proof of served identity. Report identity only when host metadata or the runner's output establishes it. Never guess a provider slug.
 

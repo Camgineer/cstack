@@ -133,6 +133,19 @@ describe("plan validation", () => {
     expect(result.status).toBe(0);
   });
 
+  test("accepts seated live lanes and rejects a changed seat or compatibility fallback", () => {
+    const seated = plan.replace("Ten lanes on `GPT-6` at the PR head", "Ten calls to the [verifier seat](/opt/installed%20plugin/agents/verifier.md) with no legacy model role at the PR head");
+    const accepted = runPlan(seated);
+    expect(accepted.status).toBe(0);
+    expect(accepted.stderr).toBe("");
+    expect(accepted.stdout).toContain("1 PR sections, 0 problems");
+    for (const changed of [seated.replace("[verifier seat]", "[worker seat]"), seated.replace("no legacy model role", "the review fallback")]) {
+      const rejected = runPlan(changed);
+      expect(rejected.status).toBe(1);
+      expect(rejected.stderr).toContain("Verify, live must name ten verifier calls");
+    }
+  });
+
   test.each([
     {
       name: "live verification is missing",
@@ -333,6 +346,10 @@ test("host sync generates seat rows and rejects drift or invalid definitions", (
     }
     writeFileSync(workflow, `${workflowText}\nDelegate to the [builder seat](../../agents/${pluginName}-agent.md).\n`);
     expect(sync("--check").status).toBe(0);
+    writeFileSync(workflow, `${workflowText}\n\`\`\`markdown\nDelegate to the [reviewer seat](../../agents/missing.md).\n\`\`\`\n`);
+    const invalidTemplate = sync("--check");
+    expect(invalidTemplate.status).toBe(1);
+    expect(invalidTemplate.stderr).toContain("skills/arena/SKILL.md has an invalid seat reference");
     writeFileSync(workflow, workflowText);
     const investigator = join(directory, "agents/investigator.md");
     const investigatorText = readFileSync(investigator, "utf8");

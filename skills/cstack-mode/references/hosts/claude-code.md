@@ -4,7 +4,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 | Capability | Native route |
 | --- | --- |
-| **Delegate** | The `Agent` tool. Resolve a seated call through **Seat names** below. Unmigrated calls keep `<plugin>:cstack-agent` and `<plugin>:comment-sicko`. Use `run_in_background` for parallel lanes and `SendMessage` to resume a child when those are listed. A subagent can delegate when this session exposes `Agent`, within the [configured depth limit](https://code.claude.com/docs/en/sub-agents#let-subagents-spawn-their-own-subagents). |
+| **Delegate** | The `Agent` tool. Resolve a seated call through **Seat names** below. Follow [Before delegation](../runtime.md#before-delegation). Use `run_in_background` for parallel lanes and `SendMessage` to resume a child when those are listed. A subagent can delegate when this session exposes `Agent`, within the [configured depth limit](https://code.claude.com/docs/en/sub-agents#let-subagents-spawn-their-own-subagents). |
 | **Ask** | `AskUserQuestion`. |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The task tools (`TaskCreate`, `TaskUpdate`), or `TodoWrite` where the task tools are absent. Use `EnterPlanMode` only when the user asked for plan mode. |

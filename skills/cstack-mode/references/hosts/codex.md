@@ -4,7 +4,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 | Capability | Native route |
 | --- | --- |
-| **Delegate** | Codex's native subagent tools. Their names and fields differ between the local CLI, the desktop app, and cloud tasks, so read the schemas in this session. Resolve a seated call through **Seat files** below. Unmigrated calls keep their complete persona file in the child's instructions. |
+| **Delegate** | Codex's native subagent tools. Their names and fields differ between the local CLI, the desktop app, and cloud tasks, so read the schemas in this session. Resolve a seated call through **Seat files** below. Follow [Before delegation](../runtime.md#before-delegation). |
 | **Ask** | The user-question tool when the session exposes one. Otherwise ask in the reply and continue on reversible work. |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native plan tool. |

@@ -4,7 +4,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 | Capability | Native route |
 | --- | --- |
-| **Delegate** | The `Task` tool. Resolve a seated call through **Seat names** below. Unmigrated calls keep `cstack-agent` or `comment-sicko` as `subagent_type`, and `generalPurpose` for an unconfigured role. |
+| **Delegate** | The `Task` tool. Resolve a seated call through **Seat names** below. Follow [Before delegation](../runtime.md#before-delegation). |
 | **Ask** | `AskQuestion`. |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native todo list. |

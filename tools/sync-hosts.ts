@@ -129,8 +129,8 @@ function checkSeatReferences(root: string, plugin: string, seats: readonly Seat[
     for (const path of readdirSync(base, { recursive: true, encoding: "utf8" })) {
       if (!path.endsWith(".md") || path.split(/[\\/]/).includes("node_modules")) continue;
       const source = join(base, path);
-      const prose = readFileSync(source, "utf8").replace(/^(`{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$/gm, "");
-      for (const match of prose.matchAll(/\[([a-z][a-z-]*) seat\]\(([^)]+)\)/g)) {
+      const text = readFileSync(source, "utf8");
+      for (const match of text.matchAll(/\[([a-z][a-z-]*) seat\]\(([^)]+)\)/g)) {
         const seat = seats.find((entry) => entry.name === match[1]);
         const target = match[2]?.split("#")[0];
         if (seat === undefined || target === undefined || resolve(dirname(source), target) !== targets.get(seat.name) || seat.name === "lead") {

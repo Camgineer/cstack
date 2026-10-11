@@ -1137,7 +1137,7 @@ test.each(["before link", "after link", "before record commit"])("overlapping de
       expect(second.status).toBe(0);
       await first.release("paused");
       expect((await first.finish()).status).toBe(0);
-      await assertFollowsInstructions({ initial: { args: [], result: second }, run: fixture.kit.runSync, instructions: () => [], snapshot: () => fixture.kit.snapshot(fixture.paths), expected: () => fixture.expected.map((entry) => JSON.stringify([entry.path, "link", entry.target])), move: fixture.kit.move });
+      await assertFollowsInstructions({ initial: { args: [], result: second }, run: fixture.kit.runSync, instructions: () => [], snapshot: () => fixture.kit.snapshot(fixture.paths), expected: () => fixture.expected.map((entry) => JSON.stringify([entry.path, "link", entry.target])), move: fixture.kit.move, wait: async () => { throw new Error("Both delivery commands have already finished."); } });
       fixture.complete();
       const before = homeSnapshot(home);
       expect(fixture.kit.runSync([]).status).toBe(0);
@@ -1310,11 +1310,46 @@ test("fetched delivery recovers a killed mode link and reports it through the pu
     const from = fetchedPackage(home);
     const fixture = deliveryRecoveryFixture(home, dirname(dirname(from)));
     expect(fixture.kit.runSync([], [{ name: "mode", operation: "rename", edge: "before", target: { path: fixture.record }, occurrence: visibleSkills().indexOf("cstack-mode") + 1, action: { kind: "kill" } }]).signal).toBe("SIGKILL");
-    const recovered = commandRun(home, ["--hosts", "intent", "--deliver-intent-source", dirname(dirname(from))], from);
+    const recovered = commandRun(home, ["--hosts", "intent"], from);
+    expect(recovered.stderr).toBe("");
     expect(recovered.status).toBe(0);
     expect(recovered.stdout).not.toContain("left your own");
     expect(recovered.stdout).toContain("added the cstack-mode rule");
     fixture.complete();
+    const child = commandRun(home, ["--deliver-intent-source", "github:example/toolkit"], from);
+    expect(child.status).toBe(0);
+    expect(JSON.parse(child.stdout).messages.join("\n")).toContain("Left the cstack-mode rule unchanged");
+    fixture.complete();
+  });
+});
+
+test.each(["before", "after"] as const)("delivery stays complete %s its pending journal cleanup", (edge) => {
+  withHome((home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    const result = fixture.kit.runSync([], [{ name: "cleanup", operation: "delete", edge, target: { parent: dirname(fixture.record) }, occurrence: visibleSkills().length * 4 + 6, action: { kind: "kill" } }]);
+    expect(result.signal).toBe("SIGKILL");
+    fixture.complete();
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    fixture.complete();
+    const before = homeSnapshot(home);
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+test.each(["before", "after"] as const)("a recorded replacement recovers %s its ownership commit", (edge) => {
+  withHome((home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    const next = join(home, "next-checkout");
+    copyPlugin(next);
+    mkdirSync(join(next, ".git"));
+    const kit = fileChangeKit(home, { command: ["node", join(next, "hooks/intent-deliver.mjs")], env: { PATH: join(home, "bin") } });
+    expect(kit.runSync([], [{ name: "replacement", operation: "rename", edge, target: { path: fixture.record }, action: { kind: "kill" } }]).signal).toBe("SIGKILL");
+    expect(readlinkSync(join(home, ".intent/skills/align"))).toBe(join(next, "skills/align"));
+    expect(kit.runSync([]).status).toBe(0);
+    expect(installRecord(home).entries).toEqual(fixture.paths.map((path) => ({ path, kind: "link", target: join(next, "skills", path.split("/").at(-1) ?? "") })).sort((a, b) => a.path.localeCompare(b.path)));
+    expect(readFileSync(fixture.updates, "utf8").trim().split("\n")).toHaveLength(1);
   });
 });
 

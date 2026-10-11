@@ -632,7 +632,7 @@ test.each(["live unrelated process", "other user's process", "unfinished acquisi
     const fault = join(home, "other-user.cjs");
     writeFileSync(fault, `process.kill = function() { throw Object.assign(new Error('fixture permission denied'), {code: 'EPERM'}); };`);
     const before = homeSnapshot(home);
-    const env = kind === "other user's process" ? { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` } : {};
+    const env: Record<string, string> = kind === "other user's process" ? { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` } : {};
     const result = command === "apply" ? setupApply(home, [], env) : setupRun(home, "revert", [], env);
     expect(result.status).toBe(2);
     expect(result.stderr).toContain(`Setup is locked at ${lock}`);

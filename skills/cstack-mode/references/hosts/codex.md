@@ -4,7 +4,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 | Capability | Native route |
 | --- | --- |
-| **Delegate** | Codex's native subagent tools. Their names and fields differ between the local CLI, the desktop app, and cloud tasks, so read the schemas in this session. Codex does not register plugin agents, so pass the complete persona file from `agents/` as the child's instructions. |
+| **Delegate** | Codex's native subagent tools. Their names and fields differ between the local CLI, the desktop app, and cloud tasks, so read the schemas in this session. Resolve a seated call through **Seat files** below. Unmigrated calls keep their complete persona file in the child's instructions. |
 | **Ask** | The user-question tool when the session exposes one. Otherwise ask in the reply and continue on reversible work. |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native plan tool. |
@@ -12,6 +12,12 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **History** | Thread and history tools when the session exposes them. Otherwise use a transcript or digest the user supplies. |
 | **Continue later** | A native automation or scheduled task the user authorized. Otherwise report the gap. |
 | **Generate an image** | The built-in `image_gen` tool, through the `$imagegen` skill. It saves under `~/.codex/generated_images/<session-id>/` and takes no output path, size, or quality, so copy the file into place and resize it. `codex exec` from another host reaches the same tool. |
+
+## Seat files
+
+Use the whole-file route for the plugin's Markdown seats. Read `agents/<plugin>-agent.md` for builder and `agents/<seat>.md` for lead, worker, investigator, reviewer, verifier, advisor, or scout. Pass that entire file as the child's instructions along with the workflow's own prompt, through the native subagent schema this session exposes. Arena's candidate receives `agents/worker.md`, and its cross-judge receives `agents/reviewer.md`. Keep the resolved model route from the runtime contract.
+
+Codex's local custom agents are separate TOML files with `developer_instructions`, as the [custom agents docs](https://developers.openai.com/codex/multi-agent#custom-agents) describe. The plugin's legacy manifest path resolves skills, MCP servers, apps, and hooks, with no Markdown seat-registration field, read from [the applying manifest parser at Codex 0.162.1](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/core-plugins/src/manifest.rs#L267-L295) and [its resolved paths](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/core-plugins/src/manifest.rs#L380-L398). This whole-file route does not assume a custom agent was configured.
 
 Skill directories. `<project-skills>` is `.agents/skills` in the project. `<user-skills>` is `~/.agents/skills`.
 

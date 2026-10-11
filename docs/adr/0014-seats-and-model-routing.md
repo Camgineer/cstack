@@ -6,4 +6,4 @@ Other hosts keep the `Models:` block. A seat line overrides its caller's existin
 
 A cut with eleven seats preserved workflow labels or split by write risk, but added overlapping choices. Eight seats distinguish the lead from seven delegated jobs by their prompt, write rule, and model need. Copying each seat's full prompt into a personal specialist would require a merge on every update, so setup points at the delivered seat file instead. Install delivers files and setup configures specialists in a later slice.
 
-The [runtime contract](../runtime.md#model-roles) is the context pointer for this decision. A change to this routing amends this ADR in the same change.
+The [runtime contract](../../skills/cstack-mode/references/runtime.md#model-roles) states the rule for installed users. A change to this routing amends this ADR in the same change.

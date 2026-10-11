@@ -4,7 +4,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 | Capability | Native route |
 | --- | --- |
-| **Delegate** | The `Task` tool. The bundled personas register as plugin subagents; pass `cstack-agent` or `comment-sicko` as `subagent_type`. Use `generalPurpose` for an unconfigured role. |
+| **Delegate** | The `Task` tool. Resolve a seated call through **Seat names** below. Unmigrated calls keep `cstack-agent` or `comment-sicko` as `subagent_type`, and `generalPurpose` for an unconfigured role. |
 | **Ask** | `AskQuestion`. |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native todo list. |
@@ -12,6 +12,12 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **History** | Conversation history tools when the session exposes them. Otherwise use a transcript or digest the user supplies. |
 | **Continue later** | A Cursor automation the user authorized. Otherwise report the gap. |
 | **Generate an image** | An image tool when this session's tool list has one. Otherwise an `image` line naming a CLI runner, such as `codex exec`, provides it. |
+
+## Seat names
+
+Cursor discovers plugin agent files under `agents/`, and their frontmatter `name` is the agent identifier, per the [plugin agents reference](https://cursor.com/docs/reference/plugins#agents-format) and [subagent configuration fields](https://cursor.com/docs/subagents#configuration-fields). Pass that identifier as the `Task` tool's `subagent_type`. Builder is `<plugin>-agent`. The other seats are `lead`, `worker`, `investigator`, `reviewer`, `verifier`, `advisor`, and `scout`. Arena's candidate uses `worker`, and its cross-judge uses `reviewer`.
+
+Carry the workflow's own prompt in the brief. If the session lists no registered type for the requested seat, use `generalPurpose` and pass the seat's whole file from `agents/` in the brief. Builder's file is `<plugin>-agent.md`, and every other seat's file is `<seat>.md`. Keep the resolved model route from the runtime contract.
 
 Skill directories. `<project-skills>` is `.cursor/skills` in the project. `<user-skills>` is `~/.cursor/skills`.
 

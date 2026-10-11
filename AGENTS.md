@@ -42,6 +42,8 @@ After a merge passes CI on main, the release workflow runs `bun tools/version.ts
 
 ## Documentation scope
 
+Architecture decisions live in [docs/adr/](docs/adr/). Read the relevant ADR before changing the plugin's architecture. An ADR is a law that can be changed and is never broken.
+
 Keep the root README as this repository's only human guide. Keep other instructional prose agent-facing, with a clear workflow or context pointer that reaches it. Classify files by their actual use; an agent verification index may still be named README.md. Preserve legal notices, provenance, and machine metadata.
 
 ## PStack imports

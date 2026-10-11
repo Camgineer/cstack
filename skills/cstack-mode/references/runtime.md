@@ -34,6 +34,8 @@ Give each child the least permission it needs. Investigators get read-only scope
 
 The seat files live in `agents/` at the plugin root. `agents/cstack-agent.md` is the builder and reads the mode. The lead runs the mode, and each thin seat sets it aside for the brief. When the host registers agents, start a seat by name as its host note says. Otherwise pass the seat's whole file in the brief. Carry the workflow's own prompt in that brief on every host. `agents/comment-sicko.md` stays a prompt to carry in a worker's brief. Delegation sites that have not migrated to seats keep their current personas and model roles.
 
+Make the intended operation explicit in the brief. For a reading task, say whether it answers a question, digests material too large for the parent's context, or watches an event. For a writing task, say whether it produces a candidate within assigned paths or implements a repository change under a plugin playbook. These distinctions select investigator versus scout and worker versus builder without changing their descriptions.
+
 Reuse a child only when the host reports it resumable. Read its status without waking or duplicating it. Each follow-up carries the current objective, constraints, and evidence pointers. The parent reviews results and resolves disagreements.
 
 ## Model roles
@@ -50,7 +52,14 @@ A command runner runs on the person's machine, so only the person's own file may
 
 The legacy roles remain available to delegation sites that have not migrated. `build` covers implementation and arena runners. `review` covers finished-change review and verification. `advisor` covers second opinions before sign-off or a one-way door. `image` covers an image command on hosts with no image capability and has no host-model fallback.
 
-The seat table is generated from agent frontmatter by `sync:hosts`. Setup supplies an explicit provider, model, and effort for every seat. A tier of `none` leaves the investigator ungrouped and still requires an explicit choice. The `site` fallback keeps the caller's existing role, including no role.
+The seat table is generated from agent frontmatter by `sync:hosts`. Its `seat` keys mean:
+
+- `tier` selects the **Setup asks** group. `main` uses the person's main model, while `none` requires an explicit ungrouped choice. The other values name model groups.
+- `fallback` selects **Fallback on other hosts**. `none` uses the host's model, and `site` keeps the caller's existing role, including no role. The other values name legacy roles. Lead is not delegated to.
+- `menu` adds **with a menu** to **Setup asks**. It is true only for reviewer and verifier. The delegating agent selects entries as the panel rule below says.
+- `writes` selects **May write**, with the boundary stated in the seat's body.
+
+These keys generate the table. They do not configure specialists or enforce filesystem permissions. Setup supplies an explicit provider, model, and effort for every seat.
 
 <!-- seats:start -->
 | Seat | Specialist id in Intent | Setup asks | Fallback on other hosts | May write | Use when |
@@ -113,5 +122,3 @@ Qualify each environment (local CLI, desktop app, cloud task) with its own evide
 ## Helpers
 
 The Bun helpers provide bookkeeping and PR watching. They need an existing Bun runtime and their declared dependencies in an owned working copy. Discovery and startup never install them. `watch-pr` also needs authorized `gh` access. The Orchestrate stack frontier needs Graphite and its local stack metadata. Without those, report that capability as unavailable. A plain GitHub base-ref list does not establish the same frontier.
-
-The seat-routing decision is recorded in [ADR 0001](adr/0001-seats-and-model-routing.md).

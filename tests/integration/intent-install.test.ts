@@ -2652,3 +2652,39 @@ test.each(["My notes say Report again after lunch.", "My notes say Run revert to
   expect(transcript.map(step => step.args)).toEqual([args]);
   expect(readFileSync(builder, "utf8")).toBe(content);
 }));
+
+test("setup recovery follows the printed command and rejects advice that undoes the winning apply", async () => {
+  for (const command of ["apply", "report"]) await withHome(async home => {
+    setupFixture(home);
+    const broken = join(home, "wrong-advice");
+    copyPlugin(broken);
+    const helper = join(broken, "hooks/intent-setup.mjs");
+    writeFileSync(helper, readFileSync(helper, "utf8").replaceAll("then run the same ${command} command again.", "then run the same revert command again."));
+    const args = ["apply", ...setupInput(home), "--yes", "--approval", setupApproval(home)];
+    const directory = join(home, ".intent/specialists");
+    const record = join(home, ".local/share/cstack-setup-record.json");
+    const builder = join(directory, "cstack-agent.md");
+    const kit = setupKit(home);
+    const run = kit.start(args, [{ name: "applying", operation: "open", edge: "before", target: { parent: directory }, flags: "wx", exists: builder, action: { kind: "pause" } }]);
+    try {
+      await run.at("applying");
+      const retry = command === "apply" ? args : ["report", ...setupInput(home)];
+      const wrong = fileChangeKit(home, { command: ["node", helper], env: { PATH: join(home, "bin") } }).runSync(retry);
+      expect(wrong.status).toBe(2);
+      expect(wrong.stderr).toContain("then run the same revert command again.");
+      const paths = [record, ...setupSeats.map(seat => join(directory, seat === "builder" ? "cstack-agent.md" : `cstack-${seat}.md`))];
+      let expected: FileSnapshot | undefined;
+      await expect(followSetup(home, retry, wrong, () => kit.snapshot(paths), () => {
+        if (!expected) throw new Error("The winning command has not finished.");
+        return expected;
+      }, async () => {
+        run.release("applying");
+        expect((await run.finish()).status).toBe(0);
+        expect(setupRecord(home).changes).toHaveLength(8);
+        expected = kit.snapshot(paths);
+      }, () => run.running)).rejects.toThrow("Following printed instructions changed the required recovered files.");
+      expect(existsSync(builder)).toBe(false);
+      expect(setupRecord(home).changes).toEqual([]);
+    } finally { await run.stop(); }
+  });
+}, 20000);

@@ -56,6 +56,8 @@ Remaining triggers. A trigger that names a skill means invoke that skill with th
 - Broken skill mid-task → fix it in its own PR. Don't block. Don't silently work around it.
 - Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "keep going until X") → invoke `show-me-your-work` for a decision trail. Follow **Scratch files** for the trail's location and cleanup.
 
+**Write it down.** In the same turn you learn something that changes the work, write it into the owning **Shared document** or the repository, because chat may be unavailable to another agent or workspace: a decision and who made it, an answer, a constraint, a finding, and what is in flight. In the same turn a fact changes, correct every document that states the old one. Keep enough current context for a new agent with only the documents and the repository to continue the work without asking anyone.
+
 ## Principles
 
 Read the leaf skill in full for any principle you apply. Each entry names when it applies.

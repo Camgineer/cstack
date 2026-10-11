@@ -26,12 +26,13 @@ Receipts default to tmp/check-receipt under the project root.
 Reuse a name only for the same command and working directory.
 check refuses failed, unfinished, foreign, or stale receipts.
 --head also requires the index and named commit to hold the checked tree.
-Receipts are local bookkeeping that track the content Git puts in a commit after file conversions, can miss changes to raw file bytes, exclude ignored files, state outside the repository, and changes restored before exit, prove no authenticity, and leave loose Git objects in the repository.
+Receipts are local bookkeeping that track the content Git puts in a commit after file conversions, can miss changes to raw file bytes, exclude ignored files, state outside the repository, and changes restored before exit, prove no authenticity, leave loose Git objects in the repository, and do not support submodules or sparse checkouts.
 `;
 
-function git(root: string, args: string[], indexFile?: string): string {
+function git(root: string, args: string[], indexFile?: string, input?: string): string {
   const result = spawnSync("git", ["-C", root, ...args], {
     encoding: "utf8",
+    input,
     env: indexFile ? { ...process.env, GIT_INDEX_FILE: indexFile } : process.env,
   });
   if (result.status !== 0) throw new Error(result.stderr.trim() || "Cannot read the Git working tree.");
@@ -88,15 +89,26 @@ function receiptDirectory(root: string, value: string): string {
 function treeHash(root: string, directory: string, tree: "working" | "index" = "working"): string {
   const indexFile = join(directory, `index-${randomUUID()}`);
   try {
-    const realIndex = resolve(root, git(root, ["rev-parse", "--git-path", "index"]));
-    if (statIfPresent(realIndex)) copyFileSync(realIndex, indexFile);
-    else git(root, ["read-tree", "--empty"], indexFile);
-    if (git(root, ["ls-files", "--stage", "-z"], indexFile).split("\0").some((entry) => entry.startsWith("160000 "))) {
+    if (git(root, ["ls-files", "--stage", "-z"]).split("\0").some((entry) => entry.startsWith("160000 "))) {
       throw new Error("Check receipts do not support submodules. Run checks in each repository separately.");
     }
-    const stagedTree = git(root, ["write-tree"], indexFile);
-    if (tree === "index") return stagedTree;
+    if (tree === "index") {
+      const realIndex = resolve(root, git(root, ["rev-parse", "--git-path", "index"]));
+      if (statIfPresent(realIndex)) copyFileSync(realIndex, indexFile);
+      else git(root, ["read-tree", "--empty"], indexFile);
+      return git(root, ["write-tree"], indexFile);
+    }
+    if (git(root, ["ls-files", "--unmerged", "-z"]).length) throw new Error("Resolve merge conflicts before recording checks.");
+    try {
+      git(root, ["read-tree", "HEAD"], indexFile);
+    } catch {
+      git(root, ["read-tree", "--empty"], indexFile);
+    }
     git(root, ["-c", "core.filemode=true", "add", "-A", "--", "."], indexFile);
+    const trackedIgnored = git(root, ["ls-files", "--cached", "--ignored", "--exclude-standard", "-z"]).split("\0").filter((path) => path && statIfPresent(join(root, path)));
+    if (trackedIgnored.length) {
+      git(root, ["--literal-pathspecs", "-c", "core.filemode=true", "add", "-f", "--pathspec-from-file=-", "--pathspec-file-nul"], indexFile, `${trackedIgnored.join("\0")}\0`);
+    }
     return git(root, ["write-tree"], indexFile);
   } finally {
     rmSync(indexFile, { force: true });
@@ -196,6 +208,8 @@ try {
     const [action, name, command] = positionals;
     if (!((action === "record" && positionals.length === 3 && values.head === undefined) || (action === "check" && positionals.length === 1))) throw new Error(HELP);
     const root = realpathSync(git(process.cwd(), ["rev-parse", "--show-toplevel"]));
+    const sparseCheckout = spawnSync("git", ["-C", root, "config", "--bool", "core.sparseCheckout"], { encoding: "utf8" });
+    if (sparseCheckout.stdout.trim() === "true") throw new Error("Check receipts do not support sparse checkouts. Run checks in a full checkout.");
     const directory = receiptDirectory(root, values.receipts);
     if (action === "record" && name !== undefined && command !== undefined) record(root, directory, name, command);
     else check(root, directory, values.head);

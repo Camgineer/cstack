@@ -503,3 +503,47 @@ test("check receipt verifier explains an unborn HEAD in plain words", () => {
     expect(result.stderr).not.toContain("fatal:");
   });
 });
+
+test.each(["assume-unchanged", "skip-worktree"])("check receipt fix N5 refuses changed %s content at record time", (flag) => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    git("update-index", `--${flag}`, "tracked.txt");
+    writeFileSync(join(repository, "tracked.txt"), "changed\n");
+    const index = resolve(repository, git("rev-parse", "--git-path", "index").trim());
+    const before = readFileSync(index);
+    expect(cli("record", "flagged-input", 'test "$(cat tracked.txt)" = changed').status).toBe(0);
+    expect(readFileSync(index)).toEqual(before);
+    const result = cli("check", "--head", "HEAD");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("HEAD does not contain the checked working tree.");
+    expect(readFileSync(index)).toEqual(before);
+  });
+});
+
+test.each(["assume-unchanged", "skip-worktree"])("check receipt fix N5 reports an edit after record to %s content as stale", (flag) => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    git("update-index", `--${flag}`, "tracked.txt");
+    const index = resolve(repository, git("rev-parse", "--git-path", "index").trim());
+    const before = readFileSync(index);
+    expect(cli("record", "flagged-input", 'test "$(cat tracked.txt)" = original').status).toBe(0);
+    expect(readFileSync(index)).toEqual(before);
+    writeFileSync(join(repository, "tracked.txt"), "changed\n");
+    const result = cli("check", "--head", "HEAD");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("flagged-input is stale.");
+    expect(readFileSync(index)).toEqual(before);
+  });
+});
+
+test("check receipt fix N5 refuses sparse checkouts in plain words", () => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    git("config", "core.sparseCheckout", "true");
+    const index = resolve(repository, git("rev-parse", "--git-path", "index").trim());
+    const before = readFileSync(index);
+    for (const args of [["record", "sparse-input", "exit 0"], ["check"], ["check", "--head", "HEAD"]]) {
+      const result = cli(...args);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain("Check receipts do not support sparse checkouts.");
+      expect(readFileSync(index)).toEqual(before);
+    }
+  });
+});

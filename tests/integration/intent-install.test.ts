@@ -584,6 +584,136 @@ require('node:module').syncBuiltinESMExports();`);
   });
 });
 
+test.each(["untouched worker", "changed builder"])("setup recovery closes an interrupted run with a later edit (%s)", (kind) => {
+  withHome((home) => {
+    setupFixture(home);
+    const builder = join(home, ".intent/specialists/cstack-agent.md");
+    const worker = join(home, ".intent/specialists/cstack-worker.md");
+    mkdirSync(dirname(builder));
+    writeFileSync(builder, "ORIGINAL BUILDER\n");
+    writeFileSync(worker, "ORIGINAL WORKER\n");
+    const fault = join(home, "stop-after-builder.cjs");
+    writeFileSync(fault, `const fs = require('node:fs');
+const rename = fs.renameSync;
+fs.renameSync = function(from, to) {
+  const result = rename.apply(this, arguments);
+  if (to === ${JSON.stringify(builder)}) process.kill(process.pid, 'SIGKILL');
+  return result;
+};
+require('node:module').syncBuiltinESMExports();`);
+    expect(setupApply(home, [], { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` }).signal).toBe("SIGKILL");
+    const edited = kind === "untouched worker" ? worker : builder;
+    writeFileSync(edited, "MY LATER EDIT\n");
+    const recovered = setupRun(home, "revert");
+    expect(recovered.status).toBe(0);
+    expect(recovered.stdout).toContain("Recovered the interrupted apply.");
+    expect(readFileSync(edited, "utf8")).toBe("MY LATER EDIT\n");
+    expect(setupRun(home, "report", setupInput(home)).status).toBe(0);
+    if (kind === "untouched worker") {
+      expect(recovered.stdout).not.toContain(worker);
+      expect(readFileSync(builder, "utf8")).toBe("ORIGINAL BUILDER\n");
+      expect(existsSync(join(home, ".local/share/cstack-setup-record.json"))).toBe(false);
+    } else {
+      expect(setupRecord(home).phase).toBe("ready");
+      expect(setupRecord(home).changes).toHaveLength(1);
+      expect(Buffer.from(setupRecord(home).changes[0].before.content, "base64").toString()).toBe("ORIGINAL BUILDER\n");
+      renameSync(builder, join(home, "saved-edit.md"));
+      expect(setupRun(home, "revert").status).toBe(0);
+      expect(readFileSync(builder, "utf8")).toBe("ORIGINAL BUILDER\n");
+    }
+  });
+});
+
+test.each(["live unrelated process", "other user's process", "unfinished acquisition"])("setup recovery gives a manual escape for a lock (%s) without removing it", (kind) => {
+  withHome((home) => {
+    setupFixture(home);
+    const lock = join(home, `.local/share/cstack-setup-record.json.lock${kind === "unfinished acquisition" ? ".acquire" : ""}`);
+    writeFileSync(lock, JSON.stringify({ schemaVersion: 1, name: "cstack", home, pid: process.pid, temporaries: [] }) + "\n");
+    const fault = join(home, "other-user.cjs");
+    writeFileSync(fault, `process.kill = function() { throw Object.assign(new Error('fixture permission denied'), {code: 'EPERM'}); };`);
+    const before = homeSnapshot(home);
+    const result = setupApply(home, [], kind === "other user's process" ? { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` } : {});
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain(`Setup is locked at ${lock}`);
+    expect(result.stderr).toContain("no setup run is active");
+    expect(result.stderr).toContain(`mv '${lock}' '${lock}.saved-`);
+    expect(result.stderr).toContain("Then run revert.");
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+test("setup recovery lets only one command take over the same stale lock", () => {
+  withHome((home) => {
+    setupFixture(home);
+    expect(setupApply(home).status).toBe(0);
+    const lock = join(home, ".local/share/cstack-setup-record.json.lock");
+    const dead = spawnSync("node", ["-e", "process.stdout.write(String(process.pid))"], { env: { HOME: home, PATH: join(home, "bin") }, encoding: "utf8" });
+    expect(dead.status).toBe(0);
+    writeFileSync(lock, JSON.stringify({ schemaVersion: 1, name: "cstack", home, pid: Number(dead.stdout), temporaries: [] }) + "\n");
+    const held = join(home, "second-held");
+    const released = join(home, "second-release");
+    const resultPath = join(home, "second-result.json");
+    const wait = `function waitFor(test) { const end = Date.now() + 4000; while (!test()) { if (Date.now() > end) throw new Error('fixture barrier timed out'); Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5); } }`;
+    const secondFault = join(home, "second-lock.cjs");
+    writeFileSync(secondFault, `const fs = require('node:fs');
+${wait}
+const open = fs.openSync, write = fs.writeSync;
+let lockFd, paused = false;
+fs.openSync = function(path, flags) { const fd = open.apply(this, arguments); if (path === ${JSON.stringify(lock)} && flags === 'wx') lockFd = fd; return fd; };
+fs.writeSync = function(fd) { const result = write.apply(this, arguments); if (fd === lockFd && !paused) { paused = true; fs.writeFileSync(${JSON.stringify(held)}, 'held'); waitFor(() => fs.existsSync(${JSON.stringify(released)})); } return result; };
+require('node:module').syncBuiltinESMExports();`);
+    const secondRunner = join(home, "second-runner.cjs");
+    writeFileSync(secondRunner, `const result = require('node:child_process').spawnSync('node', [${JSON.stringify(setupScript)}, 'revert'], { env: {...process.env, NODE_OPTIONS: ${JSON.stringify(`--require ${JSON.stringify(secondFault)}`)}}, encoding: 'utf8', timeout: 8000 });
+require('node:fs').writeFileSync(${JSON.stringify(resultPath)}, JSON.stringify({status: result.status, stderr: result.stderr, stdout: result.stdout}));`);
+    const firstFault = join(home, "first-lock.cjs");
+    writeFileSync(firstFault, `const fs = require('node:fs');
+${wait}
+const unlink = fs.unlinkSync, open = fs.openSync;
+let started = false;
+fs.unlinkSync = function(path) {
+  if (path === ${JSON.stringify(lock)} && !started) {
+    started = true;
+    require('node:child_process').spawn('node', [${JSON.stringify(secondRunner)}], {env: {...process.env, NODE_OPTIONS: ''}, stdio: 'ignore'});
+    waitFor(() => fs.existsSync(${JSON.stringify(held)}) || fs.existsSync(${JSON.stringify(resultPath)}));
+  }
+  return unlink.apply(this, arguments);
+};
+fs.openSync = function(path, flags) { const fd = open.apply(this, arguments); if (started && path === ${JSON.stringify(lock)} && flags === 'wx') fs.writeFileSync(${JSON.stringify(released)}, 'release'); return fd; };
+process.on('exit', () => { if (started) { fs.writeFileSync(${JSON.stringify(released)}, 'release'); waitFor(() => fs.existsSync(${JSON.stringify(resultPath)})); } });
+require('node:module').syncBuiltinESMExports();`);
+    const first = setupRun(home, "revert", [], { NODE_OPTIONS: `--require ${JSON.stringify(firstFault)}` });
+    expect(first.status).toBe(0);
+    const second = JSON.parse(readFileSync(resultPath, "utf8"));
+    expect(second.status).toBe(2);
+    expect(second.stderr).toContain(`Setup is locked at ${lock}.acquire`);
+    expect(setupRecord(home).changes).toEqual([]);
+  });
+});
+
+test("setup recovery does not recreate an installer link retired during an interrupted apply", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const builder = join(home, ".intent/specialists/cstack-agent.md");
+    mkdirSync(dirname(builder));
+    const target = join(root, "agents/cstack-agent.md");
+    symlinkSync(target, builder);
+    const installation = installRecord(home);
+    installation.entries.push({ path: builder, kind: "link", target });
+    writeFileSync(join(home, ".local/share/cstack-install-record.json"), JSON.stringify(installation));
+    const fault = join(home, "stop-written-link.cjs");
+    writeFileSync(fault, `const fs = require('node:fs'), rename = fs.renameSync;
+fs.renameSync = function(from, to) { const result = rename.apply(this, arguments); if (to === ${JSON.stringify(builder)}) process.kill(process.pid, 'SIGKILL'); return result; };
+require('node:module').syncBuiltinESMExports();`);
+    expect(setupApply(home, [], { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` }).signal).toBe("SIGKILL");
+    expect(install(home).status).toBe(0);
+    const recovered = setupRun(home, "revert");
+    expect(recovered.status).toBe(0);
+    expect(recovered.stdout).toContain(`Removed ${builder}. The installer no longer owns its prior link.`);
+    expect(existsSync(builder)).toBe(false);
+    expect(setupRun(home, "report", setupInput(home)).status).toBe(0);
+  });
+});
+
 const root = resolve(import.meta.dir, "../..");
 const script = join(root, "hooks/intent-deliver.sh");
 

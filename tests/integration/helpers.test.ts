@@ -431,10 +431,12 @@ test.each(["command", "directory"])("check receipt fix C3 refuses a reused name 
   });
 });
 
-test("check receipt fix B1 refuses a head that omits a checked untracked file", () => {
+test("check receipt fix B1 refuses commit -a omitting a checked untracked file", () => {
   withReceiptRepository(({ repository, git, cli }) => {
+    writeFileSync(join(repository, "tracked.txt"), "checked edit\n");
     writeFileSync(join(repository, "new.txt"), "checked input\n");
     expect(cli("record", "untracked-input", "test -f new.txt").status).toBe(0);
+    git("-c", "user.name=Fixture", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", "commit", "-a", "-m", "commit tracked input only");
     const omitted = cli("check", "--head", "HEAD");
     expect(omitted.status).toBe(1);
     expect(omitted.stderr).toContain("HEAD does not contain the checked working tree.");

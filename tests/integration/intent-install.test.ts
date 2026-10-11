@@ -3175,6 +3175,14 @@ test("fix round concurrent installs without pauses never print raw link errors",
         }
         expect(fixture.kit.runSync([]).status).toBe(0);
         expect(installRecord(home).entries).toEqual([...fixture.expected].sort((a, b) => a.path.localeCompare(b.path)));
+        if (JSON.parse(readFileSync(fixture.state, "utf8")).content === "") {
+          const output = results.map((result) => result.stdout).join("\n");
+          expect(output).toContain("earlier install may not have finished adding the cstack-mode rule");
+          const rule = output.split("To finish it, paste this at the top of your personal rule text:\n")[1]?.split("\n")[0];
+          if (!rule) throw new Error("Missing printed rule to paste.");
+          writeFileSync(fixture.state, JSON.stringify({ content: rule, enabled: true }));
+          expect(fixture.kit.runSync([]).status).toBe(0);
+        }
         expect(JSON.parse(readFileSync(fixture.state, "utf8")).content.split("Before any other step")).toHaveLength(2);
       } finally { await first.stop(); await second.stop(); }
     });

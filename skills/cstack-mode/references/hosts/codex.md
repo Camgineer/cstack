@@ -27,7 +27,9 @@ Skill directories. `<project-skills>` is `.agents/skills` in the project. `<user
 
 ## Instructions file
 
-Codex discovers project guidance from the project root down to the working directory. In each directory, it checks `AGENTS.override.md`, then `AGENTS.md`, then configured fallback names. It skips empty files and includes at most one file per directory, per the [instruction discovery docs](https://learn.chatgpt.com/docs/agent-configuration/agents-md#how-codex-discovers-guidance). For the retro pointer, use the project's non-empty `AGENTS.override.md`, otherwise `AGENTS.md`. Preserve the discovery choice by leaving an empty or absent override alone.
+Codex discovers project guidance from the project root down to the working directory. In each directory, it checks `AGENTS.override.md`, then `AGENTS.md`, then configured fallback names. It skips empty files and includes at most one file per directory, per the [instruction discovery docs](https://learn.chatgpt.com/docs/agent-configuration/agents-md#how-codex-discovers-guidance).
+
+Identify the loaded sources through the active-instruction query or an audit of existing TUI logs or enabled session logs described in the [setup verification docs](https://learn.chatgpt.com/docs/agent-configuration/agents-md#verify-your-setup). Put the retro pointer in a project instructions file already loaded, including a [configured fallback name](https://learn.chatgpt.com/docs/agent-configuration/agents-md#customize-fallback-filenames) such as `TEAM_GUIDE.md`. Leave unused higher-priority files untouched. Create `AGENTS.md` only when the project has no instructions source, and disclose that creation in the same path question under [Project task file](../runtime.md#project-task-file).
 
 User instructions file. `~/.codex/AGENTS.md`, which Codex loads in every project.
 

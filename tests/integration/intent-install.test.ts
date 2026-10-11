@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { chmodSync, linkSync, cpSync, lstatSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, linkSync, cpSync, lstatSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
@@ -1005,7 +1005,7 @@ test("the first recorded run adopts exact legacy skill links and keeps unrelated
     expect(first.status).toBe(0);
     expect(installRecord(home).entries).toContainEqual({ path: join(skills, "align"), kind: "link", target: join(root, "skills/align") });
     expect(first.stdout).toContain("left your own how as it is");
-    expect(first.stdout).toContain("left your own why as it is");
+    expect(first.stdout).toContain(`kept ${join(skills, "why")}: its link target is gone`);
     expect(readlinkSync(join(skills, "how"))).toBe(own);
     expect(readlinkSync(join(skills, "why"))).toBe(join(home, "missing"));
     expect(install(home).status).toBe(0);
@@ -1052,7 +1052,7 @@ test("a changed recorded link and a personal file replacing a recorded link surv
     for (let index = 0; index < 2; index++) {
       const result = install(home);
       expect(result.status).toBe(0);
-      expect(result.stdout).toContain("left your own how as it is");
+      expect(result.stdout).toContain(`kept ${join(skills, "how")}: its link target is gone`);
       expect(result.stdout).toContain("left your own why as it is");
       expect(readlinkSync(join(skills, "how"))).toBe(join(home, "my missing how"));
       expect(readFileSync(join(skills, "why"), "utf8")).toBe("My own file.\n");
@@ -1339,7 +1339,7 @@ test.each(["home", "ancestor", "linked parent", "intent skills", "intent special
   });
 });
 
-test.each(["after old rename", "after new rename", "after old cleanup"])("interrupted copy swap recovers host ownership %s", (phase) => {
+test.each(["after staging creation", "before old rename", "after old rename", "after new rename", "before old cleanup", "after old cleanup"])("an interrupted swap installs afresh and preserves every leftover %s", (phase) => {
   withHome((home) => {
     const from = fetchedPackage(home);
     const shell = join(dirname(from), "intent-deliver.sh");
@@ -1349,22 +1349,38 @@ test.each(["after old rename", "after new rename", "after old cleanup"])("interr
     writeFileSync(join(retired, "SKILL.md"), "---\nname: retired-review\n---\nRetired skill.\n");
     expect(install(home, shell).status).toBe(0);
     const data = join(home, ".local/share/cstack");
+    const parent = dirname(data);
+    const recordPath = join(parent, "cstack-install-record.json");
+    const recordBefore = readFileSync(recordPath, "utf8");
     const link = join(home, ".intent/skills/retired-review");
     expect(readlinkSync(link)).toBe(join(data, "skills/retired-review"));
+    const personal = join(parent, ".cstack-install-personal-backup");
+    copyPlugin(join(personal, "previous"));
+    writeFileSync(join(personal, "previous/notes.txt"), "Keep my backup.\n");
     rmSync(retired, { recursive: true });
+    const nextSkill = "---\nname: how\n---\nReplacement release.\n";
+    writeFileSync(join(plugin, "skills/how/SKILL.md"), nextSkill);
     const preload = join(home, "crash.cjs");
     writeFileSync(preload, `const fs = require('node:fs');
 const path = require('node:path');
 const phase = ${JSON.stringify(phase)};
 const data = ${JSON.stringify(data)};
+const temporary = fs.mkdtempSync;
+fs.mkdtempSync = function(a) {
+  const result = temporary.apply(this, arguments);
+  if (phase === 'after staging creation' && path.basename(a).startsWith('.cstack-install-')) process.kill(process.pid, 'SIGKILL');
+  return result;
+};
 const rename = fs.renameSync;
 fs.renameSync = function(a, b) {
+  if (phase === 'before old rename' && a === data && path.basename(b) === 'previous') process.kill(process.pid, 'SIGKILL');
   const result = rename.apply(this, arguments);
-  if (phase === 'after old rename' && path.basename(b) === 'previous' || phase === 'after new rename' && b === data && path.basename(a) === 'copy') process.kill(process.pid, 'SIGKILL');
+  if (phase === 'after old rename' && a === data && path.basename(b) === 'previous' || phase === 'after new rename' && b === data && path.basename(a) === 'copy') process.kill(process.pid, 'SIGKILL');
   return result;
 };
 const remove = fs.rmSync;
 fs.rmSync = function(a) {
+  if (phase === 'before old cleanup' && path.basename(a).startsWith('.cstack-install-')) process.kill(process.pid, 'SIGKILL');
   const result = remove.apply(this, arguments);
   if (phase === 'after old cleanup' && path.basename(a).startsWith('.cstack-install-')) process.kill(process.pid, 'SIGKILL');
   return result;
@@ -1372,16 +1388,21 @@ fs.rmSync = function(a) {
 require('node:module').syncBuiltinESMExports();`);
     const crash = spawnSync("sh", [shell], { env: { HOME: home, PATH: join(home, "bin"), NODE_OPTIONS: "--require " + JSON.stringify(preload) }, encoding: "utf8" });
     expect(crash.signal).toBe("SIGKILL");
-    const retry = install(home, shell);
-    expect(retry.status).toBe(0);
-    expect(retry.stdout).toContain("Recovered the interrupted plugin copy swap");
-    expect(install(home, shell).status).toBe(0);
-    expect(readdirSync(join(home, ".intent/skills"))).not.toContain("retired-review");
-    expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe(readFileSync(join(plugin, "skills/how/SKILL.md"), "utf8"));
-    const record = JSON.parse(readFileSync(join(dirname(data), "cstack-install-record.json"), "utf8"));
-    expect(record.entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
-    expect(existsSync(join(data, "install-record.json"))).toBe(false);
-    expect(readdirSync(dirname(data)).some((entry) => entry.startsWith(".cstack-install-"))).toBe(false);
+    expect(readFileSync(recordPath, "utf8")).toBe(recordBefore);
+    const leftovers = readdirSync(parent).filter((entry) => entry.startsWith(".cstack-install-")).sort();
+    const snapshots = leftovers.map((entry) => homeSnapshot(join(parent, entry)));
+    for (let run = 0; run < 2; run++) {
+      const retry = install(home, shell);
+      expect(retry.status).toBe(0);
+      expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe(nextSkill);
+      expect(packageContents(data)).toEqual(packageContents(plugin));
+      expect(readdirSync(join(home, ".intent/skills"))).not.toContain("retired-review");
+      const record = JSON.parse(readFileSync(recordPath, "utf8"));
+      expect(record.entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
+      expect(readdirSync(parent).filter((entry) => entry.startsWith(".cstack-install-")).sort()).toEqual(leftovers);
+      expect(leftovers.map((entry) => homeSnapshot(join(parent, entry)))).toEqual(snapshots);
+      expect(readFileSync(join(personal, "previous/notes.txt"), "utf8")).toBe("Keep my backup.\n");
+    }
   });
 });
 
@@ -1485,70 +1506,22 @@ test.each(["parent link", "dot dot", "home"])("safe custom data location still i
   });
 });
 
-test("a legacy host record moves outside the copy before replacement and still removes a retired link", () => {
+test("an internal copy record cannot supply ownership for an unrecorded host file", () => {
   withHome((home) => {
     const from = fetchedPackage(home);
     const shell = join(dirname(from), "intent-deliver.sh");
     expect(install(home, shell).status).toBe(0);
     const data = join(home, ".local/share/cstack");
-    const recordPath = join(dirname(data), "cstack-install-record.json");
     const record = installRecord(home);
-    const retired = join(home, ".intent/skills/retired-before-record-move");
-    symlinkSync(join(data, "skills/retired-before-record-move"), retired);
-    record.entries.push({ path: retired, kind: "link", target: join(data, "skills/retired-before-record-move") });
+    const personal = join(home, ".intent/skills/personal-notes");
+    writeFileSync(personal, "My host notes.\n", { mode: 0o644 });
+    record.entries.push({ path: personal, kind: "file", sha256: new Bun.CryptoHasher("sha256").update("My host notes.\n").digest("hex"), mode: 0o644 });
     writeFileSync(join(data, "install-record.json"), JSON.stringify(record));
-    rmSync(recordPath);
-    expect(install(home, shell).status).toBe(0);
-    expect(readdirSync(join(home, ".intent/skills"))).not.toContain("retired-before-record-move");
-    expect(installRecord(home).entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
-    expect(existsSync(join(data, "install-record.json"))).toBe(false);
-  });
-});
-
-test("legacy interrupted swaps restore the previous copy and its host record before delivery", () => {
-  withHome((home) => {
-    const from = fetchedPackage(home);
-    const shell = join(dirname(from), "intent-deliver.sh");
-    expect(install(home, shell).status).toBe(0);
-    const data = join(home, ".local/share/cstack");
-    const recordPath = join(dirname(data), "cstack-install-record.json");
-    const record = installRecord(home);
-    const retired = join(home, ".intent/skills/retired-before-swap-recovery");
-    symlinkSync(join(data, "skills/retired-before-swap-recovery"), retired);
-    record.entries.push({ path: retired, kind: "link", target: join(data, "skills/retired-before-swap-recovery") });
-    writeFileSync(join(data, "install-record.json"), JSON.stringify(record));
-    rmSync(recordPath);
-    const staging = mkdtempSync(join(dirname(data), ".cstack-install-"));
-    copyPlugin(join(staging, "copy"));
-    renameSync(data, join(staging, "previous"));
-    const before = homeSnapshot(home);
-    const report = spawnSync("sh", [shell, "--report-only"], { env: { HOME: home, PATH: join(home, "bin") }, encoding: "utf8" });
-    expect(report.status).toBe(0);
-    expect(homeSnapshot(home)).toEqual(before);
+    rmSync(join(dirname(data), "cstack-install-record.json"));
     const result = install(home, shell);
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Recovered the interrupted plugin copy swap by restoring");
-    expect(readdirSync(join(home, ".intent/skills"))).not.toContain("retired-before-swap-recovery");
-    expect(installRecord(home).entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
-    expect(existsSync(staging)).toBe(false);
-  });
-});
-
-test("swap recovery refuses a staging folder that contains redirected host data", () => {
-  withHome((home) => {
-    const from = fetchedPackage(home);
-    const parent = join(home, ".local/share");
-    const staging = join(parent, ".cstack-install-personal");
-    const personal = join(staging, "copy");
-    mkdirSync(personal, { recursive: true });
-    writeFileSync(join(personal, "notes.txt"), "My host notes.\n");
-    mkdirSync(join(home, ".intent"));
-    symlinkSync(personal, join(home, ".intent/skills"));
-    writeFileSync(join(parent, ".cstack-swap.json"), JSON.stringify({ schemaVersion: 1, name: "cstack", data: join(parent, "cstack"), staging }));
-    const before = homeSnapshot(home);
-    const result = install(home, join(dirname(from), "intent-deliver.sh"));
-    expect(result.status).toBe(2);
-    expect(result.stderr).toContain("protected paths");
-    expect(homeSnapshot(home)).toEqual(before);
+    expect(readFileSync(personal, "utf8")).toBe("My host notes.\n");
+    expect(installRecord(home).entries.some((entry: { path: string }) => entry.path === personal)).toBe(false);
+    expect(existsSync(join(data, "install-record.json"))).toBe(false);
   });
 });

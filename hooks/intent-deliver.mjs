@@ -15,8 +15,6 @@ const data = join(physical(resolve(process.env.XDG_DATA_HOME ?? join(home, ".loc
 const skills = physical(join(home, ".intent/skills"));
 const specialists = physical(join(home, ".intent/specialists"));
 const recordPath = join(dirname(data), `${name}-install-record.json`);
-const legacyRecordPath = join(data, "install-record.json");
-const swapPath = join(dirname(data), `.${name}-swap.json`);
 const location = "Intent's Settings, under Agent Behavior";
 const root = existsSync(join(source, ".git")) ? source : data;
 const statAt = (path) => {
@@ -35,11 +33,12 @@ const within = (base, path) => {
   return suffix !== "" && suffix !== ".." && !suffix.startsWith("../") && !isAbsolute(suffix);
 };
 function allowed(path) {
-  if (typeof path !== "string" || resolve(path) !== path || path === recordPath || path === legacyRecordPath || basename(path).startsWith(".install-record-")) return false;
-  if (!(within(data, path) || dirname(path) === skills || dirname(path) === specialists)) return false;
+  if (typeof path !== "string" || resolve(path) !== path || path === recordPath || basename(path).startsWith(".install-record-")) return false;
+  if (!(dirname(path) === skills || dirname(path) === specialists)) return false;
   return physical(dirname(path)) === dirname(path);
 }
-function loadRecord(path = statAt(recordPath) ? recordPath : legacyRecordPath) {
+function loadRecord() {
+  const path = recordPath;
   try {
     if (!lstatSync(path).isFile()) throw new Error("The record is not a regular file.");
     const record = JSON.parse(readFileSync(path, "utf8"));
@@ -73,60 +72,21 @@ function pluginCopy(path) {
 }
 function overlapsProtected(path) {
   const hosts = [".intent", ".claude", ".codex", ".cursor"].flatMap((host) => [host, `${host}/skills`, `${host}/specialists`, `${host}/plugins`, `${host}/plugins/cache`, `${host}/plugins/marketplaces`]);
-  const protectedPaths = [home, recordPath, swapPath, skills, specialists, ...hosts.map((host) => join(home, host))].map(physical);
+  const protectedPaths = [home, recordPath, skills, specialists, ...hosts.map((host) => join(home, host))].map(physical);
   return path === dirname(path) || protectedPaths.some((protectedPath) => path === protectedPath || within(path, protectedPath));
 }
 function preflight() {
   if (statAt(data)?.isSymbolicLink()) throw new Error(`kept ${data}: the plugin data folder is a link. Move that link aside before installing.`);
   if (overlapsProtected(data)) throw new Error(`kept ${data}: the copy path overlaps a protected home, host folder, or installation record. Choose a separate data folder.`);
   if (statAt(data) && !pluginCopy(data)) throw new Error(`kept ${data}: it is not a copy of this plugin`);
-  for (const path of [recordPath, swapPath]) {
-    const entry = statAt(path);
-    if (entry && !entry.isFile()) throw new Error(`kept ${path}: this protected installation state is not a regular file. Move it aside before installing.`);
-  }
-}
-function recoverCopy() {
-  let swap;
-  if (statAt(swapPath)) swap = JSON.parse(readFileSync(swapPath, "utf8"));
-  else {
-    if (!existsSync(dirname(data))) return;
-    const leftovers = readdirSync(dirname(data)).filter((path) => path.startsWith(`.${name}-install-`)).map((path) => join(dirname(data), path)).filter((path) => {
-      if (!statAt(path)?.isDirectory() || !pluginCopy(join(path, "previous"))) return false;
-      if (readdirSync(path).some((entry) => !["copy", "previous"].includes(entry))) return false;
-      return !statAt(join(path, "copy")) || pluginCopy(join(path, "copy"));
-    });
-    if (leftovers.length === 0) return;
-    if (leftovers.length !== 1) throw new Error(`kept ${data}: more than one interrupted plugin copy swap needs recovery.`);
-    swap = { schemaVersion: 1, name, data, staging: leftovers[0] };
-  }
-  if (swap?.schemaVersion !== 1 || swap.name !== name || swap.data !== data || typeof swap.staging !== "string" || dirname(swap.staging) !== dirname(data) || !basename(swap.staging).startsWith(`.${name}-install-`) || physical(swap.staging) !== swap.staging || overlapsProtected(swap.staging) || swap.staging === source || within(swap.staging, source)) throw new Error(`kept ${swapPath}: the interrupted swap has invalid or protected paths.`);
-  const staging = swap.staging;
-  if (statAt(staging)) {
-    if (!lstatSync(staging).isDirectory() || readdirSync(staging).some((path) => !["copy", "previous"].includes(path))) throw new Error(`kept ${staging}: the interrupted swap folder is unrecognized.`);
-    const previous = join(staging, "previous");
-    const incoming = join(staging, "copy");
-    if (statAt(previous) && !pluginCopy(previous) || statAt(incoming) && !lstatSync(incoming).isDirectory()) throw new Error(`kept ${staging}: the interrupted swap contains an unrecognized copy.`);
-    if (!statAt(recordPath) && statAt(join(previous, "install-record.json"))) {
-      const loaded = loadRecord(join(previous, "install-record.json"));
-      if (loaded.state === "valid") replaceFile(recordPath, JSON.stringify({ ...loaded.record, entries: loaded.record.entries.filter((entry) => !within(data, entry.path)) }) + "\n");
-    }
-    if (!statAt(data) && statAt(previous)) {
-      renameSync(previous, data);
-      console.log(`Recovered the interrupted plugin copy swap by restoring ${data}.`);
-    } else console.log(`Recovered the interrupted plugin copy swap at ${data}.`);
-    rmSync(staging, { recursive: true, force: true });
-  } else {
-    if (!pluginCopy(data)) throw new Error(`kept ${swapPath}: no plugin copy survives the interrupted swap.`);
-    console.log(`Recovered the interrupted plugin copy swap at ${data}.`);
-  }
-  if (statAt(swapPath)) unlinkSync(swapPath);
+  const entry = statAt(recordPath);
+  if (entry && !entry.isFile()) throw new Error(`kept ${recordPath}: this protected installation state is not a regular file. Move it aside before installing.`);
 }
 function replaceCopy() {
   mkdirSync(dirname(data), { recursive: true });
   const staging = mkdtempSync(join(dirname(data), `.${name}-install-`));
   const incoming = join(staging, "copy");
   const previous = join(staging, "previous");
-  replaceFile(swapPath, JSON.stringify({ schemaVersion: 1, name, data, staging }) + "\n");
   mkdirSync(incoming);
   const copy = (relativePath) => {
     const path = join(source, relativePath);
@@ -145,7 +105,6 @@ function replaceCopy() {
   if (existsSync(data)) renameSync(data, previous);
   renameSync(incoming, data);
   rmSync(staging, { recursive: true, force: true });
-  unlinkSync(swapPath);
   console.log(`copied the plugin to ${data}`);
 }
 function intentCommand() {
@@ -173,9 +132,8 @@ function main() {
     return;
   }
   preflight();
-  recoverCopy();
   const loaded = loadRecord();
-  const previous = new Map(loaded.record.entries.filter((entry) => !within(data, entry.path)).map((entry) => [entry.path, entry]));
+  const previous = new Map(loaded.record.entries.map((entry) => [entry.path, entry]));
   const owned = new Map(previous);
   const desired = new Set();
   let modeRule = loaded.record.modeRule;
@@ -194,7 +152,10 @@ function main() {
     } catch {}
   }
   const legacy = (entry, relativePath) => loaded.state !== "valid" && entry?.kind === "link" && [...legacyRoots].some((base) => entry.target === join(base, relativePath));
-  const keep = (path) => console.log(`left your own ${basename(path)} as it is`);
+  const keep = (path) => {
+    if (statAt(path)?.isSymbolicLink() && !existsSync(path)) console.log(`kept ${path}: its link target is gone. No matching installation record authorizes removal.`);
+    else console.log(`left your own ${basename(path)} as it is`);
+  };
   function place(entry, relativePath) {
     desired.add(entry.path);
     if (!allowed(entry.path)) {
@@ -251,6 +212,12 @@ function main() {
         console.log(`removed ${entry.path}`);
       } else if (current) keep(entry.path);
       owned.delete(entry.path);
+    }
+  }
+  if (existsSync(skills)) {
+    for (const child of readdirSync(skills).sort()) {
+      const path = join(skills, child);
+      if (!desired.has(path) && !previous.has(path) && statAt(path)?.isSymbolicLink() && !existsSync(path)) keep(path);
     }
   }
   if (firstInstall) {

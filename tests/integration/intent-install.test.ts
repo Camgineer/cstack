@@ -1227,7 +1227,10 @@ for (const edge of ["before", "after"] as const) {
   test.each(["open", "write"] as const)(`delivery starts afresh ${edge} initial evidence %s`, (operation) => {
     withHome((home) => {
       const fixture = deliveryRecoveryFixture(home);
-      expect(fixture.kit.runSync([], [{ name: "initial-io", operation, edge, target: { parent: dirname(fixture.record) }, action: { kind: "kill" } }]).signal).toBe("SIGKILL");
+      const killed = fixture.kit.runSync([], [{ name: "initial-io", operation, edge, target: { parent: dirname(fixture.record) }, occurrence: operation === "open" ? 3 : 2, action: { kind: "kill" } }]);
+      expect(killed.signal).toBe("SIGKILL");
+      expect(killed.cuts[0].path).toContain(".cstack-install-pending-");
+      expect(existsSync(`${fixture.record}.lock.acquire`)).toBe(false);
       expect(existsSync(join(home, ".intent/skills"))).toBe(false);
       expect(fixture.kit.runSync([]).status).toBe(0);
       fixture.complete();
@@ -1371,8 +1374,9 @@ test("fetched delivery recovers a killed mode link and reports it through the pu
 test.each(["before", "after"] as const)("delivery stays complete %s its pending journal cleanup", (edge) => {
   withHome((home) => {
     const fixture = deliveryRecoveryFixture(home);
-    const result = fixture.kit.runSync([], [{ name: "cleanup", operation: "delete", edge, target: { parent: dirname(fixture.record) }, occurrence: visibleSkills().length * 4 + 6, action: { kind: "kill" } }]);
+    const result = fixture.kit.runSync([], [{ name: "cleanup", operation: "delete", edge, target: { parent: dirname(fixture.record) }, occurrence: visibleSkills().length * 4 + 7, action: { kind: "kill" } }]);
     expect(result.signal).toBe("SIGKILL");
+    expect(result.cuts[0].path).toMatch(/\.cstack-install-pending-[a-f0-9-]{36}\.json$/);
     fixture.complete();
     expect(fixture.kit.runSync([]).status).toBe(0);
     fixture.complete();
@@ -3470,9 +3474,14 @@ test("serialized final publication keeps a newer fetched skill owned", async () 
     let second: ReturnType<typeof kit.start> | undefined;
     try {
       await first.at("final");
+      const before = fixture.kit.snapshot([...fixture.paths, fixture.record]);
       second = kit.start([], []);
       const until = Date.now() + 1000;
       while (second.running && Date.now() < until) await new Promise(done => setTimeout(done, 10));
+      if (existsSync(`${fixture.record}.lock`)) {
+        expect(fixture.kit.snapshot([...fixture.paths, fixture.record])).toEqual(before);
+        expect(existsSync(join(home, ".intent/skills/new-skill"))).toBe(false);
+      }
       await first.release("final");
       const results = await Promise.all([first.finish(), second.finish()]);
       for (const result of results) expect(result.status).toBe(0);
@@ -3761,7 +3770,7 @@ test("install lock preserves an owner replaced during inspection", async () => {
   });
 });
 
-test("install lock refuses an unwritable parent with its operation and path", () => {
+test.skipIf(process.getuid?.() === 0)("install lock refuses an unwritable parent with its operation and path", () => {
   withHome(home => {
     const fixture = deliveryRecoveryFixture(home);
     const parent = dirname(fixture.record);
@@ -3781,7 +3790,7 @@ test("install lock refuses an unwritable parent with its operation and path", ()
   });
 });
 
-test("install lock preserves unreadable bytes by following the move instruction", async () => {
+test.skipIf(process.getuid?.() === 0)("install lock preserves unreadable bytes by following the move instruction", async () => {
   await withHome(async home => {
     const fixture = deliveryRecoveryFixture(home);
     const lock = `${fixture.record}.lock`;

@@ -150,3 +150,31 @@ test("kit times out and joins a direct child that never finishes", () => withFil
   expect(running.running).toBe(false);
   expect(readdirSync(home)).toEqual([]);
 }));
+
+test.each([
+  { status: 0, observeExit: false },
+  { status: 0, observeExit: true },
+  { status: 2, observeExit: false },
+])("kit finish rejects an unreached required cut (%j)", scenario => withFileChangeHome(async home => {
+  const kit = kitFor(home, `process.exitCode = ${scenario.status}`);
+  const running = kit.start([], [{ name: "required-write", operation: "write", edge: "after", target: { path: join(home, "original") }, action: { kind: "kill" } }]);
+  try {
+    if (scenario.observeExit) expect((await running.atOrExit("required-write")).kind).toBe("exit");
+    await expect(running.finish()).rejects.toThrow("did not reach cut required-write");
+  } finally { await running.stop(); }
+}));
+
+test("kit finish requires later cuts after a released pause", () => withFileChangeHome(async home => {
+  const file = join(home, "original");
+  const kit = kitFor(home, "const fs = require('node:fs'); fs.writeFileSync(process.env.HOME + '/original', 'NEW'); process.stdout.write('complete');");
+  const running = kit.start([], [
+    { name: "written", operation: "write", edge: "after", target: { path: file }, action: { kind: "pause" } },
+    { name: "required-delete", operation: "delete", edge: "after", target: { path: file }, action: { kind: "kill" } },
+  ]);
+  try {
+    await running.at("written");
+    expect(readFileSync(file, "utf8")).toBe("NEW");
+    running.release("written");
+    await expect(running.finish()).rejects.toThrow("did not reach cut required-delete");
+  } finally { await running.stop(); }
+}));

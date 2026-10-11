@@ -2635,3 +2635,20 @@ test("an internal copy record cannot supply ownership for an unrecorded host fil
     expect(existsSync(join(data, "install-record.json"))).toBe(false);
   });
 });
+
+test.each(["My notes say Report again after lunch.", "My notes say Run revert to retry after lunch."])("setup report keeps personal content separate from recovery advice (%s)", content => withHome(async home => {
+  setupFixture(home);
+  const builder = join(home, ".intent/specialists/cstack-agent.md");
+  mkdirSync(dirname(builder));
+  writeFileSync(builder, content, { mode: 0o600 });
+  const kit = setupKit(home);
+  const before = kit.snapshot([builder]);
+  const args = ["report", ...setupInput(home)];
+  const report = kit.runSync(args);
+  expect(report.status).toBe(0);
+  const data = JSON.parse(report.stdout.slice(0, report.stdout.lastIndexOf("\n}") + 2));
+  expect(data.changes.find((change: { path: string }) => change.path === builder).before.content).toBe(content);
+  const transcript = await followSetup(home, args, report, () => kit.snapshot([builder]), () => before, async () => { throw new Error("No command is active."); });
+  expect(transcript.map(step => step.args)).toEqual([args]);
+  expect(readFileSync(builder, "utf8")).toBe(content);
+}));

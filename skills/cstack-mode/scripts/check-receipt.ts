@@ -177,7 +177,11 @@ function check(root: string, directory: string, head: string | undefined): void 
   }
   if (head !== undefined) {
     if (treeHash(root, directory, "index") !== current) problems.push("The index tree differs from the checked working tree.");
-    if (git(root, ["rev-parse", "--verify", "--end-of-options", `${head}^{tree}`]) !== current) problems.push(`${head} does not contain the checked working tree.`);
+    try {
+      if (git(root, ["rev-parse", "--verify", "--end-of-options", `${head}^{tree}`]) !== current) problems.push(`${head} does not contain the checked working tree.`);
+    } catch {
+      problems.push(`The named commit ${JSON.stringify(head)} does not exist.`);
+    }
   }
   if (problems.length) {
     for (const problem of problems) console.error(problem);

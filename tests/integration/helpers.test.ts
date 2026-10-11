@@ -461,3 +461,45 @@ test.each(["record", "check", "head"])("check receipt fix N2 preserves real inde
     expect(git("show", ":tracked.txt")).toBe("staged input\n");
   });
 });
+
+test.each(["record", "check", "head"])("check receipt verifier N2 preserves a newly staged file index during %s", (action) => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    writeFileSync(join(repository, "new.txt"), "staged input\n");
+    if (action !== "record") expect(cli("record", "staged-input", "test -f new.txt").status).toBe(0);
+    git("add", "new.txt");
+    const index = resolve(repository, git("rev-parse", "--git-path", "index").trim());
+    const before = readFileSync(index);
+    const result = action === "record" ? cli("record", "staged-input", "test -f new.txt") : action === "head" ? cli("check", "--head", "HEAD") : cli("check");
+    expect(result.status).toBe(action === "head" ? 1 : 0);
+    expect(readFileSync(index)).toEqual(before);
+    expect(git("show", ":new.txt")).toBe("staged input\n");
+  });
+});
+
+test.each(["record", "check", "head"])("check receipt verifier N2 preserves an absent real index during %s", (action) => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    git("checkout", "--orphan", "unborn");
+    git("rm", "-rf", ".");
+    writeFileSync(join(repository, "new.txt"), "untracked input\n");
+    if (action !== "record") expect(cli("record", "unborn-input", "test -f new.txt").status).toBe(0);
+    const index = resolve(repository, git("rev-parse", "--git-path", "index").trim());
+    rmSync(index, { force: true });
+    expect(existsSync(index)).toBe(false);
+    const result = action === "record" ? cli("record", "unborn-input", "test -f new.txt") : action === "head" ? cli("check", "--head", "HEAD") : cli("check");
+    expect(result.status).toBe(action === "head" ? 1 : 0);
+    expect(existsSync(index)).toBe(false);
+  });
+});
+
+test("check receipt verifier explains an unborn HEAD in plain words", () => {
+  withReceiptRepository(({ git, cli }) => {
+    git("checkout", "--orphan", "unborn");
+    git("rm", "-rf", ".");
+    expect(cli("record", "empty-tree", "exit 0").status).toBe(0);
+    expect(cli("check").status).toBe(0);
+    const result = cli("check", "--head", "HEAD");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('The named commit "HEAD" does not exist.');
+    expect(result.stderr).not.toContain("fatal:");
+  });
+});

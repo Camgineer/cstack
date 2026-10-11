@@ -40,9 +40,13 @@ Reuse a child only when the host reports it resumable. Read its status without w
 
 ### Seat delivery
 
-Start a registered seat by name through its host note. When the host does not register the plugin's seats, or the requested registration is missing, pass the seat's whole file, frontmatter included, in the brief. Builder's file is `agents/cstack-agent.md`, and each other seat's file is `agents/<seat>.md`. Carry the workflow's own prompt in the brief on every host.
+Start a registered seat by name through its host note. When the host does not register the plugin's seats, or the requested seat is not available, pass the seat's whole file, frontmatter included, in the brief. Builder's file is `agents/cstack-agent.md`, and each other seat's file is `agents/<seat>.md`. Carry the workflow's own prompt in the brief on every host.
 
-A missing registration means setup has not run only on a host that registers the plugin's seats and expects the person to set up that specialist or agent. In that case, tell the person in the reply that setup has not run for that seat. An agent with no person to reply to says it in its report. Whole-file delivery on a host that does not register the plugin's seats is its normal route and does not imply missing setup.
+On a host that registers the plugin's seats, when a seat the person must set up is unavailable, say this sentence verbatim in the reply:
+
+> The `<seat>` seat is not set up here, so I passed its instructions directly, and you need to run the plugin's setup to configure it.
+
+Replace `<seat>` with the seat name. Name all affected seats in one sentence, using plural wording when several are not set up. An agent with no person to reply to uses the same sentence in its report. Whole-file delivery on a host that does not register the plugin's seats is its normal route and does not imply missing setup.
 
 ## Model roles
 

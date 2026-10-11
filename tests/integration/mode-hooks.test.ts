@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -77,7 +77,58 @@ function cli(args: string[], cwd: string, state: string, env: Record<string, str
   return result.stdout;
 }
 
+function brokenPlugin(project: string, condition: "missing" | "unreadable"): string {
+  const plugin = join(project, "provider plugin");
+  cpSync(join(root, "hooks"), join(plugin, "hooks"), { recursive: true });
+  mkdirSync(join(plugin, "tools"));
+  cpSync(join(root, "tools/metadata.json"), join(plugin, "tools/metadata.json"));
+  const clause = join(plugin, "hooks/mode-exemption.txt");
+  if (condition === "missing") rmSync(clause);
+  else chmodSync(clause, 0o000);
+  expect(() => readFileSync(clause)).toThrow();
+  return realpathSync(plugin);
+}
+
 describe("persistent mode hooks", () => {
+  test.each(["missing", "unreadable"] as const)("registered hooks keep working with the %s exemption file", (condition) => {
+    withProject((project, state) => {
+      const plugin = brokenPlugin(project, condition);
+      const env = { CLAUDE_PLUGIN_ROOT: plugin, CURSOR_PLUGIN_ROOT: plugin };
+      const plain = `${mode} is on for ${realpathSync(project)}. Invoke the ${pluginName}:${mode} skill now and apply it to every task in this session. If you cannot invoke a skill by name, read ${join(plugin, "skills", mode, "SKILL.md")} in full instead. It stays on until the user turns it off. If the user asks to turn it off, run: sh '${join(plugin, "hooks/mode.sh")}' off.`;
+      const on = { ...env, [variable]: "on" };
+      for (const source of ["startup", "resume", "clear", "compact", "fork"]) {
+        expect(context(fireHooksJson("SessionStart", { cwd: project, source }, state, on))).toBe(`${plain} ${variable}=on in the environment turns it on in every project the user has not turned off. Unsetting it turns that off.`);
+      }
+      expect(fireCursorStart(project, state, on)).toBe(`${plain} ${variable}=on in the environment turns it on in every project the user has not turned off. Unsetting it turns that off.`);
+
+      expect(context(fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `/${mode}` }, state, env))).toContain("now on");
+      for (const source of ["startup", "resume", "clear", "compact", "fork"]) {
+        expect(context(fireHooksJson("SessionStart", { cwd: project, source }, state, env))).toBe(plain);
+      }
+      expect(fireCursorStart(project, state, env)).toBe(plain);
+      expect(context(fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `/${mode} off` }, state, env))).toContain("now off");
+      expect(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state, on)).toBe("");
+      fireCursorPrompt(project, `/${mode}`, state, env);
+      expect(fireCursorStart(project, state, env)).toBe(plain);
+      fireCursorPrompt(project, `/${mode} off`, state, env);
+      expect(fireCursorStart(project, state, on)).toBe("");
+    });
+  });
+
+  test.each(["missing", "unreadable"] as const)("off and status work with the %s exemption file", (condition) => {
+    withProject((project, state) => {
+      const plugin = brokenPlugin(project, condition);
+      for (const [command, choice] of [["status", "on"], ["off", "off"], ["status", "off"]]) {
+        const result = spawnSync("sh", [join(plugin, "hooks/mode.sh"), command], {
+          cwd: project, env: { PATH, HOME: state, XDG_STATE_HOME: state, [variable]: "on" }, encoding: "utf8",
+        });
+        expect(result.status).toBe(0);
+        expect(result.stderr).toBe("");
+        expect(result.stdout).toContain(`${mode} is ${choice}`);
+      }
+    });
+  });
+
   test.each(["", "."])("an empty or relative state directory (%s) uses the home default", (value) => {
     withProject((project, home) => {
       cli(["on"], project, home, { XDG_STATE_HOME: value });

@@ -395,6 +395,43 @@ else if (process.argv[3] === "rules.update") {
   return { state, updates };
 }
 
+test.each(["missing", "unreadable"] as const)("the %s exemption file stops Intent installation before any change", (condition) => {
+  for (const installed of [false, true]) {
+    withHome((home) => {
+      const from = fetchedPackage(home);
+      const files = ruleCommand(home, { content: "", enabled: true });
+      if (installed) expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+      writeFileSync(files.state, JSON.stringify({
+        content: "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session.",
+        enabled: false,
+      }));
+      const clause = join(dirname(from), "mode-exemption.txt");
+      const content = readFileSync(clause);
+      const mode = lstatSync(clause).mode & 0o777;
+      const before = homeSnapshot(home);
+      for (const route of ["public", "internal"]) {
+        if (condition === "missing") rmSync(clause);
+        else chmodSync(clause, 0o000);
+        expect(() => readFileSync(clause)).toThrow();
+        const result = route === "public" ? commandRun(home, ["--hosts", "intent"], from) : install(home, join(dirname(from), "intent-deliver.sh"));
+        if (condition === "missing") writeFileSync(clause, content, { mode });
+        else chmodSync(clause, mode);
+        expect(result.status).toBe(route === "public" ? 1 : 2);
+        const message = "Cannot read the mode exemption. Reinstall the complete plugin before updating Intent.";
+        if (route === "internal") {
+          expect(result.stdout).toBe("");
+          expect(result.stderr).toBe(message + "\n");
+        } else {
+          expect(result.stderr).toBe("");
+          expect(result.stdout).toContain(message);
+          expect(result.stdout).not.toMatch(/ENOENT|EACCES|readFileSync/);
+        }
+        expect(homeSnapshot(home)).toEqual(before);
+      }
+    });
+  }
+});
+
 test("the installed mode rule's exemption matches every generated thin seat and excludes lead and builder", () => {
   withHome((home) => {
     const from = fetchedPackage(home);

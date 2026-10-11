@@ -138,6 +138,12 @@ function main() {
     console.log(`The always-on mode rule belongs in ${location}.`);
     return;
   }
+  let exemption;
+  try {
+    exemption = readFileSync(join(source, "hooks/mode-exemption.txt"), "utf8").trimEnd();
+  } catch {
+    throw new Error("Cannot read the mode exemption. Reinstall the complete plugin before updating Intent.");
+  }
   preflight();
   const loaded = loadRecord();
   const previous = new Map(loaded.record.entries.map((entry) => [entry.path, entry]));
@@ -231,7 +237,6 @@ function main() {
     const earlierRules = [
       `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session.`,
     ];
-    const exemption = readFileSync(join(source, "hooks/mode-exemption.txt"), "utf8").trimEnd();
     const rule = `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session, ${exemption}`;
     const binary = intentCommand();
     modeRule = { location, status: "manual" };

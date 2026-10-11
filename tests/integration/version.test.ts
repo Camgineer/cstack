@@ -11,7 +11,7 @@ type Git = (...args: string[]) => ReturnType<typeof spawnSync>;
 function inRepositoryCopy(run: (directory: string, git: Git) => void): void {
   const directory = mkdtempSync(join(tmpdir(), "plugin version "));
   try {
-    for (const entry of ["tools", "skills", ".claude-plugin", ".codex-plugin", ".cursor-plugin", ".agents"]) {
+    for (const entry of ["tools", "skills", "agents", ".claude-plugin", ".codex-plugin", ".cursor-plugin", ".agents"]) {
       cpSync(join(root, entry), join(directory, entry), { recursive: true, filter: (source) => basename(source) !== "node_modules" });
     }
     const metadata = join(directory, "tools/metadata.json");

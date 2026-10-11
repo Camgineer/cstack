@@ -10,7 +10,10 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const metadata = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8"));
 const { name } = metadata;
 const home = process.env.HOME;
-if (!home || !isAbsolute(home)) throw new Error("HOME must be an absolute path.");
+if (!home || !isAbsolute(home)) {
+  process.stderr.write("HOME must be an absolute path.\n");
+  process.exit(2);
+}
 const entry = `${name}-intent`;
 let commandTimeout = 120000;
 let deliveryChild = false;

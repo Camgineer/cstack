@@ -8,7 +8,10 @@ import { parseArgs } from "node:util";
 const source = realpathSync(dirname(dirname(fileURLToPath(import.meta.url))));
 const { name } = JSON.parse(readFileSync(join(source, "tools/metadata.json"), "utf8"));
 if (!/^[a-z0-9-]+$/.test(name)) throw new Error("The plugin has no valid name.");
-if (!process.env.HOME || !isAbsolute(process.env.HOME)) throw new Error("HOME must be an absolute path.");
+if (!process.env.HOME || !isAbsolute(process.env.HOME)) {
+  process.stderr.write("HOME must be an absolute path.\n");
+  process.exit(2);
+}
 const home = realpathSync(process.env.HOME);
 const physical = (path) => existsSync(path) ? realpathSync(path) : join(physical(dirname(path)), basename(path));
 const dataHome = process.env.XDG_DATA_HOME;
@@ -16,6 +19,8 @@ const data = join(physical(dataHome && isAbsolute(dataHome) ? dataHome : join(ho
 const skills = physical(join(home, ".intent/skills"));
 const specialists = physical(join(home, ".intent/specialists"));
 const recordPath = join(dirname(data), `${name}-install-record.json`);
+const pendingPrefix = `.${name}-install-pending-`;
+const rulePhases = ["due", "attempted", "settled"];
 const location = "Intent's Settings, under Agent Behavior";
 const root = existsSync(join(source, ".git")) ? source : data;
 const statAt = (path) => {
@@ -38,17 +43,39 @@ function allowed(path) {
   if (!(dirname(path) === skills || dirname(path) === specialists)) return false;
   return physical(dirname(path)) === dirname(path);
 }
+function validEntry(entry) {
+  return entry && allowed(entry.path) && (entry.kind === "link" && typeof entry.target === "string" || entry.kind === "file" && typeof entry.sha256 === "string" && /^[a-f0-9]{64}$/.test(entry.sha256) && Number.isInteger(entry.mode) && entry.mode >= 0 && entry.mode <= 0o777);
+}
+function validEntries(entries) {
+  return Array.isArray(entries) && entries.every(validEntry) && new Set(entries.map((entry) => entry.path)).size === entries.length;
+}
+function pendingRuns() {
+  if (!existsSync(dirname(recordPath))) return [];
+  const runs = [];
+  for (const file of readdirSync(dirname(recordPath)).sort()) {
+    if (!new RegExp(`^\\.${name}-install-pending-[a-f0-9-]{36}\\.json$`).test(file)) continue;
+    const path = join(dirname(recordPath), file);
+    try {
+      if (!lstatSync(path).isFile()) throw new Error("Not a regular file.");
+      const run = JSON.parse(readFileSync(path, "utf8"));
+      const operation = run?.operation;
+      if (run?.schemaVersion !== 1 || !Number.isInteger(run.pid) || run.pid < 1 || !rulePhases.includes(run.ruleLifecycle) || !validEntries(run.entries) || !(operation === null || operation && validEntry(operation.after) && operation.after.kind === "link" && (operation.before === null || validEntry(operation.before) && operation.before.path === operation.after.path))) throw new Error("Invalid pending evidence.");
+      runs.push({ ...run, path });
+    } catch (error) {
+      if (error.code !== "ENOENT") console.log(`kept ${path}: pending evidence is unreadable. It authorizes no host changes.`);
+    }
+  }
+  return runs;
+}
+function activeRun(run) {
+  try { process.kill(run.pid, 0); return true; } catch (error) { return error.code !== "ESRCH"; }
+}
 function loadRecord() {
   const path = recordPath;
   try {
     if (!lstatSync(path).isFile()) throw new Error("The record is not a regular file.");
     const record = JSON.parse(readFileSync(path, "utf8"));
-    if (record.schemaVersion !== 1 || !Array.isArray(record.entries) || record.entries.length === 0 || !record.modeRule || record.modeRule.location !== location || !["added", "existing", "manual", "unchanged"].includes(record.modeRule.status)) throw new Error("Invalid record.");
-    const paths = new Set();
-    for (const entry of record.entries) {
-      if (!allowed(entry.path) || paths.has(entry.path) || !(entry.kind === "link" && typeof entry.target === "string" || entry.kind === "file" && typeof entry.sha256 === "string" && /^[a-f0-9]{64}$/.test(entry.sha256) && Number.isInteger(entry.mode) && entry.mode >= 0 && entry.mode <= 0o777)) throw new Error("Invalid entry.");
-      paths.add(entry.path);
-    }
+    if (record.schemaVersion !== 1 || !validEntries(record.entries) || record.entries.length === 0 || !record.modeRule || record.modeRule.location !== location || !["added", "existing", "manual", "unchanged"].includes(record.modeRule.status) || record.ruleLifecycle !== undefined && !rulePhases.includes(record.ruleLifecycle)) throw new Error("Invalid record.");
     return { state: "valid", record };
   } catch (error) {
     return { state: error.code === "ENOENT" ? "missing" : "unreadable", record: { schemaVersion: 1, entries: [], modeRule: { location, status: "unchanged" } } };
@@ -150,12 +177,39 @@ function main() {
   const owned = new Map(previous);
   const desired = new Set();
   let modeRule = loaded.record.modeRule;
-  const save = () => {
+  let ruleLifecycle = loaded.state === "valid" ? loaded.record.ruleLifecycle ?? "settled" : "due";
+  const pendingPath = join(dirname(recordPath), `${pendingPrefix}${randomUUID()}.json`);
+  const journal = { schemaVersion: 1, pid: process.pid, entries: [], operation: null, ruleLifecycle };
+  let journalStarted = false;
+  const phaseFrom = (runs, record) => {
+    const phases = [ruleLifecycle, ...runs.map((run) => run.ruleLifecycle)];
+    if (record.state === "valid") phases.push(record.record.ruleLifecycle ?? "settled");
+    return rulePhases[Math.max(...phases.map((phase) => rulePhases.indexOf(phase)))];
+  };
+  const savePending = () => {
     mkdirSync(dirname(recordPath), { recursive: true });
-    replaceFile(recordPath, JSON.stringify({ schemaVersion: 1, entries: [...owned.values()].sort((a, b) => a.path.localeCompare(b.path)), modeRule }, null, 2) + "\n");
+    journal.entries = [...owned.values()].filter((entry) => same(fingerprint(entry.path), entry));
+    journal.ruleLifecycle = ruleLifecycle;
+    replaceFile(pendingPath, JSON.stringify(journal, null, 2) + "\n", 0o600);
+    journalStarted = true;
+  };
+  const refresh = () => {
+    const current = loadRecord();
+    const runs = pendingRuns();
+    ruleLifecycle = phaseFrom(runs, current);
+    for (const entry of [...current.record.entries, ...runs.flatMap((run) => run.entries)]) {
+      if (same(fingerprint(entry.path), entry)) owned.set(entry.path, entry);
+    }
+    for (const [path, entry] of owned) if (!same(fingerprint(path), entry)) owned.delete(path);
+    return runs;
+  };
+  const save = () => {
+    refresh();
+    if (journalStarted) savePending();
+    mkdirSync(dirname(recordPath), { recursive: true });
+    replaceFile(recordPath, JSON.stringify({ schemaVersion: 1, entries: [...owned.values()].sort((a, b) => a.path.localeCompare(b.path)), modeRule, ruleLifecycle }, null, 2) + "\n");
   };
   const mode = join(skills, `${name}-mode`);
-  const firstInstall = !fingerprint(mode);
   const legacyRoots = new Set([source, data]);
   const modeEntry = fingerprint(mode);
   if (loaded.state !== "valid" && modeEntry?.kind === "link") {
@@ -169,6 +223,37 @@ function main() {
     if (statAt(path)?.isSymbolicLink() && !existsSync(path)) console.log(`kept ${path}: its link target is gone. No matching installation record authorizes removal.`);
     else console.log(`left your own ${basename(path)} as it is`);
   };
+  function finishOperation(operation) {
+    const current = fingerprint(operation.after.path);
+    if (current && !same(current, operation.after) && !same(current, operation.before)) {
+      owned.delete(operation.after.path);
+      keep(operation.after.path);
+      return;
+    }
+    if (!same(current, operation.after)) {
+      mkdirSync(dirname(operation.after.path), { recursive: true });
+      if (current) unlinkSync(operation.after.path);
+      symlinkSync(operation.after.target, operation.after.path);
+      console.log(`linked ${operation.after.path}`);
+    }
+    owned.set(operation.after.path, operation.after);
+    previous.set(operation.after.path, operation.after);
+  }
+  const recover = () => {
+    const runs = refresh();
+    if (runs.some((run) => run.operation)) {
+      savePending();
+      for (const run of runs) {
+        if (!run.operation) continue;
+        journal.operation = run.operation;
+        savePending();
+        finishOperation(run.operation);
+        save();
+        journal.operation = null;
+        savePending();
+      }
+    }
+  };
   function place(entry, relativePath) {
     desired.add(entry.path);
     if (!allowed(entry.path)) {
@@ -177,7 +262,8 @@ function main() {
       return;
     }
     const current = fingerprint(entry.path);
-    const recorded = previous.get(entry.path);
+    refresh();
+    const recorded = owned.get(entry.path) ?? previous.get(entry.path);
     const migrated = legacy(current, relativePath);
     if (current && !same(current, recorded) && !migrated) {
       owned.delete(entry.path);
@@ -194,17 +280,20 @@ function main() {
       return;
     }
     mkdirSync(dirname(entry.path), { recursive: true });
-    if (current) unlinkSync(entry.path);
-    symlinkSync(entry.target, entry.path);
-    owned.set(entry.path, entry);
+    journal.operation = { before: current, after: entry };
+    savePending();
+    finishOperation(journal.operation);
     save();
-    console.log(`linked ${entry.path}`);
+    journal.operation = null;
+    savePending();
   }
   if (loaded.state !== "valid") console.log(`Installation record ${loaded.state}. No host entries were removed.`);
   if (root === data) {
-    save();
     replaceCopy();
   }
+  recover();
+  for (const entry of owned.values()) previous.set(entry.path, entry);
+  if (ruleLifecycle === "due" && !journalStarted) savePending();
   for (const directory of readdirSync(join(source, "skills")).sort()) {
     const skill = join(source, "skills", directory, "SKILL.md");
     if (!existsSync(skill)) continue;
@@ -238,33 +327,61 @@ function main() {
       `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session.`,
     ];
     const rule = `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session, ${exemption}`;
+    refresh();
+    const firstInstall = ruleLifecycle === "due";
+    const uncertain = ruleLifecycle === "attempted";
     const binary = intentCommand();
     modeRule = { location, status: "manual" };
     const unchanged = `Left the ${name}-mode rule unchanged in ${location}.`;
     let message = `${unchanged} New rule text is available. To use it, paste this at the top of your personal rule text:\n${rule}`;
+    let ruleChanged = false;
+    if (uncertain) message = `The earlier install may not have finished adding the ${name}-mode rule in ${location}. To finish it, paste this at the top of your personal rule text:\n${rule}`;
     if (binary) {
-      try {
-        const call = (method, params) => JSON.parse(execFileSync(binary, ["call", method, "--params", JSON.stringify(params)], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 120000, killSignal: "SIGKILL" }));
-        const key = { workspaceId: "global", ruleType: "workspace" };
-        const current = call("rules.get", key);
+      const call = (method, params) => {
+        try { return JSON.parse(execFileSync(binary, ["call", method, "--params", JSON.stringify(params)], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 120000, killSignal: "SIGKILL" })); }
+        catch { return null; }
+      };
+      const key = { workspaceId: "global", ruleType: "workspace" };
+      const current = call("rules.get", key);
+      const updateRule = (params) => {
+        ruleLifecycle = "attempted";
+        savePending();
+        ruleChanged = call("rules.update", params) !== null;
+        return ruleChanged;
+      };
+      if (typeof current?.content === "string" && typeof current.enabled === "boolean") {
         const firstParagraph = current.content.split(/\r?\n[ \t]*\r?\n/, 1)[0].trimEnd();
         if (earlierRules.includes(firstParagraph)) {
-          call("rules.update", { ...key, content: rule + current.content.slice(firstParagraph.length), enabled: current.enabled });
-          modeRule.status = "existing";
-          message = `added the thin-seat exemption to the ${name}-mode rule in ${location}, at the top of your personal rule text.`;
-        } else if (firstParagraph === rule) {
+          if (updateRule({ ...key, content: rule + current.content.slice(firstParagraph.length), enabled: current.enabled })) {
+            modeRule.status = "existing";
+            message = `added the thin-seat exemption to the ${name}-mode rule in ${location}, at the top of your personal rule text.`;
+          }
+        } else if (firstParagraph === rule || uncertain && current.content.includes(rule)) {
           modeRule.status = "existing";
           message = unchanged;
         } else if (firstInstall && !current.content.includes(`${name}-mode`) && (current.enabled || current.content.trim() === "")) {
-          call("rules.update", { ...key, content: current.content.trim() === "" ? rule : `${rule}\n\n${current.content}`, enabled: true });
-          modeRule.status = "added";
-          message = `added the ${name}-mode rule in ${location}, at the top of your personal rule text.`;
+          refresh();
+          if (ruleLifecycle === "due" && updateRule({ ...key, content: current.content.trim() === "" ? rule : `${rule}\n\n${current.content}`, enabled: true })) {
+            modeRule.status = "added";
+            message = `added the ${name}-mode rule in ${location}, at the top of your personal rule text.`;
+          }
         } else if (current.content.includes(`${name}-mode`)) modeRule.status = "existing";
-        if (firstInstall && modeRule.status !== "manual" && execFileSync(binary, ["settings", "git.autoCommit"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 120000, killSignal: "SIGKILL" }).includes("= true")) console.log(`Intent commits agent work with Agent-Id trailers. To stop it, run: ${binary} settings git.autoCommit false`);
-      } catch {}
+        try {
+          if (firstInstall && modeRule.status !== "manual" && execFileSync(binary, ["settings", "git.autoCommit"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 120000, killSignal: "SIGKILL" }).includes("= true")) console.log(`Intent commits agent work with Agent-Id trailers. To stop it, run: ${binary} settings git.autoCommit false`);
+        } catch {}
+      }
     }
     console.log(message);
+    ruleLifecycle = "settled";
+    if (journalStarted || firstInstall || uncertain || ruleChanged) savePending();
+    if (!ruleChanged && loaded.state === "valid" && loaded.record.ruleLifecycle === "settled") modeRule = loaded.record.modeRule;
   }
   save();
+  const runs = pendingRuns();
+  if (!runs.some((run) => run.path !== pendingPath && activeRun(run))) {
+    for (const run of runs) {
+      if (run.path === pendingPath || !activeRun(run)) unlinkSync(run.path);
+    }
+  }
 }
 try { main(); } catch (error) { process.stderr.write(`${error.message}\n`); process.exitCode = 2; }

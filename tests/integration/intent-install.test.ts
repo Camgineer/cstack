@@ -3203,3 +3203,20 @@ test("fix round recovers a link held only in pending operation", () => {
     expect(homeSnapshot(home)).toEqual(before);
   });
 });
+
+
+test("fix round ignores an obsolete pending link operation", () => {
+  withHome((home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    fixture.complete();
+    const path = join(home, ".intent/skills/retired-skill");
+    const pending = join(dirname(fixture.record), ".cstack-install-pending-00000000-0000-0000-0000-000000000000.json");
+    writeFileSync(pending, JSON.stringify({ schemaVersion: 1, pid: 99999999, entries: [], ruleLifecycle: "settled", operation: { before: null, after: { path, kind: "link", target: join(root, "skills/retired-skill") } } }));
+    const result = fixture.kit.runSync([]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).not.toContain(`linked ${path}`);
+    expect(existsSync(path)).toBe(false);
+    fixture.complete();
+  });
+});

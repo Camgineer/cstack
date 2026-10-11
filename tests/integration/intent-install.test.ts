@@ -3313,3 +3313,84 @@ test.each(ruleDecisionRows)("rule decision table %s record %s pending %s mode %s
     });
   }
 }, 15000);
+
+test("overlapping due snapshots print the interrupted-rule instruction before settling", async () => {
+  await withHome(async (home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    const gate = join(home, "rule-get-gate");
+    mkdirSync(gate);
+    writeFileSync(join(home, "bin/intentd"), `#!/bin/sh
+case "$2" in
+rules.get)
+  if [ ! -f '${gate}/finished' ] && [ ! -f '${gate}/'$PPID ]; then
+    printf 'ready' > '${gate}/'$PPID
+    while [ ! -f '${gate}/'$PPID'.release' ]; do /bin/sleep 0.01; done
+  fi
+  /bin/cat '${fixture.state}' ;;
+rules.update) printf '%s\\n' "$4" >> '${fixture.updates}'; printf '%s' "$4" > '${fixture.state}'; printf '{}' ;;
+esac
+`, { mode: 0o755 });
+    const ready = async (count: number) => {
+      const deadline = Date.now() + 3000;
+      while (Date.now() < deadline) {
+        const files = readdirSync(gate).filter((file) => /^\d+$/.test(file));
+        if (files.length === count) return files;
+        await new Promise((done) => setTimeout(done, 10));
+      }
+      throw new Error("The rule-get stand-in did not reach its gate.");
+    };
+    const first = fixture.kit.start([], [{ name: "attempted", operation: "rename", edge: "after", target: { parent: dirname(fixture.record) }, occurrence: visibleSkills().length * 4 + 2, action: { kind: "pause" } }]);
+    let second: ReturnType<typeof fixture.kit.start> | undefined;
+    try {
+      const firstGate = (await ready(1))[0];
+      if (!firstGate) throw new Error("Missing first rule-get gate.");
+      second = fixture.kit.start([], []);
+      const secondGate = (await ready(2)).find((file) => file !== firstGate);
+      if (!secondGate) throw new Error("Missing second rule-get gate.");
+      writeFileSync(join(gate, `${firstGate}.release`), "release");
+      await first.at("attempted");
+      writeFileSync(join(gate, `${secondGate}.release`), "release");
+      const secondResult = await second.finish();
+      await first.release("attempted");
+      const firstResult = await first.finish();
+      for (const result of [firstResult, secondResult]) {
+        expect(result.status).toBe(0);
+        expect(result.stderr).toBe("");
+      }
+      expect(readFileSync(fixture.state, "utf8")).toBe('{"content":"","enabled":true}');
+      expect(existsSync(fixture.updates)).toBe(false);
+      const output = [firstResult.stdout, secondResult.stdout].join("\n");
+      writeFileSync(join(gate, "finished"), "finished");
+      const third = fixture.kit.runSync([]);
+      expect(third.status).toBe(0);
+      expect(third.stderr).toBe("");
+      expect(readFileSync(fixture.state, "utf8")).toBe('{"content":"","enabled":true}');
+      expect(installRecord(home).ruleLifecycle).toBe("settled");
+      expect(output).toContain("earlier install may not have finished adding the cstack-mode rule");
+      expect(output).toContain("To finish it, paste this at the top of your personal rule text:\nBefore any other step");
+    } finally { await first.stop(); if (second) await second.stop(); }
+  });
+});
+
+test("a failed fresh rule read prints the interrupted-rule instruction", () => {
+  withHome((home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    const seen = join(home, "rule-get-seen");
+    writeFileSync(join(home, "bin/intentd"), `#!/bin/sh
+case "$2" in
+rules.get)
+  if [ -f '${seen}' ]; then exit 1; fi
+  printf 'seen' > '${seen}'
+  /bin/cat '${fixture.state}' ;;
+rules.update) printf '%s\\n' "$4" >> '${fixture.updates}'; printf '%s' "$4" > '${fixture.state}'; printf '{}' ;;
+esac
+`, { mode: 0o755 });
+    const result = fixture.kit.runSync([]);
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(readFileSync(fixture.state, "utf8")).toBe('{"content":"","enabled":true}');
+    expect(existsSync(fixture.updates)).toBe(false);
+    expect(result.stdout).toContain("earlier install may not have finished adding the cstack-mode rule");
+    expect(result.stdout).toContain("To finish it, paste this at the top of your personal rule text:\nBefore any other step");
+  });
+});

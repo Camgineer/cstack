@@ -78,6 +78,33 @@ function cli(args: string[], cwd: string, state: string, env: Record<string, str
 }
 
 describe("persistent mode hooks", () => {
+  test.each(["", "."])("an empty or relative state directory (%s) uses the home default", (value) => {
+    withProject((project, home) => {
+      cli(["on"], project, home, { XDG_STATE_HOME: value });
+      const flags = readdirSync(join(home, ".local/state", pluginName, mode));
+      expect(flags).toHaveLength(1);
+      expect(cli(["status"], project, home, { XDG_STATE_HOME: join(home, ".local/state") })).toContain("is on");
+      expect(readdirSync(project)).not.toContain(pluginName);
+    });
+  });
+
+  test.each(["", "."])("the mode hook refuses an empty or relative HOME (%s)", (value) => {
+    withProject((project, state) => {
+      const result = spawnSync("sh", [join(root, "hooks/mode.sh"), "on"], { cwd: project, env: { PATH, HOME: value, XDG_STATE_HOME: state }, encoding: "utf8" });
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain("HOME must be an absolute path");
+      expect(readdirSync(project)).not.toContain(pluginName);
+    });
+  });
+
+  test.each(["", "."])("an empty or relative project environment (%s) falls back to the supplied project", (value) => {
+    withProject((project, state) => {
+      const env = { CLAUDE_PROJECT_DIR: value, CURSOR_PROJECT_DIR: value };
+      expect(context(fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `/${mode}` }, state, env))).toContain("now on");
+      expect(cli(["status"], project, state)).toContain("is on");
+    });
+  });
+
   test("a typed command keeps the mode on across new sessions and compaction until the user turns it off", () => {
     withProject((project, state) => {
       expect(context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state))).toBe("");

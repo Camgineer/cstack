@@ -7,6 +7,106 @@ import { dirname, join, resolve } from "node:path";
 const root = resolve(import.meta.dir, "../..");
 const script = join(root, "hooks/intent-deliver.sh");
 
+test.each(["", "."])("delivery ignores an empty or relative data directory (%s) and preserves the working checkout", (value) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const cwd = join(home, "code");
+    const checkout = join(cwd, "cstack");
+    copyPlugin(checkout);
+    mkdirSync(join(checkout, ".git"));
+    writeFileSync(join(checkout, "unpushed-work.txt"), "My unpushed work.\n");
+    const before = homeSnapshot(checkout);
+    const result = spawnSync("sh", [from, "--hosts", "intent"], {
+      cwd, env: { HOME: home, PATH: join(home, "bin"), XDG_DATA_HOME: value }, encoding: "utf8",
+    });
+    expect(result.status).toBe(0);
+    expect(homeSnapshot(checkout)).toEqual(before);
+    expect(packageContents(join(home, ".local/share/cstack"))).toEqual(packageContents(dirname(dirname(from))));
+    expect(installRecord(home).entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(home, ".local/share/cstack/skills/how") });
+  });
+});
+
+test.each(["directory", "file", "dangling link"])("delivery refuses a live copy with a .git %s", (kind) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const shell = join(dirname(from), "intent-deliver.sh");
+    expect(install(home, shell).status).toBe(0);
+    const checkout = join(home, ".local/share/cstack");
+    const git = join(checkout, ".git");
+    if (kind === "directory") mkdirSync(git);
+    else if (kind === "file") writeFileSync(git, "gitdir: ../worktree\n");
+    else symlinkSync(join(home, "missing-git"), git);
+    writeFileSync(join(checkout, "unpushed-work.txt"), "My unpushed work.\n");
+    const before = homeSnapshot(home);
+    const result = commandRun(home, ["--hosts", "intent"], from);
+    expect(result.status).toBe(2);
+    expect(result.stdout + result.stderr).toContain(".git entry");
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+test.each(["", "."])("installer entry points refuse an empty or relative HOME (%s)", (value) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const before = homeSnapshot(home);
+    for (const command of [from, join(dirname(from), "intent-deliver.sh")]) {
+      const result = spawnSync("sh", [command], { cwd: home, env: { HOME: value, PATH: join(home, "bin") }, encoding: "utf8" });
+      expect(result.status).not.toBe(0);
+      expect(result.stdout + result.stderr).toContain("HOME must be an absolute path");
+      expect(homeSnapshot(home)).toEqual(before);
+    }
+  });
+});
+
+test("an interrupted competing install reports the staging folder and preserves both leftovers", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const shell = join(dirname(from), "intent-deliver.sh");
+    expect(install(home, shell).status).toBe(0);
+    const data = join(home, ".local/share/cstack");
+    const competitor = join(home, "competitor.cjs");
+    writeFileSync(competitor, `const fs = require('node:fs');
+const rename = fs.renameSync;
+fs.renameSync = function(a, b) {
+  const result = rename.apply(this, arguments);
+  if (a === ${JSON.stringify(data)}) process.kill(process.pid, 'SIGKILL');
+  return result;
+};
+require('node:module').syncBuiltinESMExports();`);
+    const preload = join(home, "competing.cjs");
+    writeFileSync(preload, `const fs = require('node:fs');
+const rename = fs.renameSync;
+fs.renameSync = function(a, b) {
+  if (a === ${JSON.stringify(data)}) {
+    const other = require('node:child_process').spawnSync('sh', [${JSON.stringify(shell)}], {
+      env: { ...process.env, NODE_OPTIONS: '--require ' + ${JSON.stringify(JSON.stringify(competitor))} }, encoding: 'utf8', timeout: 10000,
+    });
+    if (other.signal !== 'SIGKILL') throw new Error('The competing installer did not reach its interrupted swap: ' + other.stderr);
+    fs.writeFileSync(${JSON.stringify(join(home, "left-staging.txt"))}, require('node:path').dirname(b));
+  }
+  return rename.apply(this, arguments);
+};
+require('node:module').syncBuiltinESMExports();`);
+    const result = spawnSync("sh", [shell], {
+      env: { HOME: home, PATH: join(home, "bin"), NODE_OPTIONS: "--require " + JSON.stringify(preload) }, encoding: "utf8", timeout: 20000,
+    });
+    expect(result.status).toBe(2);
+    const staging = readFileSync(join(home, "left-staging.txt"), "utf8");
+    expect(result.stderr).toContain("Another install may be running");
+    expect(result.stderr).toContain(`Left temporary folder ${staging}`);
+    expect(result.stderr).toContain("run the installer again");
+    const parent = dirname(data);
+    const leftovers = readdirSync(parent).filter((entry) => entry.startsWith(".cstack-install-")).sort();
+    expect(leftovers).toHaveLength(2);
+    const snapshots = leftovers.map((entry) => homeSnapshot(join(parent, entry)));
+    expect(install(home, shell).status).toBe(0);
+    expect(packageContents(data)).toEqual(packageContents(dirname(dirname(from))));
+    expect(readdirSync(parent).filter((entry) => entry.startsWith(".cstack-install-")).sort()).toEqual(leftovers);
+    expect(leftovers.map((entry) => homeSnapshot(join(parent, entry)))).toEqual(snapshots);
+    expect(installRecord(home).entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
+  });
+});
+
 test.each(["live copy", "missing copy"])("delivery preserves an unrecorded sibling backup with %s", (state) => {
   withHome((home) => {
     const from = fetchedPackage(home);

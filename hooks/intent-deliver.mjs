@@ -19,9 +19,12 @@ const legacyRecordPath = join(data, "install-record.json");
 const swapPath = join(dirname(data), `.${name}-swap.json`);
 const location = "Intent's Settings, under Agent Behavior";
 const root = existsSync(join(source, ".git")) ? source : data;
+const statAt = (path) => {
+  try { return lstatSync(path); } catch (error) { if (error.code === "ENOENT") return null; throw error; }
+};
 const fingerprint = (path) => {
-  let stat;
-  try { stat = lstatSync(path); } catch (error) { if (error.code === "ENOENT") return null; throw error; }
+  const stat = statAt(path);
+  if (!stat) return null;
   if (stat.isSymbolicLink()) return { path, kind: "link", target: readlinkSync(path) };
   if (stat.isFile()) return { path, kind: "file", sha256: createHash("sha256").update(readFileSync(path)).digest("hex"), mode: stat.mode & 0o777 };
   return { path, kind: "directory" };
@@ -36,7 +39,7 @@ function allowed(path) {
   if (!(within(data, path) || dirname(path) === skills || dirname(path) === specialists)) return false;
   return physical(dirname(path)) === dirname(path);
 }
-function loadRecord(path = fingerprint(recordPath) ? recordPath : legacyRecordPath) {
+function loadRecord(path = statAt(recordPath) ? recordPath : legacyRecordPath) {
   try {
     if (!lstatSync(path).isFile()) throw new Error("The record is not a regular file.");
     const record = JSON.parse(readFileSync(path, "utf8"));
@@ -74,23 +77,23 @@ function overlapsProtected(path) {
   return path === dirname(path) || protectedPaths.some((protectedPath) => path === protectedPath || within(path, protectedPath));
 }
 function preflight() {
-  if (fingerprint(data)?.kind === "link") throw new Error(`kept ${data}: the plugin data folder is a link. Move that link aside before installing.`);
+  if (statAt(data)?.isSymbolicLink()) throw new Error(`kept ${data}: the plugin data folder is a link. Move that link aside before installing.`);
   if (overlapsProtected(data)) throw new Error(`kept ${data}: the copy path overlaps a protected home, host folder, or installation record. Choose a separate data folder.`);
-  if (fingerprint(data) && !pluginCopy(data)) throw new Error(`kept ${data}: it is not a copy of this plugin`);
+  if (statAt(data) && !pluginCopy(data)) throw new Error(`kept ${data}: it is not a copy of this plugin`);
   for (const path of [recordPath, swapPath]) {
-    const entry = fingerprint(path);
-    if (entry && entry.kind !== "file") throw new Error(`kept ${path}: this protected installation state is not a regular file. Move it aside before installing.`);
+    const entry = statAt(path);
+    if (entry && !entry.isFile()) throw new Error(`kept ${path}: this protected installation state is not a regular file. Move it aside before installing.`);
   }
 }
 function recoverCopy() {
   let swap;
-  if (fingerprint(swapPath)) swap = JSON.parse(readFileSync(swapPath, "utf8"));
+  if (statAt(swapPath)) swap = JSON.parse(readFileSync(swapPath, "utf8"));
   else {
     if (!existsSync(dirname(data))) return;
     const leftovers = readdirSync(dirname(data)).filter((path) => path.startsWith(`.${name}-install-`)).map((path) => join(dirname(data), path)).filter((path) => {
-      if (fingerprint(path)?.kind !== "directory" || !pluginCopy(join(path, "previous"))) return false;
+      if (!statAt(path)?.isDirectory() || !pluginCopy(join(path, "previous"))) return false;
       if (readdirSync(path).some((entry) => !["copy", "previous"].includes(entry))) return false;
-      return !fingerprint(join(path, "copy")) || pluginCopy(join(path, "copy"));
+      return !statAt(join(path, "copy")) || pluginCopy(join(path, "copy"));
     });
     if (leftovers.length === 0) return;
     if (leftovers.length !== 1) throw new Error(`kept ${data}: more than one interrupted plugin copy swap needs recovery.`);
@@ -98,16 +101,16 @@ function recoverCopy() {
   }
   if (swap?.schemaVersion !== 1 || swap.name !== name || swap.data !== data || typeof swap.staging !== "string" || dirname(swap.staging) !== dirname(data) || !basename(swap.staging).startsWith(`.${name}-install-`) || physical(swap.staging) !== swap.staging || overlapsProtected(swap.staging) || swap.staging === source || within(swap.staging, source)) throw new Error(`kept ${swapPath}: the interrupted swap has invalid or protected paths.`);
   const staging = swap.staging;
-  if (fingerprint(staging)) {
+  if (statAt(staging)) {
     if (!lstatSync(staging).isDirectory() || readdirSync(staging).some((path) => !["copy", "previous"].includes(path))) throw new Error(`kept ${staging}: the interrupted swap folder is unrecognized.`);
     const previous = join(staging, "previous");
     const incoming = join(staging, "copy");
-    if (fingerprint(previous) && !pluginCopy(previous) || fingerprint(incoming) && !lstatSync(incoming).isDirectory()) throw new Error(`kept ${staging}: the interrupted swap contains an unrecognized copy.`);
-    if (!fingerprint(recordPath) && fingerprint(join(previous, "install-record.json"))) {
+    if (statAt(previous) && !pluginCopy(previous) || statAt(incoming) && !lstatSync(incoming).isDirectory()) throw new Error(`kept ${staging}: the interrupted swap contains an unrecognized copy.`);
+    if (!statAt(recordPath) && statAt(join(previous, "install-record.json"))) {
       const loaded = loadRecord(join(previous, "install-record.json"));
       if (loaded.state === "valid") replaceFile(recordPath, JSON.stringify({ ...loaded.record, entries: loaded.record.entries.filter((entry) => !within(data, entry.path)) }) + "\n");
     }
-    if (!fingerprint(data) && fingerprint(previous)) {
+    if (!statAt(data) && statAt(previous)) {
       renameSync(previous, data);
       console.log(`Recovered the interrupted plugin copy swap by restoring ${data}.`);
     } else console.log(`Recovered the interrupted plugin copy swap at ${data}.`);
@@ -116,7 +119,7 @@ function recoverCopy() {
     if (!pluginCopy(data)) throw new Error(`kept ${swapPath}: no plugin copy survives the interrupted swap.`);
     console.log(`Recovered the interrupted plugin copy swap at ${data}.`);
   }
-  if (fingerprint(swapPath)) unlinkSync(swapPath);
+  if (statAt(swapPath)) unlinkSync(swapPath);
 }
 function replaceCopy() {
   mkdirSync(dirname(data), { recursive: true });

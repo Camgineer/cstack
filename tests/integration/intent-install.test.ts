@@ -62,7 +62,7 @@ test("a missing record preserves unrecorded retired links and the person's own e
 
     const result = install(home);
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Installation record missing. Removed nothing from the previous install.");
+    expect(result.stdout).toContain("Installation record missing. No host entries were removed.");
     expect(readlinkSync(join(skills, "principle-laziness-protocol"))).toBe(join(root, "skills/principle-laziness-protocol"));
     expect(result.stderr).toBe("");
     expect(result.stdout).toContain("left your own align as it is\n");
@@ -883,7 +883,7 @@ function installRecord(home: string) {
   return JSON.parse(readFileSync(join(home, ".local/share/cstack/install-record.json"), "utf8"));
 }
 
-test("delivery records exact links and copied file hashes in the plugin data folder", () => {
+test("delivery records host links and keeps copied files outside the ownership record", () => {
   withHome((home) => {
     const from = fetchedPackage(home);
     expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
@@ -891,8 +891,7 @@ test("delivery records exact links and copied file hashes in the plugin data fol
     const data = join(home, ".local/share/cstack");
     expect(record.schemaVersion).toBe(1);
     expect(record.entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
-    const metadata = record.entries.find((entry: { path: string }) => entry.path === join(data, "tools/metadata.json"));
-    expect(metadata).toEqual({ path: join(data, "tools/metadata.json"), kind: "file", sha256: new Bun.CryptoHasher("sha256").update(readFileSync(join(data, "tools/metadata.json"))).digest("hex"), mode: 0o644 });
+    expect(record.entries.every((entry: { path: string }) => !entry.path.startsWith(data + "/"))).toBe(true);
     expect(lstatSync(join(data, "hooks/intent-deliver.sh")).mode & 0o777).toBe(0o755);
     expect(record.modeRule).toEqual({ location: "Intent's Settings, under Agent Behavior", status: "existing" });
     expect(record.entries.some((entry: { path: string }) => entry.path.includes("node_modules") || entry.path.endsWith("install-record.json"))).toBe(false);
@@ -936,14 +935,14 @@ test("the first recorded run adopts exact legacy skill links and keeps unrelated
   });
 });
 
-test("updates remove recorded retired and hidden skills but preserve edited copies and extra files", () => {
+test("updates replace the whole copy and remove recorded retired host links while preserving personal host files", () => {
   withHome((home) => {
     const cache = join(home, "npx/first");
     const plugin = join(cache, "node_modules/cstack");
     copyPlugin(plugin);
     expect(npxInstall(home, cache).status).toBe(0);
     const data = join(home, ".local/share/cstack");
-    const own = join(data, "skills/how/personal.txt");
+    const own = join(home, ".intent/skills/personal.txt");
     writeFileSync(own, "My notes.\n");
     writeFileSync(join(data, "skills/how/SKILL.md"), "My edited skill.\n");
     rmSync(join(plugin, "skills/how"), { recursive: true });
@@ -957,9 +956,9 @@ test("updates remove recorded retired and hidden skills but preserve edited copi
     expect(result.stdout).toContain(`removed ${join(home, ".intent/skills/align")}`);
     expect(existsSync(join(home, ".intent/skills/how"))).toBe(false);
     expect(existsSync(join(data, "skills/why/SKILL.md"))).toBe(false);
-    expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe("My edited skill.\n");
+    expect(existsSync(join(data, "skills/how/SKILL.md"))).toBe(false);
     expect(readFileSync(own, "utf8")).toBe("My notes.\n");
-    expect(result.stdout).toContain("left your own SKILL.md as it is");
+    expect(result.stdout).not.toContain("left your own SKILL.md as it is");
     expect(installRecord(home).entries.some((entry: { path: string }) => entry.path === join(data, "skills/how/SKILL.md"))).toBe(false);
   });
 });
@@ -983,7 +982,7 @@ test("a changed recorded link and a personal file replacing a recorded link surv
   });
 });
 
-test.each(["missing", "unreadable", "outside path"])("a %s record removes nothing from an earlier install", (state) => {
+test.each(["missing", "unreadable", "outside path"])("a %s record removes no unproven host entries from an earlier install", (state) => {
   withHome((home) => {
     const cache = join(home, "npx/first");
     const plugin = join(cache, "node_modules/cstack");
@@ -1002,15 +1001,15 @@ test.each(["missing", "unreadable", "outside path"])("a %s record removes nothin
     rmSync(join(plugin, "skills/how"), { recursive: true });
     const result = npxInstall(home, cache);
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain(`Installation record ${state === "missing" ? "missing" : "unreadable"}. Removed nothing from the previous install.`);
+    expect(result.stdout).toContain(`Installation record ${state === "missing" ? "missing" : "unreadable"}. No host entries were removed.`);
     expect(readlinkSync(join(home, ".intent/skills/how"))).toBe(join(home, ".local/share/cstack/skills/how"));
-    expect(readFileSync(join(home, ".local/share/cstack/skills/how/SKILL.md"), "utf8")).toBe(readFileSync(join(root, "skills/how/SKILL.md"), "utf8"));
+    expect(existsSync(join(home, ".local/share/cstack/skills/how/SKILL.md"))).toBe(false);
     expect(readFileSync(protectedFile, "utf8")).toBe("Keep me.\n");
     expect(result.stdout).not.toContain("removed ");
   });
 });
 
-test("delivery keeps a person's directory link in the copied package without writing through it", () => {
+test("delivery replaces a directory link inside the copy without writing through its personal target", () => {
   withHome((home) => {
     const cache = join(home, "npx/first");
     copyPlugin(join(cache, "node_modules/cstack"));
@@ -1023,9 +1022,9 @@ test("delivery keeps a person's directory link in the copied package without wri
     symlinkSync(own, join(data, "skills/how"));
     const result = npxInstall(home, cache);
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Installation record unreadable. Removed nothing");
     expect(readFileSync(join(own, "SKILL.md"), "utf8")).toBe("My skill.\n");
-    expect(readlinkSync(join(data, "skills/how"))).toBe(own);
+    expect(lstatSync(join(data, "skills/how")).isDirectory()).toBe(true);
+    expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe(readFileSync(join(root, "skills/how/SKILL.md"), "utf8"));
   });
 });
 
@@ -1081,7 +1080,7 @@ test("the record follows XDG_DATA_HOME and leaves no default data folder", () =>
   });
 });
 
-test("a recorded copied file can become a link and return to a file without claiming personal edits", () => {
+test("a copied file can become a link and return to a file when the whole copy is replaced", () => {
   withHome((home) => {
     const cache = join(home, "npx/first");
     const plugin = join(cache, "node_modules/cstack");
@@ -1125,7 +1124,6 @@ test("a legacy link to a prior checkout is recorded before its target can be rep
   });
 });
 
-
 test("copy updates preserve hard-linked personal backups and the previous record", () => {
   withHome((home) => {
     const from = fetchedPackage(home);
@@ -1152,6 +1150,20 @@ test("copy updates preserve hard-linked personal backups and the previous record
   });
 });
 
+function packageContents(base: string): string[] {
+  const result: string[] = [];
+  const visit = (path: string) => {
+    const full = join(base, path);
+    const stat = lstatSync(full);
+    if (stat.isDirectory()) {
+      for (const child of readdirSync(full).sort()) if (child !== "node_modules") visit(join(path, child));
+    } else if (stat.isSymbolicLink()) result.push(JSON.stringify([path, "link", readlinkSync(full)]));
+    else result.push(JSON.stringify([path, "file", stat.mode & 0o777, readFileSync(full).toString("base64")]));
+  };
+  for (const path of ["agents", "hooks", "skills", "tools/metadata.json", "LICENSE"]) if (existsSync(join(base, path))) visit(path);
+  return result;
+}
+
 function beforeRecordInstall(home: string) {
   const from = fetchedPackage(home);
   const plugin = dirname(dirname(from));
@@ -1161,7 +1173,7 @@ function beforeRecordInstall(home: string) {
   return from;
 }
 
-test.each(["missing", "unreadable"])("a pre-record package upgrade with a %s record replaces the whole copy and protects host files", (state) => {
+test.each(["missing", "unreadable", "empty"])("a pre-record package upgrade with a %s record replaces the whole copy and protects host files", (state) => {
   withHome((home) => {
     const from = beforeRecordInstall(home);
     const plugin = dirname(dirname(from));
@@ -1170,6 +1182,7 @@ test.each(["missing", "unreadable"])("a pre-record package upgrade with a %s rec
     rmSync(own);
     writeFileSync(own, "My own host skill.\n");
     if (state === "unreadable") writeFileSync(join(data, "install-record.json"), "broken json");
+    if (state === "empty") writeFileSync(join(data, "install-record.json"), JSON.stringify({ schemaVersion: 1, entries: [], modeRule: { location: "Intent's Settings, under Agent Behavior", status: "unchanged" } }));
     writeFileSync(join(data, "hooks/retired.txt"), "Earlier release.\n");
     copyPlugin(plugin);
     const nextSkill = "---\nname: how\n---\nNew release.\n";
@@ -1177,6 +1190,7 @@ test.each(["missing", "unreadable"])("a pre-record package upgrade with a %s rec
     const result = commandRun(home, ["--hosts", "intent"], from);
     expect(result.status).toBe(0);
     expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe(nextSkill);
+    expect(packageContents(data)).toEqual(packageContents(plugin));
     expect(readFileSync(join(data, "hooks/intent-deliver.sh"), "utf8")).toBe(readFileSync(join(root, "hooks/intent-deliver.sh"), "utf8"));
     expect(existsSync(join(data, "hooks/retired.txt"))).toBe(false);
     expect(readFileSync(own, "utf8")).toBe("My own host skill.\n");
@@ -1188,5 +1202,40 @@ test.each(["missing", "unreadable"])("a pre-record package upgrade with a %s rec
     expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
     expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe("---\nname: how\n---\nLater release.\n");
     expect(readFileSync(own, "utf8")).toBe("My own host skill.\n");
+  });
+});
+
+test("delivery refuses a data-folder link without touching its personal target", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const personal = join(home, "personal folder");
+    copyPlugin(personal);
+    writeFileSync(join(personal, "notes.txt"), "My notes.\n");
+    const data = join(home, ".local/share/cstack");
+    mkdirSync(dirname(data), { recursive: true });
+    symlinkSync(personal, data);
+    const result = commandRun(home, ["--hosts", "intent"], from);
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("the plugin data folder is a link");
+    expect(readlinkSync(data)).toBe(personal);
+    expect(readFileSync(join(personal, "notes.txt"), "utf8")).toBe("My notes.\n");
+    expect(existsSync(join(personal, "install-record.json"))).toBe(false);
+    expect(existsSync(join(home, ".intent/skills"))).toBe(false);
+  });
+});
+
+test("the final table summarizes many preserved host entries with a count and one example", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const skills = join(home, ".intent/skills");
+    mkdirSync(skills, { recursive: true });
+    for (const skill of ["how", "why", "align"]) writeFileSync(join(skills, skill), "My host skill.\n");
+    const result = commandRun(home, ["--hosts", "intent"], from);
+    expect(result.status).toBe(0);
+    const row = result.stdout.split("\n").find((line) => line.startsWith("Intent ")) ?? "";
+    expect(row).toContain("3 personal entries untouched. For example, left your own align as it is");
+    expect(row).not.toContain("left your own how");
+    expect(row).not.toContain("left your own why");
+    for (const skill of ["how", "why", "align"]) expect(readFileSync(join(skills, skill), "utf8")).toBe("My host skill.\n");
   });
 });

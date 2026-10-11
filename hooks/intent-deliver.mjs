@@ -1,5 +1,5 @@
-import { chmodSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { closeSync, existsSync, fchmodSync, openSync, mkdtempSync, rmSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { createHash, randomUUID } from "node:crypto";
 import { dirname, join, basename, resolve, relative, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -11,7 +11,7 @@ if (!/^[a-z0-9-]+$/.test(name)) throw new Error("The plugin has no valid name.")
 if (!process.env.HOME) throw new Error("HOME is required.");
 const home = realpathSync(process.env.HOME);
 const physical = (path) => existsSync(path) ? realpathSync(path) : join(physical(dirname(path)), basename(path));
-const data = physical(resolve(process.env.XDG_DATA_HOME ?? join(home, ".local/share"), name));
+const data = join(physical(resolve(process.env.XDG_DATA_HOME ?? join(home, ".local/share"))), name);
 const skills = physical(join(home, ".intent/skills"));
 const specialists = physical(join(home, ".intent/specialists"));
 const recordPath = join(data, "install-record.json");
@@ -38,7 +38,7 @@ function loadRecord() {
   try {
     if (lstatSync(recordPath).isSymbolicLink()) throw new Error("The record is a link.");
     const record = JSON.parse(readFileSync(recordPath, "utf8"));
-    if (record.schemaVersion !== 1 || !Array.isArray(record.entries) || !record.modeRule || record.modeRule.location !== location || !["added", "existing", "manual", "unchanged"].includes(record.modeRule.status)) throw new Error("Invalid record.");
+    if (record.schemaVersion !== 1 || !Array.isArray(record.entries) || record.entries.length === 0 || !record.modeRule || record.modeRule.location !== location || !["added", "existing", "manual", "unchanged"].includes(record.modeRule.status)) throw new Error("Invalid record.");
     const paths = new Set();
     for (const entry of record.entries) {
       if (!allowed(entry.path) || paths.has(entry.path) || !(entry.kind === "link" && typeof entry.target === "string" || entry.kind === "file" && typeof entry.sha256 === "string" && /^[a-f0-9]{64}$/.test(entry.sha256) && Number.isInteger(entry.mode) && entry.mode >= 0 && entry.mode <= 0o777)) throw new Error("Invalid entry.");
@@ -48,6 +48,50 @@ function loadRecord() {
   } catch (error) {
     return { state: error.code === "ENOENT" ? "missing" : "unreadable", record: { schemaVersion: 1, entries: [], modeRule: { location, status: "unchanged" } } };
   }
+}
+function replaceFile(path, content, mode = 0o644) {
+  const temporary = join(dirname(path), `.${basename(path)}-${randomUUID()}.tmp`);
+  const descriptor = openSync(temporary, "wx", mode);
+  try {
+    try {
+      writeFileSync(descriptor, content);
+      fchmodSync(descriptor, mode);
+    } finally { closeSync(descriptor); }
+    renameSync(temporary, path);
+  } finally { rmSync(temporary, { force: true }); }
+}
+function replaceCopy() {
+  mkdirSync(dirname(data), { recursive: true });
+  const staging = mkdtempSync(join(dirname(data), `.${name}-install-`));
+  const incoming = join(staging, "copy");
+  const previous = join(staging, "previous");
+  let installed = false;
+  try {
+    mkdirSync(incoming);
+    const copy = (relativePath) => {
+      const path = join(source, relativePath);
+      const destination = join(incoming, relativePath);
+      const stat = lstatSync(path);
+      if (stat.isDirectory()) {
+        mkdirSync(destination, { recursive: true });
+        for (const child of readdirSync(path).sort()) if (child !== "node_modules") copy(join(relativePath, child));
+      } else {
+        mkdirSync(dirname(destination), { recursive: true });
+        if (stat.isSymbolicLink()) symlinkSync(readlinkSync(path), destination);
+        else replaceFile(destination, readFileSync(path), stat.mode & 0o777);
+      }
+    };
+    for (const path of ["agents", "hooks", "skills", "tools/metadata.json", "LICENSE"]) if (existsSync(join(source, path))) copy(path);
+    if (existsSync(data)) renameSync(data, previous);
+    try { renameSync(incoming, data); installed = true; }
+    catch (error) {
+      if (existsSync(previous)) renameSync(previous, data);
+      throw error;
+    }
+  } finally {
+    if (installed || !existsSync(previous)) rmSync(staging, { recursive: true, force: true });
+  }
+  console.log(`copied the plugin to ${data}`);
 }
 function intentCommand() {
   for (const directory of (process.env.PATH ?? "").split(":")) {
@@ -74,34 +118,37 @@ function main() {
     console.log(`The always-on mode rule belongs in ${location}.`);
     return;
   }
+  if (fingerprint(data)?.kind === "link") {
+    process.stderr.write(`kept ${data}: the plugin data folder is a link. Move that link aside before installing.\n`);
+    process.exitCode = 2;
+    return;
+  }
   if (root === data && existsSync(data) && loaded.state !== "valid" && !existsSync(join(data, "tools/metadata.json")) && (!existsSync(recordPath) || readdirSync(data).some((entry) => entry !== "install-record.json"))) {
     process.stderr.write(`kept ${data}: it is not a copy of this plugin\n`);
     process.exitCode = 2;
     return;
   }
-  const previous = new Map(loaded.record.entries.map((entry) => [entry.path, entry]));
+  const previous = new Map(loaded.record.entries.filter((entry) => !within(data, entry.path)).map((entry) => [entry.path, entry]));
   const owned = new Map(previous);
   const desired = new Set();
   let modeRule = loaded.record.modeRule;
   const save = () => {
     mkdirSync(data, { recursive: true });
-    const temporary = join(data, `.install-record-${process.pid}.json`);
-    writeFileSync(temporary, JSON.stringify({ schemaVersion: 1, entries: [...owned.values()].sort((a, b) => a.path.localeCompare(b.path)), modeRule }, null, 2) + "\n", { flag: "wx" });
-    renameSync(temporary, recordPath);
+    replaceFile(recordPath, JSON.stringify({ schemaVersion: 1, entries: [...owned.values()].sort((a, b) => a.path.localeCompare(b.path)), modeRule }, null, 2) + "\n");
   };
   const mode = join(skills, `${name}-mode`);
   const firstInstall = !fingerprint(mode);
   const legacyRoots = new Set([source, data]);
   const modeEntry = fingerprint(mode);
-  if (loaded.state === "missing" && modeEntry?.kind === "link") {
+  if (loaded.state !== "valid" && modeEntry?.kind === "link") {
     const candidate = dirname(dirname(resolve(dirname(mode), modeEntry.target)));
     try {
       if (JSON.parse(readFileSync(join(candidate, "tools/metadata.json"), "utf8")).name === name && modeEntry.target === join(candidate, "skills", `${name}-mode`)) legacyRoots.add(candidate);
     } catch {}
   }
-  const legacy = (entry, relativePath) => loaded.state === "missing" && entry?.kind === "link" && [...legacyRoots].some((base) => entry.target === join(base, relativePath));
+  const legacy = (entry, relativePath) => loaded.state !== "valid" && entry?.kind === "link" && [...legacyRoots].some((base) => entry.target === join(base, relativePath));
   const keep = (path) => console.log(`left your own ${basename(path)} as it is`);
-  function place(entry, content, relativePath) {
+  function place(entry, relativePath) {
     desired.add(entry.path);
     if (!allowed(entry.path)) {
       owned.delete(entry.path);
@@ -110,7 +157,7 @@ function main() {
     }
     const current = fingerprint(entry.path);
     const recorded = previous.get(entry.path);
-    const migrated = legacy(current, relativePath) || loaded.state === "missing" && root === data && modeEntry?.target === join(data, "skills", `${name}-mode`) && same(current, entry);
+    const migrated = legacy(current, relativePath);
     if (current && !same(current, recorded) && !migrated) {
       owned.delete(entry.path);
       keep(entry.path);
@@ -126,37 +173,23 @@ function main() {
       return;
     }
     mkdirSync(dirname(entry.path), { recursive: true });
-    if (current && (current.kind === "link" || entry.kind === "link")) unlinkSync(entry.path);
-    if (entry.kind === "link") symlinkSync(entry.target, entry.path);
-    else {
-      writeFileSync(entry.path, content, { mode: entry.mode });
-      chmodSync(entry.path, entry.mode);
-    }
+    if (current) unlinkSync(entry.path);
+    symlinkSync(entry.target, entry.path);
     owned.set(entry.path, entry);
     save();
-    if (entry.kind === "link") console.log(`linked ${entry.path}`);
+    console.log(`linked ${entry.path}`);
   }
-  if (loaded.state !== "valid") console.log(`Installation record ${loaded.state}. Removed nothing from the previous install.`);
+  if (loaded.state !== "valid") console.log(`Installation record ${loaded.state}. No host entries were removed.`);
   if (root === data) {
-    const copy = (relativePath) => {
-      const path = join(source, relativePath);
-      const stat = lstatSync(path);
-      if (stat.isDirectory()) {
-        for (const child of readdirSync(path).sort()) if (child !== "node_modules") copy(join(relativePath, child));
-      } else {
-        const entry = { ...fingerprint(path), path: join(data, relativePath) };
-        place(entry, entry.kind === "file" ? readFileSync(path) : undefined, relativePath);
-      }
-    };
-    for (const path of ["agents", "hooks", "skills", "tools/metadata.json", "LICENSE"]) if (existsSync(join(source, path))) copy(path);
-    console.log(`copied the plugin to ${data}`);
+    replaceCopy();
+    save();
   }
   for (const directory of readdirSync(join(source, "skills")).sort()) {
     const skill = join(source, "skills", directory, "SKILL.md");
     if (!existsSync(skill)) continue;
     const frontmatter = readFileSync(skill, "utf8").split("\n---\n")[0];
     if (/^disable-model-invocation:[ \t]*true[ \t]*$/m.test(frontmatter)) continue;
-    place({ path: join(skills, directory), kind: "link", target: join(root, "skills", directory) }, undefined, join("skills", directory));
+    place({ path: join(skills, directory), kind: "link", target: join(root, "skills", directory) }, join("skills", directory));
   }
   for (const persona of readdirSync(join(source, "agents")).filter((entry) => entry.endsWith(".md"))) {
     const path = join(specialists, persona);

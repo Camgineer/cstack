@@ -367,8 +367,15 @@ async function main() {
           problem = `${problem ?? ""} Could not read the resulting version. ${after.problem}`;
         }
         const changed = !after.problem && (copyState(before) !== copyState(after) || deliveryChanged);
+        const outcomes = [["left your own ", "personal entries untouched"], ["Recorded the earlier ", "earlier links recorded"]];
+        const summarized = kept.filter((line) => !outcomes.some(([prefix]) => line.startsWith(prefix)));
+        for (const [prefix, description] of outcomes) {
+          const matching = kept.filter((line) => line.startsWith(prefix));
+          if (matching.length === 1) summarized.push(matching[0]);
+          else if (matching.length > 1) summarized.push(`${matching.length} ${description}. For example, ${matching[0]}`);
+        }
         const preserved = kept.some((line) => line.startsWith("left your own "));
-        const messages = `${kept.map((line) => line.replace(/\.$/, "")).join(". ")}${kept.length ? ". " : ""}${preserved ? "Nothing is needed for your own files. " : ""}`;
+        const messages = `${summarized.map((line) => line.replace(/\.$/, "")).join(". ")}${summarized.length ? ". " : ""}${preserved ? "Nothing is needed for your own files. " : ""}`;
         if (problem) action = `${problem} ${messages}`;
         else if (changed) action = `Updated. New sessions use version ${versions(after)}. Sessions already open keep the old version until you start them again. ${messages}${action}`;
         else if (operation.pending) action = `No installed version changed. ${messages}${operation.pending}`;

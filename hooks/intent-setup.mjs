@@ -142,7 +142,7 @@ function main() {
     const entry = stat(change.path);
     if (entry && !entry.isFile() && !entry.isSymbolicLink()) return kept(`Kept ${change.path}. You replaced it after setup.`);
     const current = fileState(change.path);
-    if (current.kind === "absent" && change.before.kind === "absent") return done(`Already absent ${change.path}. You deleted it after setup.`);
+    if (current.kind === "absent" && change.before.kind === "absent") return done(`Already absent ${change.path}. There is nothing to undo.`);
     if (same(current, change.before)) return done(`Already reverted ${change.path}.`);
     if (current.kind !== "absent" && !same(current, change.after)) return kept(`Kept ${change.path}. You changed it after setup.`);
     if (change.before.kind === "file") atomicWrite(change.path, Buffer.from(change.before.content, "base64"), change.before.mode);
@@ -190,9 +190,10 @@ ${unresolved.join("\n")}`);
     const quote = (value) => "'" + value.replaceAll("'", "'\\''") + "'";
     const locked = (path, reason) => new Error(`Setup is locked at ${path}.
 This lock keeps two setup runs from writing together. ${reason}
-Nothing was removed. After you confirm no setup run is active, keep a copy by moving only this lock aside:
+Nothing was removed. Wait for any active setup run to finish, then run the same ${command} command again.
+If the lock remains after you confirm no setup run is active, keep a copy by moving only this lock aside:
 mv ${quote(path)} ${quote(`${path}.saved-${randomUUID()}`)}
-Then run revert.`);
+Then run the same ${command} command again.`);
     const acquisitionPath = `${lockPath}.acquire`;
     let acquisition;
     try { acquisition = openSync(acquisitionPath, "wx", 0o600); }

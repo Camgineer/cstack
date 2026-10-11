@@ -343,7 +343,7 @@ test("setup safety restores a deleted personal file and reports a deleted genera
     expect(reverted.status).toBe(0);
     expect(readFileSync(builder, "utf8")).toBe("MY OWN BUILDER\n");
     expect(reverted.stdout).toContain(`Restored ${builder}.`);
-    expect(reverted.stdout).toContain(`Already absent ${worker}. You deleted it after setup.`);
+    expect(reverted.stdout).toContain(`Already absent ${worker}. There is nothing to undo.`);
     expect(reverted.stdout).not.toContain(`Kept ${worker}`);
     const before = homeSnapshot(home);
     expect(setupRun(home, "revert").stdout).toBe("Nothing to revert.\n");
@@ -359,7 +359,7 @@ test("setup safety reports an already deleted generated seat without claiming to
     rmSync(worker);
     const result = setupRun(home, "revert");
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain(`Already absent ${worker}. You deleted it after setup.`);
+    expect(result.stdout).toContain(`Already absent ${worker}. There is nothing to undo.`);
     expect(result.stdout).not.toContain(`Kept ${worker}`);
     expect(setupRecord(home).changes).toEqual([]);
   });
@@ -625,19 +625,21 @@ require('node:module').syncBuiltinESMExports();`);
 });
 
 test.each(["live unrelated process", "other user's process", "unfinished acquisition"])("setup recovery gives a manual escape for a lock (%s) without removing it", (kind) => {
-  withHome((home) => {
+  for (const command of ["apply", "revert"]) withHome((home) => {
     setupFixture(home);
     const lock = join(home, `.local/share/cstack-setup-record.json.lock${kind === "unfinished acquisition" ? ".acquire" : ""}`);
     writeFileSync(lock, JSON.stringify({ schemaVersion: 1, name: "cstack", home, pid: process.pid, temporaries: [] }) + "\n");
     const fault = join(home, "other-user.cjs");
     writeFileSync(fault, `process.kill = function() { throw Object.assign(new Error('fixture permission denied'), {code: 'EPERM'}); };`);
     const before = homeSnapshot(home);
-    const result = setupApply(home, [], kind === "other user's process" ? { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` } : {});
+    const env = kind === "other user's process" ? { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` } : {};
+    const result = command === "apply" ? setupApply(home, [], env) : setupRun(home, "revert", [], env);
     expect(result.status).toBe(2);
     expect(result.stderr).toContain(`Setup is locked at ${lock}`);
     expect(result.stderr).toContain("no setup run is active");
     expect(result.stderr).toContain(`mv '${lock}' '${lock}.saved-`);
-    expect(result.stderr).toContain("Then run revert.");
+    expect(result.stderr).toContain(`Wait for any active setup run to finish, then run the same ${command} command again.`);
+    expect(result.stderr).toContain(`Then run the same ${command} command again.`);
     expect(homeSnapshot(home)).toEqual(before);
   });
 });

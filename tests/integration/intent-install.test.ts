@@ -3050,3 +3050,156 @@ test("setup recovery follows the printed command and rejects advice that undoes 
     } finally { await run.stop(); }
   });
 }, 20000);
+
+
+test.each(["deleted", "corrupt", "never written", "invalid lifecycle"])("fix round preserves a removed rule after a %s record", (kind) => {
+  withHome((home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    fixture.complete();
+    writeFileSync(fixture.state, '{"content":"","enabled":false}');
+    if (kind === "corrupt") writeFileSync(fixture.record, "{");
+    else if (kind === "invalid lifecycle") writeFileSync(fixture.record, JSON.stringify({ ...installRecord(home), ruleLifecycle: "invalid" }));
+    else rmSync(fixture.record);
+    const before = readFileSync(fixture.updates, "utf8");
+    const result = fixture.kit.runSync([]);
+    expect(result.status).toBe(0);
+    expect(JSON.parse(readFileSync(fixture.state, "utf8"))).toEqual({ content: "", enabled: false });
+    expect(readFileSync(fixture.updates, "utf8")).toBe(before);
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    expect(readFileSync(fixture.updates, "utf8")).toBe(before);
+  });
+});
+
+test("fix round preserves main recovery before the mode link", () => {
+  withHome((home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    const old = join(home, "old-checkout");
+    copyPlugin(old);
+    mkdirSync(join(old, ".git"));
+    const source = spawnSync("git", ["show", "e4f268b917ea5a4c9289ef4d576f3c03663b094d:hooks/intent-deliver.mjs"], { cwd: root, encoding: "utf8" });
+    expect(source.status).toBe(0);
+    writeFileSync(join(old, "hooks/intent-deliver.mjs"), source.stdout);
+    const kit = fileChangeKit(home, { command: ["node", join(old, "hooks/intent-deliver.mjs")], env: { PATH: join(home, "bin") } });
+    expect(kit.runSync([], [{ name: "old-link", operation: "rename", edge: "before", target: { path: fixture.record }, occurrence: 5, action: { kind: "kill" } }]).signal).toBe("SIGKILL");
+    expect(existsSync(join(home, ".intent/skills/cstack-mode"))).toBe(false);
+    expect(installRecord(home).ruleLifecycle).toBeUndefined();
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    expect(readFileSync(fixture.updates, "utf8").trim().split("\n")).toHaveLength(1);
+    expect(JSON.parse(readFileSync(fixture.state, "utf8")).content).toContain("unless a plugin seat file");
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    expect(readFileSync(fixture.updates, "utf8").trim().split("\n")).toHaveLength(1);
+  });
+});
+
+test("fix round reports one unreadable evidence line per run", () => {
+  withHome((home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    mkdirSync(dirname(fixture.record), { recursive: true });
+    const pending = join(dirname(fixture.record), ".cstack-install-pending-00000000-0000-0000-0000-000000000000.json");
+    writeFileSync(pending, "{");
+    for (let run = 0; run < 2; run++) {
+      const result = fixture.kit.runSync([]);
+      expect(result.status).toBe(0);
+      expect(result.stdout.split("\n").filter((line) => line.includes(pending))).toEqual([`kept ${pending}: pending evidence is unreadable. Move it aside to stop this notice.`]);
+      expect(readFileSync(pending, "utf8")).toBe("{");
+      fixture.complete();
+    }
+  });
+});
+
+test.each(["unchanged", "personal edit"])("fix round rereads a rule after attempted publication with %s", async (kind) => {
+  await withHome(async (home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    const first = fixture.kit.start([], [{ name: "attempt", operation: "rename", edge: "before", target: { parent: dirname(fixture.record) }, occurrence: visibleSkills().length * 4 + 2, action: { kind: "pause" } }]);
+    try {
+      await first.at("attempt");
+      expect(installRecord(home).ruleLifecycle).toBe("due");
+      expect(fixture.kit.runSync([]).status).toBe(0);
+      fixture.complete();
+      if (kind === "personal edit") writeFileSync(fixture.state, '{"content":"My later rule.","enabled":false}');
+      const expected = readFileSync(fixture.state, "utf8");
+      const updates = readFileSync(fixture.updates, "utf8");
+      await first.release("attempt");
+      expect((await first.finish()).status).toBe(0);
+      expect(readFileSync(fixture.state, "utf8")).toBe(expected);
+      expect(readFileSync(fixture.updates, "utf8")).toBe(updates);
+      expect(installRecord(home).modeRule.status).toBe("added");
+    } finally { await first.stop(); }
+  });
+});
+
+test.each(["intended link", "personal file"])("fix round finishes a paused replacement when another run makes an %s", async (kind) => {
+  await withHome(async (home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    const next = join(home, "next-checkout");
+    copyPlugin(next);
+    mkdirSync(join(next, ".git"));
+    const kit = fileChangeKit(home, { command: ["node", join(next, "hooks/intent-deliver.mjs")], env: { PATH: join(home, "bin") } });
+    const path = join(home, ".intent/skills/architect");
+    const first = kit.start([], [{ name: "unlinked", operation: "delete", edge: "after", target: { path }, action: { kind: "pause" } }]);
+    try {
+      await first.at("unlinked");
+      expect(existsSync(path)).toBe(false);
+      expect(kit.runSync([]).status).toBe(0);
+      if (kind === "personal file") { rmSync(path); writeFileSync(path, "My concurrent skill."); }
+      await first.release("unlinked");
+      const result = await first.finish();
+      expect(result.stderr).toBe("");
+      expect(result.status).toBe(0);
+      if (kind === "intended link") {
+        expect(readlinkSync(path)).toBe(join(next, "skills/architect"));
+        expect(installRecord(home).entries).toContainEqual({ path, kind: "link", target: join(next, "skills/architect") });
+      } else {
+        expect(readFileSync(path, "utf8")).toBe("My concurrent skill.");
+        expect(result.stdout.split("\n").filter((line) => line.includes("left your own architect"))).toHaveLength(1);
+        expect(installRecord(home).entries.some((entry: { path: string }) => entry.path === path)).toBe(false);
+      }
+    } finally { await first.stop(); }
+  });
+});
+
+test("fix round concurrent installs without pauses never print raw link errors", async () => {
+  let collisions = 0;
+  for (let round = 0; round < 40; round++) {
+    await withHome(async (home) => {
+      const fixture = deliveryRecoveryFixture(home);
+      const first = fixture.kit.start([], []);
+      const second = fixture.kit.start([], []);
+      try {
+        const results = await Promise.all([first.finish(), second.finish()]);
+        for (const result of results) {
+          if (result.stderr.includes("EEXIST")) collisions++;
+          else expect(result.status).toBe(0);
+        }
+        expect(fixture.kit.runSync([]).status).toBe(0);
+        expect(installRecord(home).entries).toEqual([...fixture.expected].sort((a, b) => a.path.localeCompare(b.path)));
+        expect(JSON.parse(readFileSync(fixture.state, "utf8")).content.split("Before any other step")).toHaveLength(2);
+      } finally { await first.stop(); await second.stop(); }
+    });
+  }
+  expect(collisions).toBe(0);
+}, 60000);
+
+test("fix round recovers a link held only in pending operation", () => {
+  withHome((home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    const path = join(home, ".intent/skills/architect");
+    expect(fixture.kit.runSync([], [{ name: "operation-only", operation: "open", edge: "before", target: { parent: dirname(fixture.record) }, exists: path, action: { kind: "kill" } }]).signal).toBe("SIGKILL");
+    expect(readlinkSync(path)).toBe(join(root, "skills/architect"));
+    expect(installRecord(home).entries.some((entry: { path: string }) => entry.path === path)).toBe(false);
+    const file = readdirSync(dirname(fixture.record)).find((file) => /^\.cstack-install-pending-.+\.json$/.test(file));
+    if (!file) throw new Error("Missing reached evidence.");
+    const pending = JSON.parse(readFileSync(join(dirname(fixture.record), file), "utf8"));
+    expect(pending.entries.some((entry: { path: string }) => entry.path === path)).toBe(false);
+    expect(pending.operation.after).toEqual({ path, kind: "link", target: join(root, "skills/architect") });
+    const result = fixture.kit.runSync([]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).not.toContain("left your own architect");
+    fixture.complete();
+    const before = homeSnapshot(home);
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});

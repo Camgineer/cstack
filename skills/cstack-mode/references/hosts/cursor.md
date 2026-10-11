@@ -4,7 +4,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 | Capability | Native route |
 | --- | --- |
-| **Delegate** | The `Task` tool. Resolve a seated call through **Seat names** below. Unmigrated calls keep `cstack-agent` or `comment-sicko` as `subagent_type`, and `generalPurpose` for an unconfigured role. |
+| **Delegate** | The `Task` tool. Resolve a seated call through **Seat names** below. Follow [Before delegation](../runtime.md#before-delegation). |
 | **Ask** | `AskQuestion`. |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native todo list. |
@@ -12,6 +12,10 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **History** | Conversation history tools when the session exposes them. Otherwise use a transcript or digest the user supplies. |
 | **Continue later** | A Cursor automation the user authorized. Otherwise report the gap. |
 | **Generate an image** | An image tool when this session's tool list has one. Otherwise an `image` line naming a CLI runner, such as `codex exec`, provides it. |
+
+## Delegation preflight
+
+Check that `Task` is offered in this session, read its schema, and check the session's depth and tool permissions before each handoff. The [native Cursor nesting rule](https://cursor.com/docs/subagents.md#can-subagents-launch-other-subagents) allows the main agent and its direct children to launch children; a child launched by another child cannot launch another. The same page says the mode must expose `Task` and hooks or tool policies can block it. Apply that rule to native Cursor's `Task` route. For a Claude Code runner, use [its host note](claude-code.md). If the step needs a tool the selected child lacks, or the host's stated limit blocks the call, follow [Before delegation](../runtime.md#before-delegation).
 
 ## Seat names
 

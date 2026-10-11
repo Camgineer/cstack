@@ -8,7 +8,7 @@ Read [the runtime contract](../cstack-mode/references/runtime.md) before executi
 
 # Interrogate
 
-Spawn one reviewer per seat of the `review` role to adversarially review code changes. Each seat gets the same prompt and rubric. The adversarial signal comes from model diversity, not assigned personas.
+Start three calls to the [reviewer seat](../../agents/reviewer.md), unless the user names another panel size, with the existing `review` fallback. Each reviewer gets the same prompt and rubric. The adversarial signal comes from model diversity, not assigned personas.
 
 The deliverable is a synthesized verdict. Do NOT auto-apply changes.
 
@@ -35,7 +35,7 @@ Write one clear paragraph. When a signed spec from the **align** skill covers th
 
 ## Step 3, Spawn Reviewers
 
-Launch the `interrogate reviewers` panel in parallel within available capacity, with each seat resolved from the `review` role per **Model roles** in the runtime contract. Native seats use read-only delegation. Each reviewer gets the same template and rubric. Before you report a panel whose seats share one family, check every runner this session can reach for another family, including other agent CLIs and linked devices. Name any missing lane and its impact, and call the panel model-diverse only when the contract allows it.
+Launch the [reviewer seat](../../agents/reviewer.md) panel in parallel within available capacity, with the existing `review` fallback per **Model roles**, [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery), and [Before delegation](../cstack-mode/references/runtime.md#before-delegation) in the runtime contract. Carry the filled reviewer template in every brief and return findings to the parent. Each reviewer gets the same template and rubric. Before you report a panel whose seats share one family, check every runner this session can reach for another family, including other agent CLIs and linked devices. Name any missing lane and its impact, and call the panel model-diverse only when the contract allows it.
 
 Read `references/reviewer-prompt.md` and fill in the template with:
 1. The stated intent
@@ -43,7 +43,7 @@ Read `references/reviewer-prompt.md` and fill in the template with:
 3. The review rubric from `references/rubric.md`
 4. The code-quality lens from `references/code-quality-review.md`
 
-The same filled template goes to all reviewers, so every seat applies the code-quality lens.
+The same filled template goes to all reviewers, so every reviewer applies the code-quality lens.
 
 ## Step 4, Synthesize
 

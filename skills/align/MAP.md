@@ -36,7 +36,7 @@ A ticket is one sharp question, sized for one session, with the tickets that blo
 
 | Type | Who | Resolves by |
 | --- | --- | --- |
-| Research | Agent alone | A delegated investigator finds the fact with the **how** or **why** skill. |
+| Research | Agent alone | An [investigator seat](../../agents/investigator.md) answers the question. Carry the applicable **how** or **why** evidence criteria in its brief; it returns the cited answer. |
 | Prototype | With the operator | A cheap sketch to react to, per `../cstack-mode/playbooks/prototype.md`. |
 | Grilling | With the operator | A **grill-with-docs** round. The default type. |
 | Task | Either | Work that unblocks a decision, such as provisioning access. The answer records what was done. |

@@ -133,6 +133,17 @@ describe("plan validation", () => {
     expect(result.status).toBe(0);
   });
 
+  test("accepts readable live lanes and rejects a different count", () => {
+    const readable = plan.replace("Ten lanes on `GPT-6` at the PR head", "Ten verification lanes at the PR head");
+    const accepted = runPlan(readable);
+    expect(accepted.status).toBe(0);
+    expect(accepted.stderr).toBe("");
+    expect(accepted.stdout).toContain("1 PR sections, 0 problems");
+    const rejected = runPlan(readable.replace("Ten verification lanes", "Nine verification lanes"));
+    expect(rejected.status).toBe(1);
+    expect(rejected.stderr).toContain("Verify, live must name ten verification lanes");
+  });
+
   test.each([
     {
       name: "live verification is missing",
@@ -317,6 +328,37 @@ test("host sync generates seat rows and rejects drift or invalid definitions", (
 
     writeFileSync(worker, original);
     expect(sync().status).toBe(0);
+    const workflow = join(directory, "skills/arena/SKILL.md");
+    const workflowText = readFileSync(workflow, "utf8");
+    for (const reference of [
+      "[worker seat](../../agents/missing.md)",
+      "[worker seat](../../agents/comment-sicko.md)",
+      "[worker seat](../../agents/reviewer.md)",
+      "[unknown seat](../../agents/worker.md)",
+      "[lead seat](../../agents/lead.md)",
+      "[Reviewer seat](../../agents/missing.md)",
+      "[reviewer seats](../../agents/missing.md)",
+    ]) {
+      writeFileSync(workflow, `${workflowText}\nDelegate to the ${reference}.\n`);
+      const invalid = sync("--check");
+      expect(invalid.status).toBe(1);
+      expect(invalid.stderr).toContain("skills/arena/SKILL.md has an invalid seat reference");
+    }
+    writeFileSync(workflow, `${workflowText}\nDelegate to the [builder seat](../../agents/${pluginName}-agent.md).\n`);
+    expect(sync("--check").status).toBe(0);
+    writeFileSync(workflow, `${workflowText}\n\`\`\`markdown\nDelegate to the [reviewer seat](../../agents/missing.md).\n\`\`\`\n`);
+    const invalidTemplate = sync("--check");
+    expect(invalidTemplate.status).toBe(1);
+    expect(invalidTemplate.stderr).toContain("skills/arena/SKILL.md has an invalid seat reference");
+    writeFileSync(workflow, workflowText);
+    const investigator = join(directory, "agents/investigator.md");
+    const investigatorText = readFileSync(investigator, "utf8");
+    writeFileSync(investigator, `${investigatorText}\nDelegate to the [scout seat](missing.md).\n`);
+    const invalidAgent = sync("--check");
+    expect(invalidAgent.status).toBe(1);
+    expect(invalidAgent.stderr).toContain("agents/investigator.md has an invalid seat reference");
+    writeFileSync(investigator, investigatorText);
+    expect(sync("--check").status).toBe(0);
     writeFileSync(runtime, readFileSync(runtime, "utf8") + "\n<!-- seats:start --><!-- seats:end -->\n");
     const duplicate = sync("--check");
     expect(duplicate.status).toBe(1);

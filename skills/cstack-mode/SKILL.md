@@ -94,7 +94,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Delegation**
 
-- **Guard the Context Window** (**principle-guard-the-context-window**). Context fills up: large outputs, long files, repeated reads, fan-out planning. Route bulk to subagents, keep summaries in the main thread.
+- **Guard the Context Window** (**principle-guard-the-context-window**). Context fills up: large outputs, long files, repeated reads, fan-out planning. Follow its scout handoff for bulk inputs and keep summaries in the main thread.
 - **Never Block on the Human** (**principle-never-block-on-the-human**). Tempted to ask "should I do X?" on reversible work. Proceed, present the result, let the human course-correct.
 
 **Meta**
@@ -115,9 +115,9 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Subagents
 
-**Use the complete bundled `agents/cstack-agent.md` persona prompt, or an existing matching native profile, for implementation delegates inside a playbook step.** The cstack agent must read this skill and its Principles index. Routed workflows (`how`, `why`, `interrogate`, `reflect`, `swarm`) keep their own specialist prompts for diverse review; do not override those with the cstack agent.
+**Use the [builder seat](../../agents/cstack-agent.md) for implementation delegates inside a playbook step, with the existing `build` fallback.** The cstack agent must read this skill and its Principles index. Other workflows name their own seats and carry their own prompts in the brief.
 
-**Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Resolve model and effort through the step's role in the runtime contract: the host model unless a `Models:` block names one. Preserve the workflow's independent review coverage and verify any claimed model diversity. When a signed spec or another grant covers the work, cite its path and the sections the delegate must read, and quote any authorization word for word, because a paraphrase can narrow it. Before you delegate, check each file pointer exists at the delegate's base with `git cat-file -e <base>:<path>`.
+**Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Name the step's linked seat and compatibility fallback, then follow [Seat delivery](references/runtime.md#seat-delivery) and [Before delegation](references/runtime.md#before-delegation). Resolve model and effort through that seat and the site's existing fallback. Preserve the workflow's independent review coverage and verify any claimed model diversity. When a signed spec or another grant covers the work, cite its path and the sections the delegate must read, and quote any authorization word for word, because a paraphrase can narrow it. Before you delegate, check each file pointer exists at the delegate's base with `git cat-file -e <base>:<path>`.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. After a child that edits returns, re-read each file it touched before you edit that file. Use supported status and resumption tools, and include the current constraints on every follow-up. Send a finding that changes the round in progress through the host's interrupt route. Have the builder list each finding as fixed or pending in its completion report. A second opinion is the same prompt against a different model. Agreement is high-signal.
 

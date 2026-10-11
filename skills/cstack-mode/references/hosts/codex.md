@@ -4,7 +4,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 | Capability | Native route |
 | --- | --- |
-| **Delegate** | Codex's native subagent tools. Their names and fields differ between the local CLI, the desktop app, and cloud tasks, so read the schemas in this session. Resolve a seated call through **Seat files** below. Unmigrated calls keep their complete persona file in the child's instructions. |
+| **Delegate** | Codex's native subagent tools. Their names and fields differ between the local CLI, the desktop app, and cloud tasks, so read the schemas in this session. Resolve a seated call through **Seat files** below. Follow [Before delegation](../runtime.md#before-delegation). |
 | **Ask** | The user-question tool when the session exposes one. Otherwise ask in the reply and continue on reversible work. |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native plan tool. |
@@ -12,6 +12,10 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **History** | Thread and history tools when the session exposes them. Otherwise use a transcript or digest the user supplies. |
 | **Continue later** | A native automation or scheduled task the user authorized. Otherwise report the gap. |
 | **Generate an image** | The built-in `image_gen` tool, through the `$imagegen` skill. It saves under `~/.codex/generated_images/<session-id>/` and takes no output path, size, or quality, so copy the file into place and resize it. `codex exec` from another host reaches the same tool. |
+
+## Delegation preflight
+
+Check this session's tool list and the offered subagent tool's schema before each handoff. Read the depth, capacity, and permission limits exposed in the session's instructions. Check the selected child's tools against the step it must run. If a required tool is absent or a stated limit blocks the call, follow [Before delegation](../runtime.md#before-delegation). Do not infer permission from a tool's name. The [subagent settings](https://learn.chatgpt.com/docs/agent-configuration/subagents.md) describe `agents.enabled` and `agents.max_concurrent_threads_per_session`; check the session's actual tools rather than assuming a configured setting made them available.
 
 ## Seat files
 

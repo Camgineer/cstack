@@ -36,7 +36,7 @@ A ticket is one sharp question, sized for one session, with the tickets that blo
 
 | Type | Who | Resolves by |
 | --- | --- | --- |
-| Research | Agent alone | A delegated investigator finds the fact with the **how** or **why** skill. |
+| Research | Agent alone | An [investigator seat](../../agents/investigator.md) answers the question with no legacy model role. Carry the applicable **how** or **why** evidence criteria in its brief; it returns the cited answer. |
 | Prototype | With the operator | A cheap sketch to react to, per `../cstack-mode/playbooks/prototype.md`. |
 | Grilling | With the operator | A **grill-with-docs** round. The default type. |
 | Task | Either | Work that unblocks a decision, such as provisioning access. The answer records what was done. |
@@ -45,6 +45,6 @@ On a ticket worked with the operator, the operator answers for themselves. Never
 
 ## Sessions
 
-**Chart.** Settle the destination first with a Grill round, because it fixes the scope. Then grill breadth-first across the whole space. If no fog appears, drop the map and return to the Full tier. Otherwise write the map, the tickets you can state now, and their blocking edges, and delegate every Research ticket in parallel. Charting resolves no other ticket.
+**Chart.** Settle the destination first with a Grill round, because it fixes the scope. Then grill breadth-first across the whole space. If no fog appears, drop the map and return to the Full tier. Otherwise write the map, the tickets you can state now, and their blocking edges, and delegate every Research ticket in parallel under [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery) and [Before delegation](../cstack-mode/references/runtime.md#before-delegation). Charting resolves no other ticket.
 
 **Work.** Load the map, not every ticket. Take the ticket the operator names, or the first unblocked one. Resolve one ticket per session, plus any Research tickets. Record the answer on the ticket, add its gist to **Decisions so far**, graduate any fog the answer made sharp into new tickets, and move tickets the answer put past the destination to **Out of scope**.

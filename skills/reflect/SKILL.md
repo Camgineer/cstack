@@ -35,21 +35,21 @@ Then, in PR retro, check the evidence for a signal. A signal is a human correcti
 
 ### 2. Spawn three reviewers in parallel
 
-One message, three native subagent calls, using the generic native agent persona, with `model` set as below, read-only investigation scope. Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript). Use available read-only MCP operations; filesystem sandboxing does not determine connector-write authority.
+One message, three calls to the [investigator seat](../../agents/investigator.md), with no legacy model role. Carry each lens template in its brief and return findings to the parent. Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript). Use available read-only MCP operations; filesystem sandboxing does not determine connector-write authority.
 
-Use each named role as the assignment label. Resolve model and effort through the runtime contract, inheriting for ordinary work unless the user chose a supported override. Report unavailable model requirements without inventing a replacement.
+Follow [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery) and [Before delegation](../cstack-mode/references/runtime.md#before-delegation).
 
-| Lens | Role | Prompt template |
+| Lens | Seat | Prompt template |
 |---|---|---|
-| Judgment | `reflect judgment, divergent, synthesizer` | `references/judgment-reviewer.md` |
-| Tooling | `reflect tooling` | `references/tooling-reviewer.md` |
-| Divergent | `reflect judgment, divergent, synthesizer` | `references/divergent-reviewer.md` |
+| Judgment | [investigator seat](../../agents/investigator.md) | `references/judgment-reviewer.md` |
+| Tooling | [investigator seat](../../agents/investigator.md) | `references/tooling-reviewer.md` |
+| Divergent | [investigator seat](../../agents/investigator.md) | `references/divergent-reviewer.md` |
 
-Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the native subagent response body. When the **Delegate** capability is missing, as in a delegated agent that cannot delegate again, stop, write the step 1 evidence artifact to a file if it is not one, and return its path to your caller. The caller spawns the reviewers and the synthesizer from that artifact and finishes the run. With no caller that can delegate, report the run as blocked. Either way, post no `Retro: no lessons` comment.
+Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the native subagent response body. When [Before delegation](../cstack-mode/references/runtime.md#before-delegation) finds no available runner for the handoff, stop, write the step 1 evidence artifact to a file if it is not one, and return its path to your caller. The caller spawns the reviewers and the synthesizer from that artifact and finishes the run. With no caller that can delegate, report the run as blocked. Either way, post no `Retro: no lessons` comment.
 
 ### 3. Synthesize
 
-One native subagent call, using the generic native agent persona, with `model` from the `reflect judgment, divergent, synthesizer` line, read-only investigation scope. The synthesizer's quality check includes spot-verifying citations, which can require MCP access. Use available read-only MCP operations; filesystem sandboxing does not determine connector-write authority. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer returns a structured Accepted / Rejected / Backlog list.
+One call to the [investigator seat](../../agents/investigator.md), with no legacy model role and the synthesizer template in its brief. The synthesizer's quality check includes spot-verifying citations, which can require MCP access. Use available read-only MCP operations; filesystem sandboxing does not determine connector-write authority. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer returns a structured Accepted / Rejected / Backlog list.
 
 ### 4. Structural enforcement check
 

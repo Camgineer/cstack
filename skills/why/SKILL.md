@@ -12,7 +12,7 @@ Investigate the motivation and intent behind code.
 
 Companion to the `how` skill. `how` answers what the code does and how it works. `why` answers what forces led to its shape.
 
-Use each named role as the assignment label. Resolve model and effort through the runtime contract, inheriting for ordinary work unless the user chose a supported override. Report unavailable model requirements without inventing a replacement.
+Follow [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery) and [Before delegation](../cstack-mode/references/runtime.md#before-delegation). Each handoff below keeps no legacy model role unless the person names its seat.
 
 ## Operating Posture
 
@@ -82,8 +82,8 @@ Aim for a complete **coverage map**, not a minimal one. Document the null, don't
 Launch all matching investigators in a single message so they run concurrently. Don't ask one agent to cover multiple MCPs.
 
 Subagent config (each):
-- Persona: generic native investigator; apply the workflow reference prompt.
-- Model role: `why investigators` through the runtime contract.
+- Seat: [investigator seat](../../agents/investigator.md). Carry the workflow reference prompt in the brief and return findings to the parent.
+- Compatibility fallback: no legacy role.
 - Scope: read-only source and connector investigation. Use supported read-only tools; never add write permissions to retain MCP access.
 
 Each investigator gets:
@@ -126,8 +126,8 @@ If your scope assessment suggests a single-commit trivial target where the PR de
 
 Spawn one synthesizer subagent:
 
-- Persona: generic native investigator; apply the workflow reference prompt.
-- Model role: `why synthesizer` through the runtime contract.
+- Seat: [investigator seat](../../agents/investigator.md). Carry the workflow reference prompt in the brief and return findings to the parent.
+- Compatibility fallback: no legacy role.
 - Scope: read-only source and MCP citation checks. Do not enable writes to gain connector access.
 
 The synthesizer gets:

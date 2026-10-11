@@ -302,6 +302,179 @@ test("setup revert keeps a replacement directory and an edit to permission bits"
   });
 });
 
+test("setup safety retains original bytes after a later edit and restores them once the path is cleared", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const builder = join(home, ".intent/specialists/cstack-agent.md");
+    mkdirSync(dirname(builder));
+    writeFileSync(builder, "MY OWN BUILDER\n", { mode: 0o600 });
+    expect(setupApply(home).status).toBe(0);
+    writeFileSync(builder, "My later seat edit.\n");
+    const reverted = setupRun(home, "revert");
+    expect(reverted.status).toBe(0);
+    expect(readFileSync(builder, "utf8")).toBe("My later seat edit.\n");
+    const recordPath = join(home, ".local/share/cstack-setup-record.json");
+    expect(reverted.stdout).toContain(`Original bytes are held in ${recordPath}`);
+    expect(reverted.stdout).toContain("move the edited file aside");
+    expect(setupRecord(home).changes).toHaveLength(1);
+    expect(Buffer.from(setupRecord(home).changes[0].before.content, "base64").toString()).toBe("MY OWN BUILDER\n");
+    const before = homeSnapshot(home);
+    expect(setupRun(home, "revert").status).toBe(0);
+    expect(homeSnapshot(home)).toEqual(before);
+    renameSync(builder, join(home, "saved-edit.md"));
+    expect(setupRun(home, "revert").stdout).toContain(`Restored ${builder}.`);
+    expect(readFileSync(builder, "utf8")).toBe("MY OWN BUILDER\n");
+    expect(lstatSync(builder).mode & 0o777).toBe(0o600);
+    expect(readFileSync(join(home, "saved-edit.md"), "utf8")).toBe("My later seat edit.\n");
+    expect(setupRecord(home).changes).toEqual([]);
+  });
+});
+
+test("setup safety restores a deleted personal file and reports a deleted generated file truthfully", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const directory = join(home, ".intent/specialists");
+    mkdirSync(directory);
+    const builder = join(directory, "cstack-agent.md");
+    const worker = join(directory, "cstack-worker.md");
+    writeFileSync(builder, "MY OWN BUILDER\n", { mode: 0o600 });
+    expect(setupApply(home).status).toBe(0);
+    rmSync(builder);
+    rmSync(worker);
+    const reverted = setupRun(home, "revert");
+    expect(reverted.status).toBe(0);
+    expect(readFileSync(builder, "utf8")).toBe("MY OWN BUILDER\n");
+    expect(reverted.stdout).toContain(`Restored ${builder}.`);
+    expect(reverted.stdout).toContain(`Already absent ${worker}. You deleted it after setup.`);
+    expect(reverted.stdout).not.toContain(`Kept ${worker}`);
+    const before = homeSnapshot(home);
+    expect(setupRun(home, "revert").stdout).toBe("Nothing to revert.\n");
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+test("setup safety reports an already deleted generated seat without claiming to keep it", () => {
+  withHome((home) => {
+    setupFixture(home);
+    expect(setupApply(home).status).toBe(0);
+    const worker = join(home, ".intent/specialists/cstack-worker.md");
+    rmSync(worker);
+    const result = setupRun(home, "revert");
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(`Already absent ${worker}. You deleted it after setup.`);
+    expect(result.stdout).not.toContain(`Kept ${worker}`);
+    expect(setupRecord(home).changes).toEqual([]);
+  });
+});
+
+test.each(["truncated", "outdated", "unrecognized path"])("setup safety reports a %s record without authorizing any change", (kind) => {
+  withHome((home) => {
+    setupFixture(home);
+    expect(setupApply(home).status).toBe(0);
+    const recordPath = join(home, ".local/share/cstack-setup-record.json");
+    const record = setupRecord(home);
+    if (kind === "outdated") record.schemaVersion = 200;
+    if (kind === "unrecognized path") record.changes[0].path = join(home, ".intent/specialists/cstack-retired.md");
+    writeFileSync(recordPath, kind === "truncated" ? "{" : JSON.stringify(record));
+    const before = homeSnapshot(home);
+    for (const command of ["report", "apply", "revert"]) {
+      const refused = setupRun(home, command, command === "revert" ? [] : setupInput(home));
+      expect(refused.status).toBe(2);
+      expect(refused.stderr).toContain(`Cannot use the setup record at ${recordPath}`);
+      expect(refused.stderr).toContain("revert --report-only");
+      expect(refused.stderr).toContain("backup");
+      expect(homeSnapshot(home)).toEqual(before);
+    }
+    const diagnostic = setupRun(home, "revert", ["--report-only"]);
+    expect(diagnostic.status).toBe(0);
+    expect(JSON.parse(diagnostic.stdout).recordPath).toBe(recordPath);
+    expect(JSON.parse(diagnostic.stdout).error).toContain("Cannot use the setup record");
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+test("setup safety recovers a dead lock, names a crashed temporary file, and preserves unrelated leftovers", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const fault = join(home, "crash-before-rename.cjs");
+    writeFileSync(fault, `const fs = require('node:fs');
+const original = fs.renameSync;
+fs.renameSync = function(from, to) {
+  if (to.endsWith('/specialists/cstack-reviewer.md')) {
+    fs.writeFileSync(${JSON.stringify(join(home, "crashed-temp.txt"))}, from);
+    process.kill(process.pid, 'SIGKILL');
+  }
+  return original.apply(this, arguments);
+};
+require('node:module').syncBuiltinESMExports();`);
+    expect(setupApply(home, [], { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` }).signal).toBe("SIGKILL");
+    const temporary = readFileSync(join(home, "crashed-temp.txt"), "utf8");
+    const bytes = readFileSync(temporary, "utf8");
+    const unrelated = join(home, ".intent/specialists/.setup-personal.tmp");
+    writeFileSync(unrelated, "MY OWN LEFTOVER\n");
+    const recovered = setupRun(home, "revert");
+    expect(recovered.status).toBe(0);
+    expect(recovered.stdout).toContain(`Cleared stale lock ${join(home, ".local/share/cstack-setup-record.json.lock")}`);
+    expect(recovered.stdout).toContain("no process has its recorded PID");
+    expect(recovered.stdout).toContain(`Left temporary file ${temporary}`);
+    expect(readFileSync(temporary, "utf8")).toBe(bytes);
+    expect(readFileSync(unrelated, "utf8")).toBe("MY OWN LEFTOVER\n");
+    expect(setupRun(home, "revert").stdout).toBe("Nothing to revert.\n");
+    expect(setupApply(home).status).toBe(0);
+  });
+});
+
+test("setup safety reports incomplete rollback paths and preserves recovery for the next revert", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const builder = join(home, ".intent/specialists/cstack-agent.md");
+    mkdirSync(dirname(builder));
+    writeFileSync(builder, "MY OWN BUILDER\n", { mode: 0o600 });
+    const fault = join(home, "rollback-failure.cjs");
+    writeFileSync(fault, `const fs = require('node:fs');
+const rename = fs.renameSync;
+let failed = false;
+fs.renameSync = function(from, to) {
+  if (to.endsWith('/specialists/cstack-reviewer.md')) { failed = true; throw new Error('fixture apply failure'); }
+  if (failed && to === ${JSON.stringify(builder)}) throw new Error('fixture rollback failure');
+  return rename.apply(this, arguments);
+};
+require('node:module').syncBuiltinESMExports();`);
+    const failed = setupApply(home, [], { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` });
+    expect(failed.status).toBe(2);
+    expect(failed.stderr).toContain("Apply failed. Rollback is incomplete.");
+    expect(failed.stderr).toContain(builder);
+    expect(failed.stderr).toContain(join(home, ".local/share/cstack-setup-record.json"));
+    expect(failed.stderr).toContain("Run revert");
+    expect(setupRecord(home).phase).toBe("applying");
+    expect(setupRun(home, "revert").status).toBe(0);
+    expect(readFileSync(builder, "utf8")).toBe("MY OWN BUILDER\n");
+  });
+});
+
+test("setup safety does not recreate a retired installer link after the installer drops its entry", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const builder = join(home, ".intent/specialists/cstack-agent.md");
+    mkdirSync(dirname(builder));
+    const target = join(root, "agents/cstack-agent.md");
+    symlinkSync(target, builder);
+    const installation = installRecord(home);
+    installation.entries.push({ path: builder, kind: "link", target });
+    writeFileSync(join(home, ".local/share/cstack-install-record.json"), JSON.stringify(installation));
+    const persona = readFileSync(target, "utf8");
+    expect(setupApply(home).status).toBe(0);
+    expect(install(home).status).toBe(0);
+    const reverted = setupRun(home, "revert");
+    expect(reverted.status).toBe(0);
+    expect(reverted.stdout).toContain(`Removed ${builder}. The installer no longer owns its prior link.`);
+    expect(existsSync(builder)).toBe(false);
+    expect(readFileSync(target, "utf8")).toBe(persona);
+    expect(setupRun(home, "report", setupInput(home)).status).toBe(0);
+    expect(setupApply(home).status).toBe(0);
+  });
+});
+
 const root = resolve(import.meta.dir, "../..");
 const script = join(root, "hooks/intent-deliver.sh");
 

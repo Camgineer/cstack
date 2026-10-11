@@ -48,13 +48,13 @@ The record governs only entries in your host folders. It stores a link's exact t
 
 The record stays outside the copy during replacement. After an interrupted swap, the next run builds a fresh copy when the live path is missing, or replaces the checked live copy as usual. If another install interrupts the swap, the error asks you to rerun and names the temporary folder left for you to inspect. Earlier leftover folders stay untouched. The installer never scans them or reads a record from inside them. Files are written beside their destinations before being renamed into place, so hard-linked backups keep their previous bytes and permissions.
 
-On the first install Intent adds this mode rule at the top of your personal rule text under **Settings**, **Agent Behavior**. It exempts a thin seat whether its file arrives as a registered specialist or in the brief. The lead and builder still read the mode.
+On the first install Intent adds this mode rule at the top of your personal rule text under **Settings**, **Agent Behavior**. It exempts a thin seat whether its file arrives as a registered specialist or in the brief. The provider's session-start reminder uses the same exemption. The lead and builder still read the mode.
 
 ```markdown
 Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session, unless a plugin seat file in your instructions says "Set the plugin's mode aside for this task". In that case, your brief is the whole task.
 ```
 
-Updates replace only a first paragraph that exactly matches a rule an earlier release wrote. They keep the rest of your text and the rule's enabled state. An edited, moved, or removed rule stays unchanged. The final table reports the replacement, or says that new rule text is available and gives you the text to paste. If the installer cannot reach Intent, it also prints the text. Run `setup` to configure specialists and other settings. Installing does not create specialists.
+Updates replace only a first paragraph that matches a rule an earlier release wrote, ignoring trailing whitespace. They keep that whitespace, the rest of your text, and the rule's enabled state. Any other edit, a moved rule, or a removed rule stays unchanged. The final table reports the replacement, or says that new rule text is available and gives you the text to paste. If the installer cannot reach Intent, it also prints the text. Run `setup` to configure specialists and other settings. Installing does not create specialists.
 
 A failure in one host does not stop the others. The command exits nonzero for command or inspection failures. Preserving your own file is a successful result. On a new computer, run the same command and select the hosts you want.
 

@@ -405,6 +405,17 @@ test("the installed mode rule's exemption matches every generated thin seat and 
     const exemption = rule.match(/"([^"]+)"/);
     if (!exemption) throw new Error("The installed rule does not quote a seat exemption");
     const plugin = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8")).name;
+    const exemptionText = rule.match(/unless .+$/);
+    if (!exemptionText) throw new Error("The installed rule does not state its exemption");
+    const providerRoot = dirname(dirname(from));
+    const hooks = JSON.parse(readFileSync(join(providerRoot, "hooks/hooks.json"), "utf8"));
+    const reminder = spawnSync("sh", ["-c", hooks.hooks.SessionStart[0].hooks[0].command], {
+      cwd: home, input: JSON.stringify({ cwd: home, source: "startup" }), encoding: "utf8",
+      env: { PATH: process.env.PATH, HOME: home, XDG_STATE_HOME: join(home, "state"), CLAUDE_PLUGIN_ROOT: providerRoot, [plugin.toUpperCase().replaceAll("-", "_") + "_MODE"]: "on" },
+    });
+    expect(reminder.status).toBe(0);
+    expect(reminder.stderr).toBe("");
+    expect(JSON.parse(reminder.stdout).hookSpecificOutput.additionalContext).toContain(exemptionText[0]);
     const runtime = readFileSync(join(root, "skills/cstack-mode/references/runtime.md"), "utf8");
     const table = runtime.match(/<!-- seats:start -->([\s\S]*?)<!-- seats:end -->/);
     if (!table) throw new Error("The generated seat table is missing");
@@ -443,7 +454,7 @@ test.each([true, false])("the command upgrades an exact earlier first paragraph 
     expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
     const rule = "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session, unless a plugin seat file in your instructions says \"Set the plugin's mode aside for this task\". In that case, your brief is the whole task.";
     const earlier = "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session.";
-    for (const rest of ["", "\n\nMy rule.\n\nKeep this spacing.\n", "\r\n\r\nMy rule.\r\n", "\n \nMy rule."]) {
+    for (const rest of ["", "\n", "\r\n", " \t", " \t\r\n", " \t\n\nMy rule.\n", "\n\nMy rule.\n\nKeep this spacing.\n", "\r\n\r\nMy rule.\r\n", "\n \nMy rule."]) {
       writeFileSync(files.state, JSON.stringify({ content: earlier + rest, enabled }));
       writeFileSync(files.updates, "");
       const result = commandRun(home, ["--hosts", "intent"], from);
@@ -460,9 +471,9 @@ test.each([true, false])("the command upgrades an exact earlier first paragraph 
       expect(readFileSync(files.updates, "utf8").trim().split("\n")).toHaveLength(1);
     }
   });
-}, 15000);
+}, 30000);
 
-test.each(["edited", "leading space", "trailing space", "same paragraph", "moved", "removed", "empty"])("the command preserves the %s personal rule and offers the new text", (kind) => {
+test.each(["edited", "edited trailing whitespace", "leading space", "same paragraph", "moved", "removed", "empty"])("the command preserves the %s personal rule and offers the new text", (kind) => {
   withHome((home) => {
     const from = fetchedPackage(home);
     const files = ruleCommand(home, { content: "", enabled: true });
@@ -476,7 +487,7 @@ test.each(["edited", "leading space", "trailing space", "same paragraph", "moved
     const content = {
       edited: earlier.replace("Before any other step", "When I ask"),
       "leading space": " " + earlier,
-      "trailing space": earlier + " ",
+      "edited trailing whitespace": earlier.replace("Before any other step", "When I ask") + " \t\r\n",
       "same paragraph": earlier + "\nMy rule.",
       moved: "My rule.\n\n" + earlier,
       removed: "My replacement rule.",
@@ -490,6 +501,7 @@ test.each(["edited", "leading space", "trailing space", "same paragraph", "moved
     const row = result.stdout.split("\n").find((line) => /^Intent\s/.test(line));
     expect(row).toContain("Left the cstack-mode rule unchanged in Intent's Settings, under Agent Behavior");
     expect(row).toContain("New rule text is available. To use it, paste this at the top of your personal rule text");
+    expect(row).toContain("paste this at the top of your personal rule text: Before any other step");
     expect(row).toContain("Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session, unless a plugin seat file in your instructions says \"Set the plugin's mode aside for this task\". In that case, your brief is the whole task.");
     expect(readFileSync(files.state, "utf8")).toBe(personal);
     expect(readFileSync(files.updates, "utf8")).toBe(writes);

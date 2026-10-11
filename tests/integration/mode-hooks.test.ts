@@ -115,6 +115,8 @@ describe("persistent mode hooks", () => {
       for (const source of ["startup", "resume", "clear", "compact"]) {
         const restored = context(fireHooksJson("SessionStart", { cwd: join(project, "src"), source }, state));
         expect(restored).toContain(`Invoke the ${pluginName}:${mode} skill now`);
+        expect(restored).toContain("unless a plugin seat file in your instructions says \"Set the plugin's mode aside for this task\". In that case, your brief is the whole task.");
+        expect(restored).toContain("If the mode applies and you cannot invoke a skill by name");
         expect(restored).toContain(join(root, "skills", mode, "SKILL.md"));
       }
 
@@ -146,6 +148,8 @@ describe("persistent mode hooks", () => {
       const on = { [variable]: "on" };
       const claude = context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state, on));
       expect(claude).toContain(`Invoke the ${pluginName}:${mode} skill now`);
+      expect(claude).toContain("unless a plugin seat file in your instructions says \"Set the plugin's mode aside for this task\". In that case, your brief is the whole task.");
+      expect(claude).toContain("If the mode applies and you cannot invoke a skill by name");
       expect(claude).toContain(`${variable}=on in the environment turns it on in every project the user has not turned off`);
       expect(fireCursorStart(project, state, on)).toBe(claude);
 
@@ -191,6 +195,7 @@ describe("persistent mode hooks", () => {
       expect(fireCursorStart(project, state)).toBe("");
       cli(["on"], join(project, "src"), state);
       expect(fireCursorStart(project, state)).toContain(`run: sh '${join(root, "hooks/mode.sh")}' off`);
+      expect(fireCursorStart(project, state)).toBe(context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state)));
     });
   });
 

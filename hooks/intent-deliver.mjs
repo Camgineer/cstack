@@ -231,7 +231,8 @@ function main() {
     const earlierRules = [
       `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session.`,
     ];
-    const rule = `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session, unless a plugin seat file in your instructions says "Set the plugin's mode aside for this task". In that case, your brief is the whole task.`;
+    const exemption = readFileSync(join(source, "hooks/mode-exemption.txt"), "utf8").trimEnd();
+    const rule = `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session, ${exemption}`;
     const binary = intentCommand();
     modeRule = { location, status: "manual" };
     const unchanged = `Left the ${name}-mode rule unchanged in ${location}.`;
@@ -241,7 +242,7 @@ function main() {
         const call = (method, params) => JSON.parse(execFileSync(binary, ["call", method, "--params", JSON.stringify(params)], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 120000, killSignal: "SIGKILL" }));
         const key = { workspaceId: "global", ruleType: "workspace" };
         const current = call("rules.get", key);
-        const firstParagraph = current.content.split(/\r?\n[ \t]*\r?\n/, 1)[0];
+        const firstParagraph = current.content.split(/\r?\n[ \t]*\r?\n/, 1)[0].trimEnd();
         if (earlierRules.includes(firstParagraph)) {
           call("rules.update", { ...key, content: rule + current.content.slice(firstParagraph.length), enabled: current.enabled });
           modeRule.status = "existing";

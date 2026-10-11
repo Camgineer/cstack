@@ -6,6 +6,7 @@ set -eu
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 name=$(sed -n 's/^[[:space:]]*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$root/tools/metadata.json" 2>/dev/null | head -n 1)
 mode="${name:-plugin}-mode"
+exemption=$(cat "$root/hooks/mode-exemption.txt")
 case "${HOME:-}" in /*) ;; *) echo "HOME must be an absolute path." >&2; exit 2 ;; esac
 case "${XDG_STATE_HOME:-}" in
   /*) state_home=$XDG_STATE_HOME ;;
@@ -71,8 +72,8 @@ emit() {
 
 # Hosts load a named skill without a file-read permission prompt, so name it first and keep the path as the fallback.
 reminder() {
-  printf '%s is on for %s. Invoke the %s skill now and apply it to every task in this session. If you cannot invoke a skill by name, read %s in full instead. It stays on until the user turns it off. If the user asks to turn it off, run: sh %s off.%s\n' \
-    "$mode" "$1" "${name:-plugin}:$mode" "$root/skills/$mode/SKILL.md" "'$root/hooks/mode.sh'" "$(env_switch_note)"
+  printf '%s is on for %s. Invoke the %s skill now and apply it to every task in this session, %s If the mode applies and you cannot invoke a skill by name, read %s in full instead. It stays on until the user turns it off. If the user asks to turn it off, run: sh %s off.%s\n' \
+    "$mode" "$1" "${name:-plugin}:$mode" "$exemption" "$root/skills/$mode/SKILL.md" "'$root/hooks/mode.sh'" "$(env_switch_note)"
 }
 
 command=${1:-}

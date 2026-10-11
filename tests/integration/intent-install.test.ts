@@ -642,6 +642,82 @@ test.each(["live unrelated process", "other user's process", "unfinished acquisi
   });
 });
 
+test("setup recovery tells a competing command to wait and rerun the same command", () => {
+  for (const stage of ["acquisition", "owner lock"]) for (const command of ["apply", "revert"]) {
+    withHome((home) => {
+      setupFixture(home);
+      const approval = setupApproval(home);
+      const args = [...setupInput(home), "--yes", "--approval", approval];
+      const lock = join(home, ".local/share/cstack-setup-record.json.lock");
+      const record = join(home, ".local/share/cstack-setup-record.json");
+      const resultPath = join(home, "competing-result.json");
+      const fault = join(home, "competing-run.cjs");
+      writeFileSync(fault, `const fs = require('node:fs');
+const open = fs.openSync, rename = fs.renameSync;
+let started = false;
+function compete() {
+  if (started) return;
+  started = true;
+  const before = fs.readFileSync(${JSON.stringify(lock)}, 'utf8');
+  const result = require('node:child_process').spawnSync(process.execPath, [${JSON.stringify(setupScript)}, ${JSON.stringify(command)}, ...${JSON.stringify(command === "apply" ? args : [])}], {env: {...process.env, NODE_OPTIONS: ''}, encoding: 'utf8', timeout: 4000});
+  fs.writeFileSync(${JSON.stringify(resultPath)}, JSON.stringify({status: result.status, stderr: result.stderr, lockBefore: before, lockAfter: fs.readFileSync(${JSON.stringify(lock)}, 'utf8')}));
+}
+fs.openSync = function(path, flags) {
+  const fd = open.apply(this, arguments);
+  if (${JSON.stringify(stage)} === 'acquisition' && path === ${JSON.stringify(lock)} && flags === 'wx') compete();
+  return fd;
+};
+fs.renameSync = function(from, to) {
+  if (${JSON.stringify(stage)} === 'owner lock' && to === ${JSON.stringify(record)}) compete();
+  return rename.apply(this, arguments);
+};
+require('node:module').syncBuiltinESMExports();`);
+      const winner = setupRun(home, "apply", args, { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` });
+      expect(winner.status).toBe(0);
+      const loser = JSON.parse(readFileSync(resultPath, "utf8"));
+      expect(loser.status).toBe(2);
+      expect(loser.stderr).toContain(`Setup is locked at ${lock}${stage === "acquisition" ? ".acquire" : ""}.`);
+      expect(loser.stderr).toContain(`Wait for any active setup run to finish, then run the same ${command} command again.`);
+      expect(loser.stderr).toContain(`Then run the same ${command} command again.`);
+      expect(loser.stderr).not.toContain("Then run revert.");
+      expect(loser.lockAfter).toBe(loser.lockBefore);
+      expect(setupRecord(home).phase).toBe("ready");
+      expect(setupRecord(home).changes).toHaveLength(8);
+      expect(readFileSync(join(home, ".intent/specialists/cstack-worker.md"), "utf8")).toContain('model: "fixture-model"');
+      expect(existsSync(lock)).toBe(false);
+      expect(existsSync(`${lock}.acquire`)).toBe(false);
+    });
+  }
+});
+
+test("setup recovery reports a recorded but unwritten file without blaming the person", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const path = join(home, ".intent/specialists/cstack-advisor.md");
+    const fault = join(home, "stop-before-write.cjs");
+    writeFileSync(fault, `const fs = require('node:fs');
+const open = fs.openSync;
+fs.openSync = function(path, flags) {
+  if (flags === 'wx' && require('node:path').dirname(path) === ${JSON.stringify(dirname(path))}) process.kill(process.pid, 'SIGKILL');
+  return open.apply(this, arguments);
+};
+require('node:module').syncBuiltinESMExports();`);
+    const interrupted = setupApply(home, [], { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` });
+    expect(interrupted.signal).toBe("SIGKILL");
+    expect(setupRecord(home).phase).toBe("applying");
+    expect(setupRecord(home).pending.map((change: { path: string }) => change.path)).toEqual([path]);
+    expect(existsSync(path)).toBe(false);
+    const recovered = setupRun(home, "revert");
+    expect(recovered.status).toBe(0);
+    expect(recovered.stdout).toContain(`Already absent ${path}. There is nothing to undo.`);
+    expect(recovered.stdout).not.toContain("You deleted it after setup.");
+    expect(recovered.stdout).toContain("Recovered the interrupted apply.");
+    expect(existsSync(path)).toBe(false);
+    expect(existsSync(join(home, ".local/share/cstack-setup-record.json"))).toBe(false);
+    expect(setupRun(home, "revert").stdout).toBe("Nothing to revert.\n");
+  });
+});
+
 test("setup recovery lets only one command take over the same stale lock", () => {
   withHome((home) => {
     setupFixture(home);

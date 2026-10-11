@@ -14,7 +14,9 @@ const physical = (path) => existsSync(path) ? realpathSync(path) : join(physical
 const data = join(physical(resolve(process.env.XDG_DATA_HOME ?? join(home, ".local/share"))), name);
 const skills = physical(join(home, ".intent/skills"));
 const specialists = physical(join(home, ".intent/specialists"));
-const recordPath = join(data, "install-record.json");
+const recordPath = join(dirname(data), `${name}-install-record.json`);
+const legacyRecordPath = join(data, "install-record.json");
+const swapPath = join(dirname(data), `.${name}-swap.json`);
 const location = "Intent's Settings, under Agent Behavior";
 const root = existsSync(join(source, ".git")) ? source : data;
 const fingerprint = (path) => {
@@ -30,14 +32,14 @@ const within = (base, path) => {
   return suffix !== "" && suffix !== ".." && !suffix.startsWith("../") && !isAbsolute(suffix);
 };
 function allowed(path) {
-  if (typeof path !== "string" || resolve(path) !== path || path === recordPath || basename(path).startsWith(".install-record-")) return false;
+  if (typeof path !== "string" || resolve(path) !== path || path === recordPath || path === legacyRecordPath || basename(path).startsWith(".install-record-")) return false;
   if (!(within(data, path) || dirname(path) === skills || dirname(path) === specialists)) return false;
   return physical(dirname(path)) === dirname(path);
 }
-function loadRecord() {
+function loadRecord(path = fingerprint(recordPath) ? recordPath : legacyRecordPath) {
   try {
-    if (lstatSync(recordPath).isSymbolicLink()) throw new Error("The record is a link.");
-    const record = JSON.parse(readFileSync(recordPath, "utf8"));
+    if (!lstatSync(path).isFile()) throw new Error("The record is not a regular file.");
+    const record = JSON.parse(readFileSync(path, "utf8"));
     if (record.schemaVersion !== 1 || !Array.isArray(record.entries) || record.entries.length === 0 || !record.modeRule || record.modeRule.location !== location || !["added", "existing", "manual", "unchanged"].includes(record.modeRule.status)) throw new Error("Invalid record.");
     const paths = new Set();
     for (const entry of record.entries) {
@@ -50,7 +52,7 @@ function loadRecord() {
   }
 }
 function replaceFile(path, content, mode = 0o644) {
-  const temporary = join(dirname(path), `.${basename(path)}-${randomUUID()}.tmp`);
+  const temporary = join(dirname(path), `.${path === recordPath ? "install-record" : basename(path)}-${randomUUID()}.tmp`);
   const descriptor = openSync(temporary, "wx", mode);
   try {
     try {
@@ -60,37 +62,87 @@ function replaceFile(path, content, mode = 0o644) {
     renameSync(temporary, path);
   } finally { rmSync(temporary, { force: true }); }
 }
+function pluginCopy(path) {
+  try {
+    const metadata = join(path, "tools/metadata.json");
+    return lstatSync(path).isDirectory() && lstatSync(join(path, "tools")).isDirectory() && lstatSync(metadata).isFile() && JSON.parse(readFileSync(metadata, "utf8"))?.name === name;
+  } catch { return false; }
+}
+function overlapsProtected(path) {
+  const hosts = [".intent", ".claude", ".codex", ".cursor"].flatMap((host) => [host, `${host}/skills`, `${host}/specialists`, `${host}/plugins`, `${host}/plugins/cache`, `${host}/plugins/marketplaces`]);
+  const protectedPaths = [home, recordPath, swapPath, skills, specialists, ...hosts.map((host) => join(home, host))].map(physical);
+  return path === dirname(path) || protectedPaths.some((protectedPath) => path === protectedPath || within(path, protectedPath));
+}
+function preflight() {
+  if (fingerprint(data)?.kind === "link") throw new Error(`kept ${data}: the plugin data folder is a link. Move that link aside before installing.`);
+  if (overlapsProtected(data)) throw new Error(`kept ${data}: the copy path overlaps a protected home, host folder, or installation record. Choose a separate data folder.`);
+  if (fingerprint(data) && !pluginCopy(data)) throw new Error(`kept ${data}: it is not a copy of this plugin`);
+  for (const path of [recordPath, swapPath]) {
+    const entry = fingerprint(path);
+    if (entry && entry.kind !== "file") throw new Error(`kept ${path}: this protected installation state is not a regular file. Move it aside before installing.`);
+  }
+}
+function recoverCopy() {
+  let swap;
+  if (fingerprint(swapPath)) swap = JSON.parse(readFileSync(swapPath, "utf8"));
+  else {
+    if (!existsSync(dirname(data))) return;
+    const leftovers = readdirSync(dirname(data)).filter((path) => path.startsWith(`.${name}-install-`)).map((path) => join(dirname(data), path)).filter((path) => {
+      if (fingerprint(path)?.kind !== "directory" || !pluginCopy(join(path, "previous"))) return false;
+      if (readdirSync(path).some((entry) => !["copy", "previous"].includes(entry))) return false;
+      return !fingerprint(join(path, "copy")) || pluginCopy(join(path, "copy"));
+    });
+    if (leftovers.length === 0) return;
+    if (leftovers.length !== 1) throw new Error(`kept ${data}: more than one interrupted plugin copy swap needs recovery.`);
+    swap = { schemaVersion: 1, name, data, staging: leftovers[0] };
+  }
+  if (swap?.schemaVersion !== 1 || swap.name !== name || swap.data !== data || typeof swap.staging !== "string" || dirname(swap.staging) !== dirname(data) || !basename(swap.staging).startsWith(`.${name}-install-`) || physical(swap.staging) !== swap.staging || overlapsProtected(swap.staging) || swap.staging === source || within(swap.staging, source)) throw new Error(`kept ${swapPath}: the interrupted swap has invalid or protected paths.`);
+  const staging = swap.staging;
+  if (fingerprint(staging)) {
+    if (!lstatSync(staging).isDirectory() || readdirSync(staging).some((path) => !["copy", "previous"].includes(path))) throw new Error(`kept ${staging}: the interrupted swap folder is unrecognized.`);
+    const previous = join(staging, "previous");
+    const incoming = join(staging, "copy");
+    if (fingerprint(previous) && !pluginCopy(previous) || fingerprint(incoming) && !lstatSync(incoming).isDirectory()) throw new Error(`kept ${staging}: the interrupted swap contains an unrecognized copy.`);
+    if (!fingerprint(recordPath) && fingerprint(join(previous, "install-record.json"))) {
+      const loaded = loadRecord(join(previous, "install-record.json"));
+      if (loaded.state === "valid") replaceFile(recordPath, JSON.stringify({ ...loaded.record, entries: loaded.record.entries.filter((entry) => !within(data, entry.path)) }) + "\n");
+    }
+    if (!fingerprint(data) && fingerprint(previous)) {
+      renameSync(previous, data);
+      console.log(`Recovered the interrupted plugin copy swap by restoring ${data}.`);
+    } else console.log(`Recovered the interrupted plugin copy swap at ${data}.`);
+    rmSync(staging, { recursive: true, force: true });
+  } else {
+    if (!pluginCopy(data)) throw new Error(`kept ${swapPath}: no plugin copy survives the interrupted swap.`);
+    console.log(`Recovered the interrupted plugin copy swap at ${data}.`);
+  }
+  if (fingerprint(swapPath)) unlinkSync(swapPath);
+}
 function replaceCopy() {
   mkdirSync(dirname(data), { recursive: true });
   const staging = mkdtempSync(join(dirname(data), `.${name}-install-`));
   const incoming = join(staging, "copy");
   const previous = join(staging, "previous");
-  let installed = false;
-  try {
-    mkdirSync(incoming);
-    const copy = (relativePath) => {
-      const path = join(source, relativePath);
-      const destination = join(incoming, relativePath);
-      const stat = lstatSync(path);
-      if (stat.isDirectory()) {
-        mkdirSync(destination, { recursive: true });
-        for (const child of readdirSync(path).sort()) if (child !== "node_modules") copy(join(relativePath, child));
-      } else {
-        mkdirSync(dirname(destination), { recursive: true });
-        if (stat.isSymbolicLink()) symlinkSync(readlinkSync(path), destination);
-        else replaceFile(destination, readFileSync(path), stat.mode & 0o777);
-      }
-    };
-    for (const path of ["agents", "hooks", "skills", "tools/metadata.json", "LICENSE"]) if (existsSync(join(source, path))) copy(path);
-    if (existsSync(data)) renameSync(data, previous);
-    try { renameSync(incoming, data); installed = true; }
-    catch (error) {
-      if (existsSync(previous)) renameSync(previous, data);
-      throw error;
+  replaceFile(swapPath, JSON.stringify({ schemaVersion: 1, name, data, staging }) + "\n");
+  mkdirSync(incoming);
+  const copy = (relativePath) => {
+    const path = join(source, relativePath);
+    const destination = join(incoming, relativePath);
+    const stat = lstatSync(path);
+    if (stat.isDirectory()) {
+      mkdirSync(destination, { recursive: true });
+      for (const child of readdirSync(path).sort()) if (child !== "node_modules") copy(join(relativePath, child));
+    } else {
+      mkdirSync(dirname(destination), { recursive: true });
+      if (stat.isSymbolicLink()) symlinkSync(readlinkSync(path), destination);
+      else replaceFile(destination, readFileSync(path), stat.mode & 0o777);
     }
-  } finally {
-    if (installed || !existsSync(previous)) rmSync(staging, { recursive: true, force: true });
-  }
+  };
+  for (const path of ["agents", "hooks", "skills", "tools/metadata.json", "LICENSE"]) if (existsSync(join(source, path))) copy(path);
+  if (existsSync(data)) renameSync(data, previous);
+  renameSync(incoming, data);
+  rmSync(staging, { recursive: true, force: true });
+  unlinkSync(swapPath);
   console.log(`copied the plugin to ${data}`);
 }
 function intentCommand() {
@@ -111,29 +163,21 @@ function intentCommand() {
 }
 function main() {
   const { values } = parseArgs({ options: { "report-only": { type: "boolean" } } });
-  const loaded = loadRecord();
   if (values["report-only"]) {
     console.log("Report only. No install, update, move, delivery, or rule write was run.");
-    console.log(`Installation record ${recordPath} is ${loaded.state}.`);
+    console.log(`Installation record ${recordPath} is ${loadRecord().state}.`);
     console.log(`The always-on mode rule belongs in ${location}.`);
     return;
   }
-  if (fingerprint(data)?.kind === "link") {
-    process.stderr.write(`kept ${data}: the plugin data folder is a link. Move that link aside before installing.\n`);
-    process.exitCode = 2;
-    return;
-  }
-  if (root === data && existsSync(data) && loaded.state !== "valid" && !existsSync(join(data, "tools/metadata.json")) && (!existsSync(recordPath) || readdirSync(data).some((entry) => entry !== "install-record.json"))) {
-    process.stderr.write(`kept ${data}: it is not a copy of this plugin\n`);
-    process.exitCode = 2;
-    return;
-  }
+  preflight();
+  recoverCopy();
+  const loaded = loadRecord();
   const previous = new Map(loaded.record.entries.filter((entry) => !within(data, entry.path)).map((entry) => [entry.path, entry]));
   const owned = new Map(previous);
   const desired = new Set();
   let modeRule = loaded.record.modeRule;
   const save = () => {
-    mkdirSync(data, { recursive: true });
+    mkdirSync(dirname(recordPath), { recursive: true });
     replaceFile(recordPath, JSON.stringify({ schemaVersion: 1, entries: [...owned.values()].sort((a, b) => a.path.localeCompare(b.path)), modeRule }, null, 2) + "\n");
   };
   const mode = join(skills, `${name}-mode`);
@@ -181,8 +225,8 @@ function main() {
   }
   if (loaded.state !== "valid") console.log(`Installation record ${loaded.state}. No host entries were removed.`);
   if (root === data) {
-    replaceCopy();
     save();
+    replaceCopy();
   }
   for (const directory of readdirSync(join(source, "skills")).sort()) {
     const skill = join(source, "skills", directory, "SKILL.md");

@@ -880,7 +880,7 @@ test.each([
 });
 
 function installRecord(home: string) {
-  return JSON.parse(readFileSync(join(home, ".local/share/cstack/install-record.json"), "utf8"));
+  return JSON.parse(readFileSync(join(home, ".local/share/cstack-install-record.json"), "utf8"));
 }
 
 test("delivery records host links and keeps copied files outside the ownership record", () => {
@@ -904,7 +904,7 @@ test("a valid record never claims an unrecorded link even when it points at the 
     const record = installRecord(home);
     const path = join(home, ".intent/skills/how");
     record.entries = record.entries.filter((entry: { path: string }) => entry.path !== path);
-    writeFileSync(join(home, ".local/share/cstack/install-record.json"), JSON.stringify(record));
+    writeFileSync(join(home, ".local/share/cstack-install-record.json"), JSON.stringify(record));
     const result = install(home);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("left your own how as it is");
@@ -988,7 +988,7 @@ test.each(["missing", "unreadable", "outside path"])("a %s record removes no unp
     const plugin = join(cache, "node_modules/cstack");
     copyPlugin(plugin);
     expect(npxInstall(home, cache).status).toBe(0);
-    const path = join(home, ".local/share/cstack/install-record.json");
+    const path = join(home, ".local/share/cstack-install-record.json");
     const protectedFile = join(home, "keep.txt");
     writeFileSync(protectedFile, "Keep me.\n");
     if (state === "missing") rmSync(path);
@@ -1073,7 +1073,7 @@ test("the record follows XDG_DATA_HOME and leaves no default data folder", () =>
     const data = join(home, "custom data");
     const result = spawnSync("sh", [script], { env: { HOME: home, PATH: join(home, "bin"), XDG_DATA_HOME: data }, encoding: "utf8" });
     expect(result.status).toBe(0);
-    const record = JSON.parse(readFileSync(join(data, "cstack/install-record.json"), "utf8"));
+    const record = JSON.parse(readFileSync(join(data, "cstack-install-record.json"), "utf8"));
     expect(record.entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(root, "skills/how") });
     expect(existsSync(join(home, ".local/share/cstack"))).toBe(false);
     expect(readlinkSync(join(home, ".intent/skills/how"))).toBe(join(root, "skills/how"));
@@ -1135,9 +1135,10 @@ test("copy updates preserve hard-linked personal backups and the previous record
     const installed = join(data, "hooks/example.txt");
     const backup = join(home, "personal-backup.txt");
     const recordBackup = join(home, "record-backup.json");
-    const recordBefore = readFileSync(join(data, "install-record.json"), "utf8");
+    const recordPath = join(dirname(data), "cstack-install-record.json");
+    const recordBefore = readFileSync(recordPath, "utf8");
     linkSync(installed, backup);
-    linkSync(join(data, "install-record.json"), recordBackup);
+    linkSync(recordPath, recordBackup);
     writeFileSync(sourceFile, "Replacement.\n");
     chmodSync(sourceFile, 0o600);
     expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
@@ -1210,7 +1211,7 @@ test.each(["empty object", "wrong name", "directory", "linked metadata", "valid 
   });
 });
 
-test.each(["home", "ancestor", "linked parent", "intent skills", "intent specialists", "codex folder", "record target"])("copy path refusal preserves protected folders at %s", (kind) => {
+test.each(["home", "ancestor", "linked parent", "intent skills", "intent specialists", "codex folder", "codex skills", "claude cache", "record target"])("copy path refusal preserves protected folders at %s", (kind) => {
   withHome((outer) => {
     const from = fetchedPackage(outer);
     let home = join(outer, "home");
@@ -1241,10 +1242,12 @@ test.each(["home", "ancestor", "linked parent", "intent skills", "intent special
       mkdirSync(join(data, "host"));
       writeFileSync(join(data, "host/personal"), "My redirected host entry.\n");
       symlinkSync(join(data, "host"), redirected);
-    } else if (kind === "codex folder") {
+    } else if (["codex folder", "codex skills", "claude cache"].includes(kind)) {
       mkdirSync(join(data, "host"));
       writeFileSync(join(data, "host/personal"), "My redirected host entry.\n");
-      symlinkSync(join(data, "host"), join(home, ".codex"));
+      const hostPath = join(home, kind === "codex folder" ? ".codex" : kind === "codex skills" ? ".codex/skills" : ".claude/plugins/cache");
+      mkdirSync(dirname(hostPath), { recursive: true });
+      symlinkSync(join(data, "host"), hostPath);
     } else if (kind === "record target") {
       writeFileSync(join(data, "personal-record.json"), "My personal record.\n");
       symlinkSync(join(data, "personal-record.json"), join(dirname(data), "cstack-install-record.json"));
@@ -1376,5 +1379,97 @@ test("the final table summarizes many preserved host entries with a count and on
     expect(row).not.toContain("left your own how");
     expect(row).not.toContain("left your own why");
     for (const skill of ["how", "why", "align"]) expect(readFileSync(join(skills, skill), "utf8")).toBe("My host skill.\n");
+  });
+});
+
+
+test.each(["parent link", "dot dot", "home"])("safe custom data location still installs through %s", (kind) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const target = join(home, "custom");
+    mkdirSync(target);
+    writeFileSync(join(target, "sibling.txt"), "Keep sibling.\n");
+    let xdg = target;
+    if (kind === "parent link") {
+      xdg = join(home, "alias");
+      symlinkSync(target, xdg);
+    }
+    if (kind === "dot dot") xdg = join(home, "unused") + "/../custom";
+    if (kind === "home") xdg = home;
+    const result = spawnSync("sh", [join(dirname(from), "intent-deliver.sh")], { env: { HOME: home, PATH: join(home, "bin"), XDG_DATA_HOME: xdg }, encoding: "utf8" });
+    expect(result.status).toBe(0);
+    expect(readFileSync(join(target, "sibling.txt"), "utf8")).toBe("Keep sibling.\n");
+    const parent = kind === "home" ? home : target;
+    expect(readFileSync(join(parent, "cstack/tools/metadata.json"), "utf8")).toBe(readFileSync(join(root, "tools/metadata.json"), "utf8"));
+    const record = JSON.parse(readFileSync(join(parent, "cstack-install-record.json"), "utf8"));
+    expect(record.entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(parent, "cstack/skills/how") });
+  });
+});
+
+test("a legacy host record moves outside the copy before replacement and still removes a retired link", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const shell = join(dirname(from), "intent-deliver.sh");
+    expect(install(home, shell).status).toBe(0);
+    const data = join(home, ".local/share/cstack");
+    const recordPath = join(dirname(data), "cstack-install-record.json");
+    const record = installRecord(home);
+    const retired = join(home, ".intent/skills/retired-before-record-move");
+    symlinkSync(join(data, "skills/retired-before-record-move"), retired);
+    record.entries.push({ path: retired, kind: "link", target: join(data, "skills/retired-before-record-move") });
+    writeFileSync(join(data, "install-record.json"), JSON.stringify(record));
+    rmSync(recordPath);
+    expect(install(home, shell).status).toBe(0);
+    expect(readdirSync(join(home, ".intent/skills"))).not.toContain("retired-before-record-move");
+    expect(installRecord(home).entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
+    expect(existsSync(join(data, "install-record.json"))).toBe(false);
+  });
+});
+
+test("legacy interrupted swaps restore the previous copy and its host record before delivery", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const shell = join(dirname(from), "intent-deliver.sh");
+    expect(install(home, shell).status).toBe(0);
+    const data = join(home, ".local/share/cstack");
+    const recordPath = join(dirname(data), "cstack-install-record.json");
+    const record = installRecord(home);
+    const retired = join(home, ".intent/skills/retired-before-swap-recovery");
+    symlinkSync(join(data, "skills/retired-before-swap-recovery"), retired);
+    record.entries.push({ path: retired, kind: "link", target: join(data, "skills/retired-before-swap-recovery") });
+    writeFileSync(join(data, "install-record.json"), JSON.stringify(record));
+    rmSync(recordPath);
+    const staging = mkdtempSync(join(dirname(data), ".cstack-install-"));
+    copyPlugin(join(staging, "copy"));
+    renameSync(data, join(staging, "previous"));
+    const before = homeSnapshot(home);
+    const report = spawnSync("sh", [shell, "--report-only"], { env: { HOME: home, PATH: join(home, "bin") }, encoding: "utf8" });
+    expect(report.status).toBe(0);
+    expect(homeSnapshot(home)).toEqual(before);
+    const result = install(home, shell);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Recovered the interrupted plugin copy swap by restoring");
+    expect(readdirSync(join(home, ".intent/skills"))).not.toContain("retired-before-swap-recovery");
+    expect(installRecord(home).entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
+    expect(existsSync(staging)).toBe(false);
+  });
+});
+
+test("swap recovery refuses a staging folder that contains redirected host data", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const parent = join(home, ".local/share");
+    const staging = join(parent, ".cstack-install-personal");
+    const personal = join(staging, "copy");
+    mkdirSync(personal, { recursive: true });
+    writeFileSync(join(personal, "notes.txt"), "My host notes.\n");
+    mkdirSync(join(home, ".intent"));
+    symlinkSync(personal, join(home, ".intent/skills"));
+    writeFileSync(join(parent, ".cstack-swap.json"), JSON.stringify({ schemaVersion: 1, name: "cstack", data: join(parent, "cstack"), staging }));
+    const before = homeSnapshot(home);
+    const result = install(home, join(dirname(from), "intent-deliver.sh"));
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("protected paths");
+    expect(homeSnapshot(home)).toEqual(before);
   });
 });

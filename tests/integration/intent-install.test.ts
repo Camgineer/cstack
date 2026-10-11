@@ -54,12 +54,14 @@ function setupRecord(home: string) {
 function setupInstructions(home: string, initial: string[], active: () => boolean) {
   return (result: CommandResult, args: string[]): Instruction[] => {
     const text = result.status === 2 ? result.stderr : "";
-    if (/^Setup is locked at .+\.$/m.test(text) && /^Nothing was removed\. Wait for any active setup run to finish, then run the same (apply|report|revert) command again\.$/m.test(text)) {
-      if (active()) return [{ kind: "wait" }, { kind: "run", args }];
+    const retry = /^Nothing was removed\. Wait for any active setup run to finish, then run the same (apply|report|revert) command again\.$/m.exec(text);
+    if (/^Setup is locked at .+\.$/m.test(text) && retry) {
+      const next = retry[1] === args[0] ? args : retry[1] === "revert" ? ["revert"] : [retry[1], ...setupInput(home)];
+      if (active()) return [{ kind: "wait" }, { kind: "run", args: next }];
       const move = /^mv '([^']+)' '([^']+)'$/m.exec(text);
       if (!move) throw new Error("The printed lock advice needs its exact move command.");
-      if (!existsSync(move[1])) return [{ kind: "run", args }];
-      return [{ kind: "move", from: move[1], to: move[2] }, { kind: "run", args }];
+      if (!existsSync(move[1])) return [{ kind: "run", args: next }];
+      return [{ kind: "move", from: move[1], to: move[2] }, { kind: "run", args: next }];
     }
     if (/^An apply was interrupted\. Run revert before a new report or apply\.$/m.test(text) || /^(Apply failed\. Rollback is incomplete\. Recovery remains at .+|Rollback is incomplete\. Recorded recovery remains at .+|Could not remove the empty directory .+\. Recovery remains at .+)\. Run revert to retry\.( .*)?$/m.test(text)) return [{ kind: "run", args: ["revert"] }, ...(args[0] === "revert" ? [] : [{ kind: "run", args } satisfies Instruction])];
     if (/^The approval digest does not match this report\. Show the new report and ask for a yes again\.$/m.test(text) || /^The setup record changed after the report\. Report again\.$/m.test(text)) return [{ kind: "run", args: ["report", ...setupInput(home)] }];

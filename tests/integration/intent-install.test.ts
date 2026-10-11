@@ -4,6 +4,304 @@ import { chmodSync, linkSync, cpSync, lstatSync, existsSync, mkdirSync, mkdtempS
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
+const setupScript = resolve(import.meta.dir, "../../hooks/intent-setup.mjs");
+const setupSeats = ["lead", "builder", "worker", "investigator", "reviewer", "verifier", "advisor", "scout"];
+
+function seatChoices() {
+  const first = { provider: "fixture-provider", model: "fixture-model", reasoningEffort: "fixture-effort" };
+  const second = { provider: "other-fixture-provider", model: "other-fixture-model", reasoningEffort: "other-fixture-effort" };
+  return Object.fromEntries(setupSeats.map((seat) => [seat, seat === "reviewer" || seat === "verifier" ? { ...first, modelOptions: [first, second] } : { ...first }]));
+}
+
+function setupFixture(home: string) {
+  expect(install(home).status).toBe(0);
+  writeFileSync(join(home, "choices.json"), JSON.stringify(seatChoices()));
+  writeFileSync(join(home, "catalog.json"), JSON.stringify({ providers: [
+    { id: "fixture-provider", models: [{ id: "fixture-model", efforts: ["fixture-effort"] }] },
+    { id: "other-fixture-provider", models: [{ id: "other-fixture-model", efforts: ["other-fixture-effort"] }] },
+  ] }));
+}
+
+function setupRun(home: string, command: string, args: string[] = [], env: Record<string, string> = {}) {
+  return spawnSync("node", [setupScript, command, ...args], { env: { HOME: home, PATH: join(home, "bin"), ...env }, encoding: "utf8", timeout: 10000 });
+}
+
+function setupInput(home: string) {
+  return ["--choices", join(home, "choices.json"), "--catalog", join(home, "catalog.json")];
+}
+
+function setupApproval(home: string, args: string[] = []) {
+  const result = setupRun(home, "report", [...setupInput(home), ...args]);
+  expect(result.status).toBe(0);
+  const approval: string = JSON.parse(result.stdout.slice(0, result.stdout.lastIndexOf("\n}") + 2)).approval;
+  return approval;
+}
+
+function setupApply(home: string, args: string[] = [], env: Record<string, string> = {}) {
+  const approval = setupApproval(home, args);
+  return setupRun(home, "apply", [...setupInput(home), ...args, "--yes", "--approval", approval], env);
+}
+
+function setupRecord(home: string) {
+  return JSON.parse(readFileSync(join(home, ".local/share/cstack-setup-record.json"), "utf8"));
+}
+
+test("setup reports old and new files, a no writes nothing, and an approved apply writes all eight explicit seats", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const before = homeSnapshot(home);
+    const report = setupRun(home, "report", setupInput(home));
+    expect(report.status).toBe(0);
+    expect(report.stdout).toContain('"before": {\n        "kind": "absent"');
+    expect(report.stdout).toContain("codingAgent: \\\"fixture-provider\\\"");
+    expect(homeSnapshot(home)).toEqual(before);
+    const no = setupRun(home, "apply", setupInput(home));
+    expect(no.status).toBe(0);
+    expect(no.stdout).toContain("Nothing was written.");
+    expect(homeSnapshot(home)).toEqual(before);
+    expect(setupApply(home).status).toBe(0);
+    const directory = join(home, ".intent/specialists");
+    expect(readdirSync(directory).sort()).toEqual(["cstack-advisor.md", "cstack-agent.md", "cstack-investigator.md", "cstack-lead.md", "cstack-reviewer.md", "cstack-scout.md", "cstack-verifier.md", "cstack-worker.md"]);
+    for (const file of readdirSync(directory)) {
+      expect(lstatSync(join(directory, file)).isFile()).toBe(true);
+      const written = readFileSync(join(directory, file), "utf8");
+      expect(written).toContain('codingAgent: "fixture-provider"\nmodel: "fixture-model"\nreasoningEffort: "fixture-effort"');
+      expect(written).toContain(`hidden: ${file !== "cstack-lead.md"}`);
+    }
+    expect(readFileSync(join(directory, "cstack-worker.md"), "utf8")).toContain(`Read the file at ${root}/agents/worker.md and follow it for the rest of the session.`);
+    expect(readFileSync(join(directory, "cstack-reviewer.md"), "utf8")).toContain('modelOptions: [{"provider":"fixture-provider","model":"fixture-model","reasoningEffort":"fixture-effort"},{"provider":"other-fixture-provider","model":"other-fixture-model","reasoningEffort":"other-fixture-effort"}]');
+    expect(setupRecord(home).phase).toBe("ready");
+    expect(setupRecord(home).changes).toHaveLength(8);
+    expect(lstatSync(join(home, ".local/share/cstack-setup-record.json")).mode & 0o777).toBe(0o600);
+    const after = homeSnapshot(home);
+    const undoReport = setupRun(home, "revert", ["--report-only"]);
+    expect(undoReport.status).toBe(0);
+    expect(JSON.parse(undoReport.stdout).changes[0].path).toBe(join(directory, "cstack-worker.md"));
+    expect(homeSnapshot(home)).toEqual(after);
+    expect(setupApply(home).stdout).toContain("Already set. Nothing was written.");
+    expect(homeSnapshot(home)).toEqual(after);
+    expect(setupRun(home, "revert").stdout).toContain("Revert complete.");
+    expect(readdirSync(directory)).toEqual([]);
+    const reverted = homeSnapshot(home);
+    expect(setupRun(home, "revert").stdout).toBe("Nothing to revert.\n");
+    expect(homeSnapshot(home)).toEqual(reverted);
+  });
+});
+
+test("setup keeps an edited file on revert and restores an approved personal builder file with its mode", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const directory = join(home, ".intent/specialists");
+    mkdirSync(directory);
+    const builder = join(directory, "cstack-agent.md");
+    const own = "My own specialist and model.\n";
+    writeFileSync(builder, own, { mode: 0o600 });
+    expect(install(home).status).toBe(0);
+    expect(readFileSync(builder, "utf8")).toBe(own);
+    const report = setupRun(home, "report", setupInput(home));
+    expect(report.stdout).toContain("My own specialist and model.");
+    expect(setupApply(home).status).toBe(0);
+    const edited = join(directory, "cstack-worker.md");
+    writeFileSync(edited, "My later edit.\n");
+    const result = setupRun(home, "revert");
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(`Kept ${edited}. You changed it after setup.`);
+    expect(readFileSync(edited, "utf8")).toBe("My later edit.\n");
+    expect(readFileSync(builder, "utf8")).toBe(own);
+    expect(lstatSync(builder).mode & 0o777).toBe(0o600);
+    expect(setupRecord(home).changes).toEqual([]);
+    expect(setupRun(home, "revert").stdout).toBe("Nothing to revert.\n");
+  });
+});
+
+test("an installer update preserves setup files and an edited seat needs a fresh approval", () => {
+  withHome((home) => {
+    setupFixture(home);
+    expect(setupApply(home).status).toBe(0);
+    const directory = join(home, ".intent/specialists");
+    const edited = join(directory, "cstack-worker.md");
+    writeFileSync(edited, "Keep this edit.\n");
+    const before = homeSnapshot(directory);
+    const recordBefore = readFileSync(join(home, ".local/share/cstack-setup-record.json"), "utf8");
+    const from = fetchedPackage(home);
+    expect(install(home, join(dirname(from), "intent-deliver.sh")).status).toBe(0);
+    expect(homeSnapshot(directory)).toEqual(before);
+    expect(readFileSync(join(home, ".local/share/cstack-setup-record.json"), "utf8")).toBe(recordBefore);
+    expect(setupRun(home, "apply", setupInput(home)).status).toBe(0);
+    expect(homeSnapshot(directory)).toEqual(before);
+    const approval = setupApproval(home);
+    writeFileSync(edited, "Changed after the report.\n");
+    const declined = setupRun(home, "apply", [...setupInput(home), "--yes", "--approval", approval]);
+    expect(declined.status).toBe(2);
+    expect(declined.stderr).toContain("approval digest does not match");
+    expect(readFileSync(edited, "utf8")).toBe("Changed after the report.\n");
+    expect(setupApply(home).status).toBe(0);
+    expect(readFileSync(edited, "utf8")).toContain(join(home, ".local/share/cstack/agents/worker.md"));
+    expect(setupRun(home, "revert").status).toBe(0);
+    expect(readFileSync(edited, "utf8")).toBe("Changed after the report.\n");
+  });
+});
+
+test.each(["missing provider", "missing model", "missing effort", "unavailable", "compound model", "wrong menu first", "duplicate menu", "no menu"])("setup refuses %s before any write", (kind) => {
+  withHome((home) => {
+    setupFixture(home);
+    const choices = seatChoices();
+    const input: Record<string, unknown> = { ...choices };
+    const keys: Record<string, string> = { "missing provider": "provider", "missing model": "model", "missing effort": "reasoningEffort" };
+    if (keys[kind]) input.investigator = Object.fromEntries(Object.entries(choices.investigator).filter(([key]) => key !== keys[kind]));
+    if (kind === "unavailable") input.scout = { ...choices.scout, model: "not-offered" };
+    if (kind === "compound model") input.scout = { ...choices.scout, model: "fixture-provider:fixture-model" };
+    const reviewer = choices.reviewer;
+    if (!("modelOptions" in reviewer)) throw new Error("The review fixture needs a menu.");
+    if (kind === "wrong menu first") input.reviewer = { ...reviewer, modelOptions: [...reviewer.modelOptions].reverse() };
+    if (kind === "duplicate menu") input.reviewer = { ...reviewer, modelOptions: [...reviewer.modelOptions, reviewer.modelOptions[0]] };
+    if (kind === "no menu") input.reviewer = Object.fromEntries(Object.entries(reviewer).filter(([key]) => key !== "modelOptions"));
+    writeFileSync(join(home, "choices.json"), JSON.stringify(input));
+    const before = homeSnapshot(home);
+    const result = setupRun(home, "apply", [...setupInput(home), "--yes"]);
+    expect(result.status).toBe(2);
+    expect(homeSnapshot(home)).toEqual(before);
+    expect(existsSync(join(home, ".intent/specialists"))).toBe(false);
+  });
+});
+
+test("setup refuses unrecorded links, restores recorded links, and offers all-visible fallback", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const directory = join(home, ".intent/specialists");
+    mkdirSync(directory);
+    const path = join(directory, "cstack-agent.md");
+    const target = join(root, "agents/cstack-agent.md");
+    symlinkSync(target, path);
+    const before = homeSnapshot(home);
+    const refused = setupRun(home, "report", setupInput(home));
+    expect(refused.status).toBe(2);
+    expect(refused.stderr).toContain("does not own this link");
+    expect(homeSnapshot(home)).toEqual(before);
+    const installation = installRecord(home);
+    installation.entries.push({ path, kind: "link", target });
+    writeFileSync(join(home, ".local/share/cstack-install-record.json"), JSON.stringify(installation));
+    const personaBefore = readFileSync(target, "utf8");
+    expect(setupApply(home, ["--show-all"]).status).toBe(0);
+    for (const file of readdirSync(directory)) expect(readFileSync(join(directory, file), "utf8")).toContain("hidden: false");
+    expect(readFileSync(target, "utf8")).toBe(personaBefore);
+    expect(setupRun(home, "revert").status).toBe(0);
+    expect(readlinkSync(path)).toBe(target);
+    expect(readFileSync(target, "utf8")).toBe(personaBefore);
+  });
+});
+
+test.each(["new record", "existing record"])("setup rolls back every file after a mid-apply filesystem failure with %s", (state) => {
+  withHome((home) => {
+    const previousSetup = state === "existing record";
+    setupFixture(home);
+    const recordPath = join(home, ".local/share/cstack-setup-record.json");
+    const directory = join(home, ".intent/specialists");
+    if (previousSetup) {
+      expect(setupApply(home).status).toBe(0);
+      expect(setupRun(home, "revert").status).toBe(0);
+      writeFileSync(join(directory, "cstack-agent.md"), "My earlier builder.\n", { mode: 0o600 });
+    }
+    const recordBefore = existsSync(recordPath) ? readFileSync(recordPath, "utf8") : "";
+    const fault = join(home, "failure.cjs");
+    writeFileSync(fault, `const fs = require('node:fs');
+const original = fs.renameSync;
+fs.renameSync = function(from, to) {
+  if (to.endsWith('/specialists/cstack-reviewer.md')) throw new Error('fixture disk failure');
+  return original.apply(this, arguments);
+};
+require('node:module').syncBuiltinESMExports();`);
+    const result = setupApply(home, [], { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` });
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("Apply failed. Rolled back this run.");
+    expect(result.stderr).toContain("fixture disk failure");
+    if (previousSetup) {
+      expect(readdirSync(directory)).toEqual(["cstack-agent.md"]);
+      expect(readFileSync(join(directory, "cstack-agent.md"), "utf8")).toBe("My earlier builder.\n");
+      expect(lstatSync(join(directory, "cstack-agent.md")).mode & 0o777).toBe(0o600);
+      expect(readFileSync(recordPath, "utf8")).toBe(recordBefore);
+    } else {
+      expect(existsSync(directory)).toBe(false);
+      expect(existsSync(recordPath)).toBe(false);
+    }
+    expect(setupApply(home).status).toBe(0);
+    expect(setupRun(home, "revert").status).toBe(0);
+  });
+});
+
+test("setup recovers an interrupted apply through revert without deleting an unrelated leftover", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const fault = join(home, "crash.cjs");
+    writeFileSync(fault, `const fs = require('node:fs');
+const original = fs.renameSync;
+fs.renameSync = function(from, to) {
+  const result = original.apply(this, arguments);
+  if (to.endsWith('/specialists/cstack-investigator.md')) process.kill(process.pid, 'SIGKILL');
+  return result;
+};
+require('node:module').syncBuiltinESMExports();`);
+    const result = setupApply(home, [], { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` });
+    expect(result.signal).toBe("SIGKILL");
+    expect(setupRecord(home).phase).toBe("applying");
+    expect(setupRun(home, "revert").stderr).toContain("Setup is locked");
+    rmSync(join(home, ".local/share/cstack-setup-record.json.lock"));
+    const leftover = join(home, ".intent/specialists/personal.md");
+    writeFileSync(leftover, "My unrelated file.\n");
+    const recovered = setupRun(home, "revert");
+    expect(recovered.status).toBe(0);
+    expect(recovered.stdout).toContain("Recovered the interrupted apply.");
+    expect(readFileSync(leftover, "utf8")).toBe("My unrelated file.\n");
+    expect(readdirSync(join(home, ".intent/specialists"))).toEqual(["personal.md"]);
+    expect(setupRun(home, "revert").stdout).toBe("Nothing to revert.\n");
+  });
+});
+
+test("setup rejects a planted record path or redirected specialist directory", () => {
+  withHome((home) => {
+    setupFixture(home);
+    expect(setupApply(home).status).toBe(0);
+    const record = setupRecord(home);
+    const personal = join(home, "personal.md");
+    writeFileSync(personal, "Keep this file.\n");
+    record.changes[0].path = personal;
+    writeFileSync(join(home, ".local/share/cstack-setup-record.json"), JSON.stringify(record));
+    const before = homeSnapshot(home);
+    expect(setupRun(home, "revert").stderr).toContain("Invalid path in setup record");
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+  withHome((home) => {
+    setupFixture(home);
+    const personal = join(home, "my specialists");
+    mkdirSync(personal);
+    symlinkSync(personal, join(home, ".intent/specialists"));
+    const before = homeSnapshot(home);
+    expect(setupRun(home, "report", setupInput(home)).stderr).toContain("A parent is not a regular directory");
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+test("setup revert keeps a replacement directory and an edit to permission bits", () => {
+  withHome((home) => {
+    setupFixture(home);
+    expect(setupApply(home).status).toBe(0);
+    const directory = join(home, ".intent/specialists");
+    const worker = join(directory, "cstack-worker.md");
+    rmSync(worker);
+    mkdirSync(worker);
+    writeFileSync(join(worker, "personal.txt"), "Keep my replacement.\n");
+    const advisor = join(directory, "cstack-advisor.md");
+    chmodSync(advisor, 0o600);
+    const result = setupRun(home, "revert");
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(`Kept ${worker}. You replaced it after setup.`);
+    expect(result.stdout).toContain(`Kept ${advisor}. You changed it after setup.`);
+    expect(readFileSync(join(worker, "personal.txt"), "utf8")).toBe("Keep my replacement.\n");
+    expect(lstatSync(advisor).mode & 0o777).toBe(0o600);
+    expect(readdirSync(directory).sort()).toEqual(["cstack-advisor.md", "cstack-worker.md"]);
+  });
+});
+
 const root = resolve(import.meta.dir, "../..");
 const script = join(root, "hooks/intent-deliver.sh");
 

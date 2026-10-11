@@ -50,6 +50,18 @@ The record stays outside the copy during replacement. After an interrupted swap,
 
 On the first install Intent adds the mode rule at the top of your personal rule text under **Settings**, **Agent Behavior**. If it cannot reach Intent, it prints the rule to paste there. Updates leave that rule alone. The final table says where the rule went. Run `setup` to configure specialists and other settings. Installing does not create specialists.
 
+In Intent, `setup` asks for an explicit provider, model, and effort for each of the eight seats, from the choices your Intent offers. It recommends no model. It shows the current and proposed files and waits for your yes. The lead appears in the picker. The other seven seats are hidden for delegation, with an all-visible fallback if hidden delegation fails. Reviewer and verifier carry your ordered model menu.
+
+Setup writes regular files in your own specialist folder. Each points at its seat file in the delivered plugin copy, so a plugin update preserves your model choices and later edits. A personal file already at a seat's path is shown before replacement and restored by revert. An unrecorded link is kept for you to move aside. Setup keeps its undo record beside the installation record, outside the replaced copy.
+
+Ask `setup` to revert to undo its writes. Revert keeps a file you changed after setup and names it. A second revert changes nothing. The helper can also be run directly from the delivered plugin:
+
+```bash
+node ~/.local/share/cstack/hooks/intent-setup.mjs --help
+node ~/.local/share/cstack/hooks/intent-setup.mjs revert --report-only
+node ~/.local/share/cstack/hooks/intent-setup.mjs revert
+```
+
 A failure in one host does not stop the others. The command exits nonzero for command or inspection failures. Preserving your own file is a successful result. On a new computer, run the same command and select the hosts you want.
 
 ## Get started
@@ -158,7 +170,7 @@ flowchart LR
 | Path | Role |
 | --- | --- |
 | `skills/` | The core. Skills in the shared `SKILL.md` format, with no harness tool names. |
-| `agents/` | Persona prompts. Claude Code and Cursor register them as subagents. Codex receives them as instructions. Intent lists them as specialists. |
+| `agents/` | Seat and persona prompts. Claude Code and Cursor register them as subagents. Codex receives them as instructions. Intent setup writes specialists that point at the seat files. |
 | `skills/cstack-mode/references/runtime.md` | The runtime contract. Workflows name capabilities such as "delegate" and "ask the user". |
 | `skills/cstack-mode/references/hosts/` | One host note per harness. Each maps those capabilities to native tools. |
 | `.claude-plugin/`, `.codex-plugin/`, `.agents/plugins/`, `.cursor-plugin/` | Generated manifests. Never edit them by hand. |

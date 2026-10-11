@@ -1014,6 +1014,72 @@ function visibleSkills(): string[] {
     .sort();
 }
 
+function deliveryRecoveryFixture(home: string, source = root) {
+  const state = join(home, "recovery-rule.json");
+  const updates = join(home, "recovery-updates.jsonl");
+  writeFileSync(state, '{"content":"","enabled":true}');
+  writeFileSync(join(home, "bin/intentd"), `#!/bin/sh
+case "$2" in
+rules.get) /bin/cat '${state}' ;;
+rules.update) printf '%s\\n' "$4" >> '${updates}'; printf '%s' "$4" > '${state}'; printf '{}' ;;
+esac
+`, { mode: 0o755 });
+  const kit = fileChangeKit(home, { command: ["node", join(source, "hooks/intent-deliver.mjs")], env: { PATH: join(home, "bin") } });
+  const record = join(home, ".local/share/cstack-install-record.json");
+  const paths = visibleSkills().map((skill) => join(home, ".intent/skills", skill));
+  const expected = paths.map((path) => ({ path, kind: "link", target: join(source, "skills", path.split("/").at(-1) ?? "") }));
+  const complete = () => {
+    expect(installRecord(home).entries).toEqual([...expected].sort((a, b) => a.path.localeCompare(b.path)));
+    expect(kit.snapshot(paths)).toEqual(expected);
+    expect(readFileSync(updates, "utf8").trim().split("\n")).toHaveLength(1);
+    expect(JSON.parse(readFileSync(state, "utf8")).content).toContain('unless a plugin seat file');
+  };
+  return { kit, record, paths, expected, complete, state, updates };
+}
+
+test.each(visibleSkills())("interrupted delivery records %s and finishes the first rule once", (skill) => {
+  withHome((home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    const index = visibleSkills().indexOf(skill);
+    const killed = fixture.kit.runSync([], [{ name: "link-created", operation: "rename", edge: "before", target: { path: fixture.record, occurrence: index + 1 }, action: { kind: "kill" } }]);
+    expect(killed.signal).toBe("SIGKILL");
+    expect(readlinkSync(fixture.paths[index] ?? "")).toBe(join(root, "skills", skill));
+    const recovered = fixture.kit.runSync([]);
+    expect(recovered.status).toBe(0);
+    expect(recovered.stdout).not.toContain("left your own");
+    fixture.complete();
+    const before = homeSnapshot(home);
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+test.each([undefined, "", "relative"])("installer routes refuse invalid HOME %s with one line and no writes", (value) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    for (const source of [root, dirname(dirname(from))]) {
+      const binName: string = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).bin["cstack-intent"];
+      const commands = [
+        ["node", join(source, "hooks/intent-deliver.mjs")],
+        ["node", join(source, "hooks/install.mjs")],
+        ["sh", join(source, "hooks/intent-deliver.sh")],
+        ["sh", join(source, "hooks/intent-install.sh")],
+        ["sh", join(source, binName)],
+      ];
+      const before = homeSnapshot(home);
+      for (const command of commands) {
+        for (const args of [[], ["--report-only"], ...(command[1]?.includes("install.") ? [["--hosts", "intent", "--deliver-intent-source", source]] : [])]) {
+          const result = spawnSync(command[0] ?? "", [...command.slice(1), ...args], { cwd: home, env: { HOME: value, PATH: join(home, "bin") }, encoding: "utf8" });
+          expect(result.status).toBe(2);
+          expect(result.stderr).toBe("HOME must be an absolute path.\n");
+          expect(result.stdout).toBe("");
+          expect(homeSnapshot(home)).toEqual(before);
+        }
+      }
+    }
+  });
+});
+
 test("links every visible skill into Intent, and leaves specialist setup alone", () => {
   withHome((home) => {
     const result = install(home);

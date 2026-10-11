@@ -56,12 +56,12 @@ Add each new question to the grill document before showing it in the reply. When
 
 An answer in chat or in the document settles the same question. Check who answered and which question they answered. Another person's agreement does not settle the owner's question. Record that agreement in the spec and keep the question open for its owner.
 
-Reply in its thread to every comment from a person that you act on. If the comment does not settle the question, say what you recorded and what remains for its owner. Keep the question and its thread open.
+Once you read a person's comment and record its content in the spec, reply in its thread, then resolve it, because the grill document holds any question still waiting on an owner. If the comment does not settle the question, say what you recorded and what remains for its owner.
 
 When the owner answers, do these in the same turn:
 
 1. Write the decision into the spec with its question number, who decided it, and when.
-2. Reply where the answer was given. Reply in each thread on that question, and close each thread once the question is fully settled.
+2. Reply where the answer was given and in each thread on that question, following the comment handling above.
 3. Remove the settled question's index entry and section from the grill document. Keep comment anchors until their threads are closed, using the host's route.
 4. Recompute the frontier. Update any affected open question in the document, then show the change in the reply.
 

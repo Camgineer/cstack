@@ -395,6 +395,47 @@ else if (process.argv[3] === "rules.update") {
   return { state, updates };
 }
 
+test("the installed mode rule's exemption matches every generated thin seat and excludes lead and builder", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const files = ruleCommand(home, { content: "", enabled: true });
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    const rule = JSON.parse(readFileSync(files.state, "utf8")).content;
+    if (typeof rule !== "string") throw new Error("The installer did not write a rule");
+    const exemption = rule.match(/"([^"]+)"/);
+    if (!exemption) throw new Error("The installed rule does not quote a seat exemption");
+    const plugin = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8")).name;
+    const runtime = readFileSync(join(root, "skills/cstack-mode/references/runtime.md"), "utf8");
+    const table = runtime.match(/<!-- seats:start -->([\s\S]*?)<!-- seats:end -->/);
+    if (!table) throw new Error("The generated seat table is missing");
+    const seats = [...table[1].matchAll(/^\| `([^`]+)` \| `([^`]+)` \|/gm)];
+    expect(seats.map((seat) => seat[1])).toEqual(expect.arrayContaining(["lead", "builder"]));
+    expect(seats.length).toBeGreaterThan(2);
+    for (const [, seat, specialist] of seats) {
+      const file = specialist === `${plugin}-agent` ? `${plugin}-agent.md` : `${seat}.md`;
+      const body = readFileSync(join(root, "agents", file), "utf8").replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
+      if (seat === "lead" || seat === "builder") expect(body, file).not.toContain(exemption[1]);
+      else expect(body, file).toContain(exemption[1]);
+    }
+  });
+});
+
+test("the documented mode rules match the rule written by the installer", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const files = ruleCommand(home, { content: "", enabled: true });
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    const rule = JSON.parse(readFileSync(files.state, "utf8")).content;
+    const plugin = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8")).name;
+    for (const file of ["README.md", "skills/cstack-mode/references/hosts/intent.md"]) {
+      const doc = readFileSync(join(root, file), "utf8").replaceAll("<plugin>", plugin);
+      const quotes = [...doc.matchAll(/```markdown\n([\s\S]*?)\n```/g)]
+        .map((match) => match[1]).filter((quote) => quote.startsWith("Before any other step,"));
+      expect(quotes, file).toEqual([rule]);
+    }
+  });
+});
+
 test.each([true, false])("the command upgrades an exact earlier first paragraph and keeps the enabled state (%s)", (enabled) => {
   withHome((home) => {
     const from = fetchedPackage(home);

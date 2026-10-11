@@ -54,7 +54,7 @@ User instructions file. None. Intent keeps a person's rules in its settings stor
 
 ## Seats
 
-Seat routing is the plugin's workflow. For a migrated call, read `ws.agent.listSpecialists()` and find the seat's id below, with `<plugin>` replaced by the manifest's name. Pass that id as `specialist` and carry the workflow's own prompt in `agentInstructions`. When the id is not listed, omit `specialist`, carry the seat's whole file and the workflow's prompt in `agentInstructions`, and say "setup has not run" in the reply. The missing-id fallback avoids Intent's unknown-specialist error, which is [read from source at v0.10.33](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/agent_ops.rs#L10660-L10664).
+Seat routing is the plugin's workflow. For a migrated call, read `ws.agent.listSpecialists()` and find the seat's id below, with `<plugin>` replaced by the manifest's name. Pass that id as `specialist` and carry the workflow's own prompt in `agentInstructions`. When the id is not listed, omit `specialist` and carry the workflow's prompt in `agentInstructions`. For that fallback, pass the seat's whole file, frontmatter included, in `agentInstructions` and tell the person in the reply that setup has not run for that seat. An agent with no person to reply to says it in its report. The missing-id fallback avoids Intent's unknown-specialist error, which is [read from source at v0.10.33](https://github.com/intent-hq/intentd/blob/v0.10.33/crates/intent-services/src/agent_ops.rs#L10660-L10664).
 
 | Seat | Specialist id | Seat file in the plugin |
 | --- | --- | --- |

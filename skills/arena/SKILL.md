@@ -32,7 +32,7 @@ The N candidates will receive the same prompt, so the prompt is the contract.
 
 ## Phase B: Fan out
 
-Delegate all N candidates to the `worker` seat in one message using native concurrency. Carry the workflow's candidate prompt in each brief, with the task, the path to the shared grounding, its own output path, and instructions to produce both the artifact and a short rationale. Resolve the seat through the host note, including its fallback when no specialist is listed.
+Delegate all N candidates to the `worker` seat in one message using native concurrency. Carry the workflow's candidate prompt in each brief, with the task, the path to the shared grounding, its own output path, and instructions to produce both the artifact and a short rationale. Resolve the seat through the host note. When the seat is not listed, pass the seat's whole file, frontmatter included, in the brief and tell the person in the reply that setup has not run for that seat. An agent with no person to reply to says it in its report.
 
 Each rationale names the alternatives the candidate considered and what it rejected.
 
@@ -40,7 +40,7 @@ If a candidate fails to produce output, proceed with N-1 and note the dropout in
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, resolve the cross-judge through the `reviewer` seat, with its existing `review` fallback on hosts with `Models:` routing, per **Model roles** in the runtime contract. With no `reviewer` or `review` line on those hosts, prefer a different model family from the parent's when the host exposes that identity. Delegate one read-only judge to the `reviewer` seat. Carry the workflow's judge prompt, the rubric, and the candidates by path label in its brief, and resolve the seat through the host note's specialist fallback. It scores each criterion and recommends a base with rationale, in parallel with the parent's Phase D reading. Do not spawn it while candidates are writing. Report when cross-family independence cannot be established.
+After all Phase B candidates complete, resolve the cross-judge through the `reviewer` seat, with its existing `review` fallback on hosts with `Models:` routing, per **Model roles** in the runtime contract. With no `reviewer` or `review` line on those hosts, prefer a different model family from the parent's when the host exposes that identity. Delegate one read-only judge to the `reviewer` seat. Carry the workflow's judge prompt, the rubric, and the candidates by path label in its brief, and resolve the seat through the host note. When the seat is not listed, pass the seat's whole file, frontmatter included, in the brief and tell the person in the reply that setup has not run for that seat. An agent with no person to reply to says it in its report. The judge scores each criterion and recommends a base with rationale, in parallel with the parent's Phase D reading. Do not spawn it while candidates are writing. Report when cross-family independence cannot be established.
 
 ## Phase D: Pick a base
 

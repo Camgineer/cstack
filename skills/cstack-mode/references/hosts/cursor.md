@@ -17,7 +17,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 Cursor discovers plugin agent files under `agents/`, and their frontmatter `name` is the agent identifier, per the [plugin agents reference](https://cursor.com/docs/reference/plugins#agents-format) and [subagent configuration fields](https://cursor.com/docs/subagents#configuration-fields). Pass that identifier as the `Task` tool's `subagent_type`. Builder is `<plugin>-agent`. The other seats are `lead`, `worker`, `investigator`, `reviewer`, `verifier`, `advisor`, and `scout`. Arena's candidate uses `worker`, and its cross-judge uses `reviewer`.
 
-Carry the workflow's own prompt in the brief. If the session lists no registered type for the requested seat, use `generalPurpose` and pass the seat's whole file from `agents/` in the brief. Builder's file is `<plugin>-agent.md`, and every other seat's file is `<seat>.md`. Keep the resolved model route from the runtime contract.
+Carry the workflow's own prompt in the brief. If the session lists no registered type for the requested seat, use `generalPurpose`. For that fallback, pass the seat's whole file, frontmatter included, from `agents/` in the brief and tell the person in the reply that setup has not run for that seat. An agent with no person to reply to says it in its report. Builder's file is `<plugin>-agent.md`, and every other seat's file is `<seat>.md`. Keep the resolved model route from the runtime contract.
 
 Skill directories. `<project-skills>` is `.cursor/skills` in the project. `<user-skills>` is `~/.cursor/skills`.
 

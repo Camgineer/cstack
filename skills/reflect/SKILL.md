@@ -19,7 +19,7 @@ Run in one of two scopes. Both use the same pipeline. They differ in the evidenc
 - **Session.** The user says "reflect", or says "retro" while the current branch has no open PR. The evidence is the active transcript.
 - **PR retro.** **Retro** in `../cstack-mode/playbooks/opening-a-pr.md` calls for it, or the user asks for a retro on a PR or says "retro" on a branch with an open PR. The evidence is the session that built the PR plus the PR's record.
 
-A **lessons PR** is the PR a retro opens. Its description starts with the line `Lessons from <PR link>`. Run PR retro once per PR. Skip it when the PR is a lessons PR, or when a lessons PR or a `Retro: no lessons` comment already links the PR.
+A **lessons PR** is the PR a retro opens. Its description starts with the line `Lessons from <PR link>`. Run PR retro once per PR. Before skipping a lessons PR or an already-retroed PR, reconcile any recorded lesson items against the linked lessons PR and the base branch under the lifecycle rule in [step 3](#3-synthesize). Then skip mining when the PR is a lessons PR, or when a lessons PR or a `Retro: no lessons` comment already links the PR.
 
 In Session scope, skip when the session is trivial, off-topic, or already covered by an existing skill the parent followed correctly. One-offs are not lessons. In PR retro, the signal check at the end of step 1 decides instead.
 
@@ -48,6 +48,8 @@ Pass each template verbatim, substituting the transcript path or digest where ma
 ### 3. Synthesize
 
 One call to the [investigator seat](../../agents/investigator.md) with the synthesizer template in its brief. The synthesizer's quality check includes spot-verifying citations, which can require MCP access. Use available read-only MCP operations; filesystem sandboxing does not determine connector-write authority. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer returns a structured Accepted / Rejected / Backlog list.
+
+After step 4 settles the list, the parent uses **Track work** to open one item per Accepted row. In Session scope, wait for the approval in step 5 and track only the rows the person approves. Rejected, Backlog, and deferred rows open none. Name the lesson, the target file from Routing, and the originating retro in each item. Record each item's identifier in the retro. On a retry, find the item by its retro and lesson before creating another. Keep the item open until the routed edit is verified on the base branch, then mark it complete with that commit as evidence. A lessons PR names the items it will close when it merges.
 
 ### 4. Structural enforcement check
 
@@ -79,6 +81,7 @@ If your environment ships a SKILL.md validator, run it on every touched skill be
 Short list, no preamble:
 
 - Lessons PR (PR retro): its link.
+- Tracked lessons: each item's identifier and status.
 - Draft plugin edits: `<skill path>`. One line each.
 - Edits applied: `<skill path>`. What changed, one line each.
 - New skills created: `<skill path>`. One line each (rare).

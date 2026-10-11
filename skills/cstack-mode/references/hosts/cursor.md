@@ -9,6 +9,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **End a subagent** | A native `Task` subagent's run completes when it returns its final result ([how subagents work](https://cursor.com/docs/subagents.md#how-subagents-work)). A completed run can be resumed with its agent ID ([resumption docs](https://cursor.com/docs/subagents.md#resuming-subagents)). |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native todo list. |
+| **Track work** | Plugin workflow. Use the [project task file](../runtime.md#project-task-file) route and record the agreed path in the project's `AGENTS.md`, which the [rules docs](https://cursor.com/docs/rules.md#agentsmd) describe as project instructions. The [Plan Mode docs](https://cursor.com/docs/agent/plan-mode.md#how-it-works) say plans are saved in the home directory by default and Save to workspace moves them into the workspace. This mapping uses a project file so later sessions can find the lesson items through the agreed path. |
 | **Invoke a skill** | Cursor selects a skill by its description. Users type `/<skill>`. A skill that sets `disable-model-invocation` stays out of automatic selection. Read its `SKILL.md` when a workflow names it. |
 | **History** | Conversation history tools when the session exposes them. Otherwise use a transcript or digest the user supplies. |
 | **Continue later** | A Cursor automation the user authorized. Otherwise report the gap. |

@@ -22,12 +22,21 @@ Each workflow uses these capabilities by name. Use the native tool the host note
 | **Ask** | Put a structured question with options to the user. For grill and align rounds, follow [grill-with-docs](../../grill-with-docs/SKILL.md). |
 | **Shared document** | Keep a document the people in the conversation can read and comment on. Read authors and replies, reply in a thread, close it, and watch for new comments. |
 | **Plan** | Keep a visible todolist of the workflow's steps. |
+| **Track work** | Create, read, and update work items that remain available across sessions. Each item has an identifier, a status, and its source. A session todolist alone does not supply this capability. |
 | **Invoke a skill** | Load a bundled skill by name with the host's skill mechanism, then follow it. A workflow step that names a skill ("invoke `how`", "the **how** skill") is a call to make at that step, not background reading. The step is done only when the skill is loaded, or when the reply records `skip <skill>: <reason>`. A `principle-*` skill is the exception: read its `SKILL.md` file. |
 | **History** | Read authorized past conversations for the current project. |
 | **Continue later** | Wake the work again after the current task ends. |
 | **Generate an image** | Make an image file from a prompt with the host's built-in image tool. |
 
 When a capability is missing, use the workflow's stated fallback. Without a fallback, say which step it blocks. Keep going with the steps that do not need it. Never claim a check ran when its capability was missing.
+
+## Project task file
+
+Use this route only when the host note maps **Track work** to a project task file. When the host note selects a lasting native task list, use that list and write no task file.
+
+Read the project instructions file the host loads for a `Retro task file: <project-relative path>` line. Before proposing a write, inspect that file and resolve any symlink so the question names the actual destination. When the pointer is absent, ask the person once for a lasting path in the project, outside scratch. In that question, propose the task-file path and disclose both writes. Name the instructions file and show the exact `Retro task file: <proposed path>` line to append there. If the instructions file says it is generated, ask where the pointer should go in that same question. Record the agreed path in the agreed instructions source before appending items, and preserve its other content. Reuse the path in later sessions. Open no forge issue for these items.
+
+Append each item as an unchecked Markdown task with a stable identifier, the lesson, the target file, and the retro link or identifier. Preserve existing content. Read the file to find existing items and to confirm each write. Update an item's checkbox and base-commit evidence at that same path when it is complete. The task file and pointer line travel in the lessons PR when the retro opens one; otherwise the retro makes no commit and tells the person both paths are uncommitted and must reach the base branch for a later session to find them.
 
 ## Delegation
 

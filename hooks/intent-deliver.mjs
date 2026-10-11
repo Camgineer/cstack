@@ -185,7 +185,7 @@ function main() {
   const modeEntry = fingerprint(mode);
   const recordPhase = (record) => record.ruleLifecycle ?? (modeEntry || record.entries.some((entry) => entry.path === mode) ? "settled" : "due");
   let ruleLifecycle = loaded.state === "valid" ? recordPhase(loaded.record)
-    : pendingRuns().length || !modeEntry ? "due" : "settled";
+    : !pendingRuns().length && modeEntry?.kind === "link" ? "settled" : "due";
   const pendingPath = join(dirname(recordPath), `${pendingPrefix}${randomUUID()}.json`);
   const journal = { schemaVersion: 1, pid: process.pid, entries: [], operation: null, ruleLifecycle };
   let journalStarted = false;

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Principle Config Over Code"
+  short_description: "Apply when writing logic with tunable values, reviewing code with magic numbers, or deciding whether a value belongs..."
+policy:
+  allow_implicit_invocation: false

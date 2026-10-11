@@ -6,6 +6,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | --- | --- |
 | **Delegate** | The `Agent` tool. Resolve a seated call through **Seat names** below. Follow [Before delegation](../runtime.md#before-delegation). Use `run_in_background` for parallel lanes and `SendMessage` to resume a child when those are listed. A subagent can delegate when this session exposes `Agent`, within the [configured depth limit](https://code.claude.com/docs/en/sub-agents#let-subagents-spawn-their-own-subagents). |
 | **Ask** | `AskUserQuestion`. |
+| **End a subagent** | An ordinary subagent's run ends when it returns its result ([subagent lifecycle docs](https://code.claude.com/docs/en/sub-agents#chain-subagents)). For an agent-team teammate, send a shutdown request and check its response. It can approve or reject the request ([team shutdown docs](https://code.claude.com/docs/en/agent-teams#shut-down-teammates)). |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The task tools (`TaskCreate`, `TaskUpdate`), or `TodoWrite` where the task tools are absent. Use `EnterPlanMode` only when the user asked for plan mode. |
 | **Invoke a skill** | The `Skill` tool with `<plugin>:<skill>`. Users type `/<plugin>:<skill>`. The `Skill` tool refuses a skill that sets `disable-model-invocation`, such as a user's explicit-only skill. Read that skill's `SKILL.md` instead. |

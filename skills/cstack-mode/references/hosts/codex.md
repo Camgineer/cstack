@@ -6,6 +6,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | --- | --- |
 | **Delegate** | Codex's native subagent tools. Their names and fields differ between the local CLI, the desktop app, and cloud tasks, so read the schemas in this session. Resolve a seated call through **Seat files** below. Follow [Before delegation](../runtime.md#before-delegation). |
 | **Ask** | The user-question tool when the session exposes one. Otherwise ask in the reply and continue on reversible work. |
+| **End a subagent** | Use this session's native tool for closing completed agent threads when offered. Read its schema. The [subagent management docs](https://learn.chatgpt.com/docs/agent-configuration/subagents.md#managing-subagents) describe closing completed threads in the app, CLI, and IDE. |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native plan tool. |
 | **Invoke a skill** | `$<plugin>:<skill>`. Skills marked explicit-only in `agents/openai.yaml` stay out of the default selector, but their files remain readable. |

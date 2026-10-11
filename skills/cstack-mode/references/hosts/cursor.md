@@ -6,6 +6,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | --- | --- |
 | **Delegate** | The `Task` tool. Resolve a seated call through **Seat names** below. Follow [Before delegation](../runtime.md#before-delegation). |
 | **Ask** | `AskQuestion`. |
+| **End a subagent** | A native `Task` subagent's run completes when it returns its final result ([how subagents work](https://cursor.com/docs/subagents.md#how-subagents-work)). A completed run can be resumed with its agent ID ([resumption docs](https://cursor.com/docs/subagents.md#resuming-subagents)). |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native todo list. |
 | **Invoke a skill** | Cursor selects a skill by its description. Users type `/<skill>`. A skill that sets `disable-model-invocation` stays out of automatic selection. Read its `SKILL.md` when a workflow names it. |

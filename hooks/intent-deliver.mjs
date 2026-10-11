@@ -378,7 +378,7 @@ function main() {
   }
   save();
   const runs = pendingRuns();
-  if (!runs.some((run) => run.path !== pendingPath && activeRun(run))) {
+  if (loadRecord().state === "valid" && !runs.some((run) => run.path !== pendingPath && activeRun(run))) {
     for (const run of runs) {
       if (run.path === pendingPath || !activeRun(run)) unlinkSync(run.path);
     }

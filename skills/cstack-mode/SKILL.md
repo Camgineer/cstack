@@ -16,7 +16,7 @@ On hosts that run the plugin's hooks, the user's typed command for this skill al
 
 ## Scratch files
 
-Keep every scratch file you create for your work inside the project, under `tmp/<task>/`, with a folder named for the task. Scratch includes a probe file, a temporary file a command needs, a throwaway repository, a log, a download, a screenshot, a resume note, and a local prototype. This keeps the files where you can remove them and the person can open them.
+Keep every scratch file you create for your work in `tmp/<task>/` at the project root, with a folder named for the task. The project root is the top of the checkout you are working in, printed by `git rev-parse --show-toplevel`. Never use a `tmp/` folder in a subdirectory. Scratch includes a probe file, a temporary file a command needs, a throwaway repository, a log, a download, a screenshot, a resume note, and a local prototype. This keeps the files where you can remove them and the person can open them.
 
 A prototype that a PR or issue will link to is published on a throwaway branch, per [Prototype](playbooks/prototype.md). Local-only prototypes stay in `tmp/<task>/`.
 

@@ -26,7 +26,8 @@ Receipts default to tmp/check-receipt under the project root.
 Reuse a name only for the same command and working directory.
 check refuses failed, unfinished, foreign, or stale receipts.
 --head also requires the index and named commit to hold the checked tree.
-Receipts are local bookkeeping that track the content Git puts in a commit after file conversions, can miss changes to raw file bytes, exclude ignored files, state outside the repository, and changes restored before exit, prove no authenticity, leave loose Git objects in the repository, and do not support submodules or sparse checkouts.
+Receipts are local bookkeeping that track the content Git would commit under active ignore, attribute, and configuration rules after file conversions, can miss changes to raw file bytes, exclude ignored untracked files, state outside the repository, and changes restored before exit, prove no authenticity, leave loose Git objects in the repository, and do not support submodules, sparse checkouts, or caller-set Git repository, index, or object-directory overrides.
+Git settings and concurrent activity are not frozen, and passing every saved receipt does not prove that every required check was recorded.
 `;
 
 function git(root: string, args: string[], indexFile?: string, input?: string): string {
@@ -36,7 +37,7 @@ function git(root: string, args: string[], indexFile?: string, input?: string): 
     env: indexFile ? { ...process.env, GIT_INDEX_FILE: indexFile } : process.env,
   });
   if (result.status !== 0) throw new Error(result.stderr.trim() || "Cannot read the Git working tree.");
-  return result.stdout.trim();
+  return result.stdout;
 }
 
 function statIfPresent(path: string) {
@@ -93,10 +94,10 @@ function treeHash(root: string, directory: string, tree: "working" | "index" = "
       throw new Error("Check receipts do not support submodules. Run checks in each repository separately.");
     }
     if (tree === "index") {
-      const realIndex = resolve(root, git(root, ["rev-parse", "--git-path", "index"]));
+      const realIndex = resolve(root, git(root, ["rev-parse", "--git-path", "index"]).replace(/\n$/, ""));
       if (statIfPresent(realIndex)) copyFileSync(realIndex, indexFile);
       else git(root, ["read-tree", "--empty"], indexFile);
-      return git(root, ["write-tree"], indexFile);
+      return git(root, ["write-tree"], indexFile).trim();
     }
     if (git(root, ["ls-files", "--unmerged", "-z"]).length) throw new Error("Resolve merge conflicts before recording checks.");
     try {
@@ -113,7 +114,7 @@ function treeHash(root: string, directory: string, tree: "working" | "index" = "
       git(root, ["--literal-pathspecs", "-c", "core.filemode=true", "add", "-f", "--pathspec-from-file=-", "--pathspec-file-nul"], indexFile, `${trackedPaths.join("\0")}\0`);
     }
     git(root, ["-c", "core.filemode=true", "add", "-A", "--", "."], indexFile);
-    return git(root, ["write-tree"], indexFile);
+    return git(root, ["write-tree"], indexFile).trim();
   } finally {
     rmSync(indexFile, { force: true });
     rmSync(`${indexFile}.lock`, { force: true });
@@ -194,7 +195,7 @@ function check(root: string, directory: string, head: string | undefined): void 
   if (head !== undefined) {
     if (treeHash(root, directory, "index") !== current) problems.push("The index tree differs from the checked working tree.");
     try {
-      if (git(root, ["rev-parse", "--verify", "--end-of-options", `${head}^{tree}`]) !== current) problems.push(`${head} does not contain the checked working tree.`);
+      if (git(root, ["rev-parse", "--verify", "--end-of-options", `${head}^{tree}`]).trim() !== current) problems.push(`${head} does not contain the checked working tree.`);
     } catch {
       problems.push(`The named commit ${JSON.stringify(head)} does not exist.`);
     }
@@ -211,7 +212,10 @@ try {
   else {
     const [action, name, command] = positionals;
     if (!((action === "record" && positionals.length === 3 && values.head === undefined) || (action === "check" && positionals.length === 1))) throw new Error(HELP);
-    const root = realpathSync(git(process.cwd(), ["rev-parse", "--show-toplevel"]));
+    for (const variable of ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY"]) {
+      if (process.env[variable] !== undefined) throw new Error(`Check receipts do not support ${variable}. Unset it and run again.`);
+    }
+    const root = realpathSync(git(process.cwd(), ["rev-parse", "--show-toplevel"]).replace(/\n$/, ""));
     const sparseCheckout = spawnSync("git", ["-C", root, "config", "--bool", "core.sparseCheckout"], { encoding: "utf8" });
     if (sparseCheckout.stdout.trim() === "true") throw new Error("Check receipts do not support sparse checkouts. Run checks in a full checkout.");
     const directory = receiptDirectory(root, values.receipts);

@@ -397,7 +397,7 @@ test("check receipt fix B5 runs a packaged helper without dependencies or instal
     const help = spawnSync(process.execPath, [helper, "--help"], { cwd: repository, env, encoding: "utf8", timeout: 10_000 });
     expect(help.status).toBe(0);
     expect(help.stdout).toContain("Receipts are local bookkeeping");
-    expect(help.stdout).toContain("ignored files");
+    expect(help.stdout).toContain("ignored untracked files");
     expect(help.stdout).toContain("restored");
     expect(help.stdout).toContain("authenticity");
   });
@@ -558,5 +558,105 @@ test("check receipt tracked path replacement keeps ignored directory children ou
     expect(cli("record", "directory-replacement", "exit 0").status).toBe(0);
     writeFileSync(ignored, "changed input\n");
     expect(cli("check").status).toBe(0);
+  });
+});
+
+test("check receipt advisor preserves literal tracked names with whitespace and pathspec characters", () => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    const name = " \n:(glob)*[x].txt";
+    writeFileSync(join(repository, ".gitignore"), "*\n");
+    writeFileSync(join(repository, name), "original\n");
+    git("--literal-pathspecs", "add", "-f", "--", ".gitignore", name);
+    expect(cli("record", "literal-input", "exit 0").status).toBe(0);
+    git("-c", "user.name=Fixture", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", "commit", "-m", "literal input");
+    expect(cli("check", "--head", "HEAD").status).toBe(0);
+    writeFileSync(join(repository, name), "changed\n");
+    const result = cli("check");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("literal-input is stale.");
+  });
+});
+
+test.each(["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY"])("check receipt advisor refuses caller override %s", (variable) => {
+  withReceiptRepository(({ repository }) => {
+    const nested = join(repository, "nested");
+    mkdirSync(nested);
+    for (const args of [["record", "override-input", "touch command-ran"], ["check"], ["check", "--head", "HEAD"]]) {
+      const result = spawnSync(process.execPath, [join(scripts, "check-receipt.ts"), ...args], {
+        cwd: nested,
+        env: { ...process.env, HOME: join(dirname(repository), "home"), GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1", [variable]: "unsupported-override" },
+        encoding: "utf8",
+        timeout: 10_000,
+      });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(`Check receipts do not support ${variable}. Unset it and run again.`);
+      expect(existsSync(join(nested, "command-ran"))).toBe(false);
+      expect(existsSync(join(repository, "tmp"))).toBe(false);
+    }
+  });
+});
+
+test.each(["before record", "after record"])("check receipt advisor sees edits %s with core.ignoreStat", (timing) => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    git("config", "core.ignoreStat", "true");
+    git("update-index", "--really-refresh");
+    expect(git("ls-files", "-v", "--", "tracked.txt")).toStartWith("h ");
+    const index = resolve(repository, git("rev-parse", "--git-path", "index").trim());
+    const before = readFileSync(index);
+    if (timing === "before record") writeFileSync(join(repository, "tracked.txt"), "changed\n");
+    expect(cli("record", "ignore-stat-input", "exit 0").status).toBe(0);
+    expect(readFileSync(index)).toEqual(before);
+    if (timing === "after record") writeFileSync(join(repository, "tracked.txt"), "changed\n");
+    const result = cli("check", "--head", "HEAD");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(timing === "before record" ? "HEAD does not contain the checked working tree." : "ignore-stat-input is stale.");
+    expect(readFileSync(index)).toEqual(before);
+  });
+});
+
+test("check receipt advisor sees a tracked file rename", () => {
+  withReceiptRepository(({ git, cli }) => {
+    expect(cli("record", "rename-input", "exit 0").status).toBe(0);
+    git("mv", "tracked.txt", "renamed.txt");
+    const result = cli("check");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("rename-input is stale.");
+  });
+});
+
+test("check receipt advisor sees a tracked symlink retarget", () => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    const link = join(repository, "tracked-link");
+    symlinkSync("tracked.txt", link);
+    git("add", "tracked-link");
+    git("-c", "user.name=Fixture", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", "commit", "-m", "symlink input");
+    expect(cli("record", "symlink-input", "exit 0").status).toBe(0);
+    expect(cli("check", "--head", "HEAD").status).toBe(0);
+    rmSync(link);
+    symlinkSync("missing-target", link);
+    const result = cli("check");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("symlink-input is stale.");
+  });
+});
+
+test("check receipt advisor uses the linked worktree index from a subdirectory", () => {
+  withReceiptRepository(({ repository, git, cliFrom }) => {
+    const linked = join(dirname(repository), "linked checkout");
+    git("worktree", "add", "-b", "linked", linked);
+    const nested = join(linked, "nested");
+    mkdirSync(nested);
+    const index = git("-C", linked, "rev-parse", "--git-path", "index").trim();
+    const before = readFileSync(index);
+    expect(cliFrom(nested, "record", "linked-input", "exit 0").status).toBe(0);
+    expect(cliFrom(nested, "check", "--head", "HEAD").status).toBe(0);
+    expect(readFileSync(index)).toEqual(before);
+    expect(existsSync(join(linked, "tmp/checks with spaces/linked-input.json"))).toBe(true);
+    expect(existsSync(join(repository, "tmp"))).toBe(false);
+    writeFileSync(join(linked, "tracked.txt"), "changed\n");
+    const result = cliFrom(nested, "check");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("linked-input is stale.");
+    expect(readFileSync(index)).toEqual(before);
   });
 });

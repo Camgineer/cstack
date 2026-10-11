@@ -49,6 +49,8 @@ Pass each template verbatim, substituting the transcript path or digest where ma
 
 One call to the [investigator seat](../../agents/investigator.md) with the synthesizer template in its brief. The synthesizer's quality check includes spot-verifying citations, which can require MCP access. Use available read-only MCP operations; filesystem sandboxing does not determine connector-write authority. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer returns a structured Accepted / Rejected / Backlog list.
 
+After step 4 settles the list, the parent uses **Track work** to open one item per Accepted row. In Session scope, wait for the approval in step 5 and track only the rows the person approves. Rejected, Backlog, and deferred rows open none. Name the lesson, the target file from Routing, and the originating retro in each item. Record each item's identifier in the retro. On a retry, find the item by its retro and lesson before creating another. Keep the item open until the routed edit is verified on the base branch, then mark it complete with that commit as evidence. A lessons PR names the items it will close when it merges.
+
 ### 4. Structural enforcement check
 
 Sanity-check the synthesizer's Accepted list. For any item that would be enforced more reliably by a lint rule, script, metadata flag, or runtime check, move it from Accepted to Backlog. See the **encode-lessons-in-structure** principle skill. When a Backlog item is a mistake agents have now made twice, name the **correct** skill as the way to fix it.
@@ -79,6 +81,7 @@ If your environment ships a SKILL.md validator, run it on every touched skill be
 Short list, no preamble:
 
 - Lessons PR (PR retro): its link.
+- Tracked lessons: each item's identifier and status.
 - Draft plugin edits: `<skill path>`. One line each.
 - Edits applied: `<skill path>`. What changed, one line each.
 - New skills created: `<skill path>`. One line each (rare).

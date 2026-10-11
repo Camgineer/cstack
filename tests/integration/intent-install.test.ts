@@ -3672,7 +3672,7 @@ test("install lock preserves a live unrelated PID until manual recovery", async 
     expect(readFileSync(lock, "utf8")).toBe(owner);
     expect(refused.stderr).toContain("no installer is active");
     await followInstallLock(home, refused, fixture);
-    expect(process.kill(process.pid, 0)).toBeUndefined();
+    expect(process.kill(process.pid, 0)).toBe(true);
   });
 }, 60000);
 
@@ -3830,3 +3830,16 @@ test("the outer fetched command waits for the host phase and completes", async (
     } finally { await first.stop(); }
   });
 }, 20000);
+
+for (const edge of ["before", "after"] satisfies Cut["edge"][]) {
+  test.each(installLockBoundaries)(`install lock follows a filesystem exception ${edge} %s`, async point => {
+    await withHome(async home => {
+      const fixture = deliveryRecoveryFixture(home);
+      const path = `${fixture.record}.lock${point.startsWith("acquisition") ? ".acquire" : ""}`;
+      const operation = point.endsWith("open") ? "open" : point.endsWith("write") ? "write" : "delete";
+      const result = fixture.kit.runSync([], [{ name: "exception", operation, edge, target: { path }, action: { kind: "throw", message: "Lock operation refused." } }]);
+      expect(result.status).toBe(2);
+      await followInstallLock(home, result, fixture);
+    });
+  }, 60000);
+}

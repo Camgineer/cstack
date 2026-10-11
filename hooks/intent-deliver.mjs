@@ -183,15 +183,23 @@ function main() {
   let modeRule = loaded.record.modeRule;
   const mode = join(skills, `${name}-mode`);
   const modeEntry = fingerprint(mode);
-  const recordPhase = (record) => record.ruleLifecycle ?? (modeEntry || record.entries.some((entry) => entry.path === mode) ? "settled" : "due");
-  let ruleLifecycle = loaded.state === "valid" ? recordPhase(loaded.record)
-    : !pendingRuns().length && modeEntry?.kind === "link" ? "settled" : "due";
+  const fallbackPhase = modeEntry?.kind === "link" ? "settled" : "due";
+  const initialRuns = pendingRuns();
+  const recordPhase = (record, runs) => {
+    if (record.ruleLifecycle !== undefined) return record.ruleLifecycle;
+    if (record.entries.some((entry) => entry.path === mode)) return "settled";
+    return runs.length ? null : fallbackPhase;
+  };
+  let ruleLifecycle = (loaded.state === "valid" ? recordPhase(loaded.record, initialRuns) : initialRuns.length ? null : fallbackPhase) ?? "due";
   const pendingPath = join(dirname(recordPath), `${pendingPrefix}${randomUUID()}.json`);
   const journal = { schemaVersion: 1, pid: process.pid, entries: [], operation: null, ruleLifecycle };
   let journalStarted = false;
   const phaseFrom = (runs, record) => {
     const phases = [ruleLifecycle, ...runs.map((run) => run.ruleLifecycle)];
-    if (record.state === "valid") phases.push(recordPhase(record.record));
+    if (record.state === "valid") {
+      const phase = recordPhase(record.record, runs);
+      if (phase !== null) phases.push(phase);
+    }
     return rulePhases[Math.max(...phases.map((phase) => rulePhases.indexOf(phase)))];
   };
   const savePending = () => {

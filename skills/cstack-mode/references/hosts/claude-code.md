@@ -4,7 +4,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 | Capability | Native route |
 | --- | --- |
-| **Delegate** | The `Agent` tool. Resolve a seated call through **Seat names** below. Unmigrated calls keep `<plugin>:cstack-agent` and `<plugin>:comment-sicko`. Use `run_in_background` for parallel lanes and `SendMessage` to resume a child when those are listed. A subagent has no `Agent` tool, so only the top-level session can delegate. |
+| **Delegate** | The `Agent` tool. Resolve a seated call through **Seat names** below. Unmigrated calls keep `<plugin>:cstack-agent` and `<plugin>:comment-sicko`. Use `run_in_background` for parallel lanes and `SendMessage` to resume a child when those are listed. A subagent can delegate when this session exposes `Agent`, within the [configured depth limit](https://code.claude.com/docs/en/sub-agents#let-subagents-spawn-their-own-subagents). |
 | **Ask** | `AskUserQuestion`. |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The task tools (`TaskCreate`, `TaskUpdate`), or `TodoWrite` where the task tools are absent. Use `EnterPlanMode` only when the user asked for plan mode. |
@@ -15,9 +15,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 ## Seat names
 
-Claude Code loads the plugin's `agents/` files as `<plugin>:<name>`, using the frontmatter `name`, per the [plugin agents reference](https://code.claude.com/docs/en/plugins/components#agents). Pass that scoped name as the `Agent` tool's subagent type. Builder is `<plugin>:<plugin>-agent`. The other seats are `<plugin>:lead`, `<plugin>:worker`, `<plugin>:investigator`, `<plugin>:reviewer`, `<plugin>:verifier`, `<plugin>:advisor`, and `<plugin>:scout`. Arena's candidate uses `<plugin>:worker`, and its cross-judge uses `<plugin>:reviewer`.
-
-Carry the workflow's own prompt in the brief. If the session lists no registered type for the requested seat, use its general-purpose delegate. For that fallback, pass the seat's whole file, frontmatter included, from `agents/` in the brief and tell the person in the reply that setup has not run for that seat. An agent with no person to reply to says it in its report. Builder's file is `<plugin>-agent.md`, and every other seat's file is `<seat>.md`. Keep the resolved model route from the runtime contract.
+Claude Code starts a seat with the `Agent` tool's subagent type `<plugin>:<name>`, using its frontmatter `name` per the [plugin agents reference](https://code.claude.com/docs/en/plugins/components#agents). Builder is `<plugin>:<plugin>-agent`. A missing type means setup has not run for that seat. Use its general-purpose delegate under [Seat delivery](../runtime.md#seat-delivery).
 
 GitHub API. In a Claude Code cloud session, every `gh` command that uses GraphQL returns HTTP 403. That includes `gh pr view`, `gh pr list`, `gh pr ready`, `gh pr merge`, and `gh api graphql`, so `scripts/watch-pr/watch-pr` fails too. Read PR state through REST with `gh api repos/<owner>/<repo>/pulls/<number>` and its `/reviews` and `/comments` routes. Read checks from both `commits/<sha>/check-runs` and `commits/<sha>/status`. For review threads, ready, draft, and auto-merge, use the routes the 403 message names, or a GitHub MCP tool when one is listed. Poll with the **Continue later** capability instead of the watcher.
 

@@ -52,6 +52,11 @@ export type CommandResult = { status: number | null; signal: string | null; stdo
 export type FileSnapshot = ReturnType<typeof snapshotFiles>;
 export type Instruction = { kind: "run"; args: string[] } | { kind: "wait" } | { kind: "move"; from: string; to: string };
 
+function requireCuts(faults: Cut[], result: CommandResult) {
+  for (const fault of faults) if (!result.cuts.some(cut => cut.name === fault.name)) throw new Error(`Command did not reach cut ${fault.name}.\n${result.stderr}`);
+  return result;
+}
+
 function eventOf(bytes: string): CutEvent {
   const value: unknown = JSON.parse(bytes);
   if (!value || typeof value !== "object" || !("name" in value) || typeof value.name !== "string" || !("path" in value) || typeof value.path !== "string" || !("edge" in value) || (value.edge !== "before" && value.edge !== "after") || !("operation" in value)) throw new Error("Invalid file-change cut event.");
@@ -149,8 +154,7 @@ export function fileChangeKit(home: string, options: { command: [string, ...stri
       const result = spawnSync(executable, [...prefix, ...args], { cwd: home, env: controls?.env ?? env, encoding: "utf8", timeout, killSignal: "SIGKILL" });
       if (result.error) throw result.error;
       const cuts = controls?.events() ?? [];
-      for (const fault of faults) if (!cuts.some(cut => cut.name === fault.name)) throw new Error(`Command did not reach cut ${fault.name}.\n${result.stderr}`);
-      return { status: result.status, signal: result.signal, stdout: result.stdout, stderr: result.stderr, cuts };
+      return requireCuts(faults, { status: result.status, signal: result.signal, stdout: result.stdout, stderr: result.stderr, cuts });
     } finally { controls?.clean(); }
   };
   const start = (args: string[], faults: Cut[]) => {
@@ -176,7 +180,8 @@ export function fileChangeKit(home: string, options: { command: [string, ...stri
       });
     });
     result.catch(() => {});
-    const atOrExit = async (name: string): Promise<{ kind: "cut"; event: CutEvent } | { kind: "exit"; result: CommandResult }> => {
+    const refusedCuts = new Set<string>();
+    const observeCut = async (name: string): Promise<{ kind: "cut"; event: CutEvent } | { kind: "exit"; result: CommandResult }> => {
       if (!faults.some(fault => fault.name === name)) throw new Error(`Unknown cut ${name}.`);
       const until = Date.now() + timeout;
       while (true) {
@@ -189,15 +194,19 @@ export function fileChangeKit(home: string, options: { command: [string, ...stri
     };
     return {
       get running() { return running; },
-      atOrExit,
+      async atOrExit(name: string) {
+        const observed = await observeCut(name);
+        if (observed.kind === "exit" && observed.result.status !== null && observed.result.status !== 0 && !observed.result.signal) refusedCuts.add(name);
+        return observed;
+      },
       async at(name: string) {
-        const observed = await atOrExit(name);
+        const observed = await observeCut(name);
         if (observed.kind === "cut") return observed.event;
         throw new Error(`Command did not reach cut ${name}.\n${observed.result.stderr}`);
       },
       release: controls.release,
       async finish() {
-        try { return await result; } finally { controls.clean(); }
+        try { return requireCuts(faults.filter(fault => !refusedCuts.has(fault.name)), await result); } finally { controls.clean(); }
       },
       async stop() {
         if (running) child.kill("SIGKILL");

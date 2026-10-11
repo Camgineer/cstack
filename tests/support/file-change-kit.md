@@ -29,7 +29,7 @@ Select an exact `path` or a `parent` directory. Optional `flags`, `sourceKind`, 
 
 ## Overlap two commands
 
-Use `start` for a paused command. Await `at(name)` before inspecting the files or running a second command through the same kit. `atOrExit(name)` returns a tagged cut or process exit for a race whose competing command may be refused before the cut. Release the named pause, await `finish`, and call `stop` in `finally`. `stop` joins the fixture's direct child and also works after `finish`.
+Use `start` for a paused command. Await `at(name)` before inspecting the files or running a second command through the same kit. `atOrExit(name)` returns a tagged cut or process exit for a race whose competing command may be refused before the cut. Observing a nonzero, unsignalled exit through `atOrExit(name)` permits that one cut to be missing at `finish`; assert the expected refusal yourself. Successful completion still requires every cut, including later cuts after a released pause. Release the named pause, await `finish`, and call `stop` in `finally`. `stop` joins the fixture's direct child and also works after `finish` without requiring cuts during teardown.
 
 Each run gets its own private control directory. A second command inherits no fault plan. Pauses and child lifetimes are bounded by `timeout`, which defaults to ten seconds. A missing cut or fixture timeout fails the test.
 
@@ -46,7 +46,8 @@ The assertion runs the queue to completion, rejects repeated command/output/stat
 ## Limits
 
 - The fixture serves this repository only. Installed plugin copies do not contain it. Every plugin user receives the general interruption rule from the builder playbook.
-- The preload intercepts Node synchronous filesystem exports only. It does not intercept asynchronous APIs, native syscalls, worker threads, other runtimes, or filesystem calls in another process. It tracks only the direct child, so a command that launches descendants needs another harness.
+- The preload wraps `openSync`, `writeFileSync`, `writeSync`, `renameSync`, `unlinkSync`, `rmSync`, and `rmdirSync`; `closeSync` maintains descriptor tracking. Cuts recognize string paths and numeric descriptors opened through the preload. URL and Buffer paths, other synchronous methods, asynchronous APIs, direct native syscalls, and other runtimes are not intercepted.
+- Node workers and spawned Node descendants may inherit the preload, fault plan, and control files and fire cuts meant for the direct process. Their events can collide, and their lifetimes are not managed. Use this kit only for commands whose tested file operations stay in one direct Node process. For commands that start workers or descendants, use a harness that isolates each fault plan and owns every process or worker lifetime.
 - The fixture is not an OS sandbox. `HOME` isolation does not prevent the command or an extra environment variable from naming files elsewhere. Keep every mutable command input and destination in the throwaway home. Source files outside it remain read-only inputs.
 - Before and after name call boundaries, not disk durability, partial writes, power loss, or every scheduler interleaving. A write inside another intercepted call is counted once at the outer call.
 - Directory identity checks and exclusive control writes refuse ordinary link and folder swaps. They are not an atomic defence against a concurrent malicious actor. If a fixture home is replaced, teardown refuses to remove the replacement.

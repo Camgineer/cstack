@@ -4,7 +4,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 
 | Capability | Native route |
 | --- | --- |
-| **Delegate** | The `Task` tool. The bundled personas register as plugin subagents; pass `cstack-agent` or `comment-sicko` as `subagent_type`. Use `generalPurpose` for an unconfigured role. |
+| **Delegate** | The `Task` tool. Resolve a seated call through **Seat names** below. Unmigrated calls keep `cstack-agent` or `comment-sicko` as `subagent_type`, and `generalPurpose` for an unconfigured role. |
 | **Ask** | `AskQuestion`. |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native todo list. |
@@ -12,6 +12,10 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **History** | Conversation history tools when the session exposes them. Otherwise use a transcript or digest the user supplies. |
 | **Continue later** | A Cursor automation the user authorized. Otherwise report the gap. |
 | **Generate an image** | An image tool when this session's tool list has one. Otherwise an `image` line naming a CLI runner, such as `codex exec`, provides it. |
+
+## Seat names
+
+Cursor starts a seat with the `Task` tool's `subagent_type` set to its frontmatter `name`, per the [plugin agents reference](https://cursor.com/docs/reference/plugins#agents-format) and [subagent configuration fields](https://cursor.com/docs/subagents#configuration-fields). Builder is `<plugin>-agent`. A missing type means setup has not run for that seat. Use `generalPurpose` under [Seat delivery](../runtime.md#seat-delivery).
 
 Skill directories. `<project-skills>` is `.cursor/skills` in the project. `<user-skills>` is `~/.cursor/skills`.
 

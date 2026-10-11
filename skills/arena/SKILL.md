@@ -27,12 +27,12 @@ The N candidates will receive the same prompt, so the prompt is the contract.
 
 1. State the artifact each candidate is producing.
 2. Derive the rubric. State what success looks like for *this* task, then turn it into 3-6 concrete gradeable criteria. The rubric is the picker's tool in Phase D. Candidates only see the task.
-3. Resolve the `arena runners` panel from the `build` role per **Model roles** in the runtime contract. Preserve the three-seat default and resolve any required diversity before launching. `auto` or `inherit-parent` preserves a seat but cannot establish model diversity. For rejected entries, report the missing seat and obtain a supported selection rather than guessing a family fallback. Spawn more when the arena covers multiple design directions. Same model N times is appropriate when the work is generation-bound rather than judgment-sensitive.
+3. Resolve the `arena runners` panel through the `worker` seat per **Model roles** in the runtime contract. On hosts with `Models:` routing, its fallback is the existing `build` role. An `architect runners` panel keeps its existing no-role fallback unless the person names `worker`. Preserve the three-seat default and resolve any required diversity before launching. `auto` or `inherit-parent` preserves a seat but cannot establish model diversity. For rejected entries, report the missing seat and obtain a supported selection rather than guessing a family fallback. Spawn more when the arena covers multiple design directions. Same model N times is appropriate when the work is generation-bound rather than judgment-sensitive.
 4. Assign output paths. Each candidate writes scratch to `tmp/<task>/candidate-<n>/` inside the project, per [Scratch files](../cstack-mode/SKILL.md#scratch-files). Use a separate git worktree for each candidate that edits production source, per the **separate-before-serializing-shared-state** principle skill.
 
 ## Phase B: Fan out
 
-Spawn all N subagents in one message using native concurrency, each with the task, the path to the shared grounding, its own output path, and instructions to produce both the artifact and a short rationale.
+Delegate all N candidates to the `worker` seat in one message using native concurrency. Carry the workflow's candidate prompt in each brief, with the task, the path to the shared grounding, its own output path, and instructions to produce both the artifact and a short rationale. Follow [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery) in the runtime contract.
 
 Each rationale names the alternatives the candidate considered and what it rejected.
 
@@ -40,7 +40,7 @@ If a candidate fails to produce output, proceed with N-1 and note the dropout in
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, resolve the cross-judge from the `review` role per **Model roles** in the runtime contract. With no `review` line, prefer a different model family from the parent's when the host exposes that identity. Spawn one read-only judge with the rubric and candidates by path label. It scores each criterion and recommends a base with rationale, in parallel with the parent's Phase D reading. Do not spawn it while candidates are writing. Report when cross-family independence cannot be established.
+After all Phase B candidates complete, resolve the cross-judge through the `reviewer` seat, with its existing `review` fallback on hosts with `Models:` routing, per **Model roles** in the runtime contract. With no `reviewer` or `review` line on those hosts, prefer a different model family from the parent's when the host exposes that identity. Delegate one read-only judge to the `reviewer` seat. Carry the workflow's judge prompt, the rubric, and the candidates by path label in its brief. Follow [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery) in the runtime contract. The judge scores each criterion and recommends a base with rationale, in parallel with the parent's Phase D reading. Do not spawn it while candidates are writing. Report when cross-family independence cannot be established.
 
 ## Phase D: Pick a base
 

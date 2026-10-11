@@ -8,7 +8,7 @@ Read [the runtime contract](../cstack-mode/references/runtime.md) before executi
 
 # Interrogate
 
-Start the [reviewer seat](../../agents/reviewer.md) once per review-panel angle to adversarially review code changes, with the existing `review` fallback. Each seat gets the same prompt and rubric. The adversarial signal comes from model diversity, not assigned personas.
+Start three calls to the [reviewer seat](../../agents/reviewer.md), unless the user names another panel size, with the existing `review` fallback. Each reviewer gets the same prompt and rubric. The adversarial signal comes from model diversity, not assigned personas.
 
 The deliverable is a synthesized verdict. Do NOT auto-apply changes.
 
@@ -43,7 +43,7 @@ Read `references/reviewer-prompt.md` and fill in the template with:
 3. The review rubric from `references/rubric.md`
 4. The code-quality lens from `references/code-quality-review.md`
 
-The same filled template goes to all reviewers, so every seat applies the code-quality lens.
+The same filled template goes to all reviewers, so every reviewer applies the code-quality lens.
 
 ## Step 4, Synthesize
 

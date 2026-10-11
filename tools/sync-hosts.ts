@@ -130,8 +130,8 @@ function checkSeatReferences(root: string, plugin: string, seats: readonly Seat[
       if (!path.endsWith(".md") || path.split(/[\\/]/).includes("node_modules")) continue;
       const source = join(base, path);
       const text = readFileSync(source, "utf8");
-      for (const match of text.matchAll(/\[([a-z][a-z-]*) seat\]\(([^)]+)\)/g)) {
-        const seat = seats.find((entry) => entry.name === match[1]);
+      for (const match of text.matchAll(/\[([^\]]+\sseats?)\]\(([^)]+)\)/gi)) {
+        const seat = seats.find((entry) => `${entry.name} seat` === match[1]);
         const target = match[2]?.split("#")[0];
         if (seat === undefined || target === undefined || resolve(dirname(source), target) !== targets.get(seat.name) || seat.name === "lead") {
           throw new Error(`${relative(root, source)} has an invalid seat reference: ${match[0]}`);

@@ -29,7 +29,7 @@ Open a todolist with one entry per phase before launching anything.
 
 ## Phase B: Fan out
 
-Spawn all N lanes through their caller-selected seats, defaulting to the [worker seat](../../agents/worker.md), under [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery) and [Before delegation](../cstack-mode/references/runtime.md#before-delegation). Carry the lane's full task prompt and output boundary in its brief. Invoking another workflow reuses its handoffs and creates no extra set of children. Run within actual native capacity, with exclusive writable paths or worktrees. Pass only the fields the host's spawn tool exposes.
+Spawn all N lanes through their caller-selected seats, defaulting to the [worker seat](../../agents/worker.md). Carry the lane's full task prompt and output boundary in its brief. Invoking another workflow reuses its handoffs and creates no extra set of children. Run within actual native capacity, with exclusive writable paths or worktrees. Pass only the fields the host's spawn tool exposes.
 
 When a worker needs a non-default branch, prepare its isolated worktree at that exact ref before spawning. Pass the working directory through a supported field when available; otherwise include it in the brief and require the child to verify it before writing.
 

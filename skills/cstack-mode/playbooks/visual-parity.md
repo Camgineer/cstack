@@ -4,7 +4,7 @@
 
 1. Establish the baseline first, before any migration: a visual regression harness that screenshots the current component across its states, plus the target when matching two implementations. No baseline, no parity claim. A blocking prerequisite, not a follow-up.
 2. Anti-shortcut clauses, stated and held: no harness modifications, no baseline tampering, no component restructuring to make a diff pass. If the baseline looks wrong, stop and ask, don't edit it.
-3. Migrate one component at a time. Parallelize across worktrees, one [builder seat](../../../agents/cstack-agent.md) per component, with its existing `build` fallback. Carry the component scope, frozen baseline, and expected diff in the brief under [Seat delivery](../references/runtime.md#seat-delivery) and [Before delegation](../references/runtime.md#before-delegation). Apply the **separate-before-serializing-shared-state** principle skill. Shared primitives migrate first as a blocking phase.
+3. Migrate one component at a time. Parallelize across worktrees, one [builder seat](../../../agents/cstack-agent.md) per component, with its existing `build` fallback. Carry the component scope, frozen baseline, and expected diff in the brief. Apply the **separate-before-serializing-shared-state** principle skill. Shared primitives migrate first as a blocking phase.
 4. Verify each component against its baseline via image diff on the matching surface via the control skill. A nonzero diff is a fail. Investigate the pixel delta. Iterate per component in the active task until the diff is zero. If work must continue beyond the task, resolve an authorized native continuation mechanism through the runtime contract first.
 5. Run **Opening a PR** per component or per safe batch.
 

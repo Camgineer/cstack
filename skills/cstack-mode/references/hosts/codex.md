@@ -13,6 +13,10 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **Continue later** | A native automation or scheduled task the user authorized. Otherwise report the gap. |
 | **Generate an image** | The built-in `image_gen` tool, through the `$imagegen` skill. It saves under `~/.codex/generated_images/<session-id>/` and takes no output path, size, or quality, so copy the file into place and resize it. `codex exec` from another host reaches the same tool. |
 
+## Delegation preflight
+
+Check this session's tool list and the offered subagent tool's schema before each handoff. Read the depth, capacity, and permission limits exposed in the session's instructions. Check the selected child's tools against the step it must run. If a required tool is absent or a stated limit blocks the call, follow [Before delegation](../runtime.md#before-delegation). Do not infer permission from a tool's name. The [subagent settings](https://learn.chatgpt.com/docs/agent-configuration/subagents.md) describe `agents.enabled` and `agents.max_concurrent_threads_per_session`; check the session's actual tools rather than assuming a configured setting made them available.
+
 ## Seat files
 
 Codex starts a seat through this session's native subagent schema with the seat file as the child's instructions under [Seat delivery](../runtime.md#seat-delivery). This plugin's Markdown seats have no registration in the legacy manifest path, read from [the applying parser at Codex 0.162.1](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/core-plugins/src/manifest.rs#L267-L295) and [its resolved paths](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/core-plugins/src/manifest.rs#L380-L398). Whole-file delivery here does not indicate missing setup. Local TOML custom agents are a separate route, per the [custom agents docs](https://developers.openai.com/codex/multi-agent#custom-agents).

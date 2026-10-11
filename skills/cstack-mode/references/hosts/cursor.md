@@ -13,6 +13,10 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **Continue later** | A Cursor automation the user authorized. Otherwise report the gap. |
 | **Generate an image** | An image tool when this session's tool list has one. Otherwise an `image` line naming a CLI runner, such as `codex exec`, provides it. |
 
+## Delegation preflight
+
+Check that `Task` is offered in this session, read its schema, and check the session's depth and tool permissions before each handoff. The [native Cursor nesting rule](https://cursor.com/docs/subagents.md#can-subagents-launch-other-subagents) allows the main agent and its direct children to launch children; a child launched by another child cannot launch another. The same page says the mode must expose `Task` and hooks or tool policies can block it. Apply that rule to native Cursor's `Task` route. For a Claude Code runner, use [its host note](claude-code.md). If the step needs a tool the selected child lacks, or the host's stated limit blocks the call, follow [Before delegation](../runtime.md#before-delegation).
+
 ## Seat names
 
 Cursor starts a seat with the `Task` tool's `subagent_type` set to its frontmatter `name`, per the [plugin agents reference](https://cursor.com/docs/reference/plugins#agents-format) and [subagent configuration fields](https://cursor.com/docs/subagents#configuration-fields). Builder is `<plugin>-agent`. A missing type means setup has not run for that seat. Use `generalPurpose` under [Seat delivery](../runtime.md#seat-delivery).

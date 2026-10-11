@@ -133,17 +133,15 @@ describe("plan validation", () => {
     expect(result.status).toBe(0);
   });
 
-  test("accepts seated live lanes and rejects a changed seat or compatibility fallback", () => {
-    const seated = plan.replace("Ten lanes on `GPT-6` at the PR head", "Ten calls to the [verifier seat](/opt/installed%20plugin/agents/verifier.md) with no legacy model role at the PR head");
-    const accepted = runPlan(seated);
+  test("accepts readable live lanes and rejects a different count", () => {
+    const readable = plan.replace("Ten lanes on `GPT-6` at the PR head", "Ten verification lanes at the PR head");
+    const accepted = runPlan(readable);
     expect(accepted.status).toBe(0);
     expect(accepted.stderr).toBe("");
     expect(accepted.stdout).toContain("1 PR sections, 0 problems");
-    for (const changed of [seated.replace("[verifier seat]", "[worker seat]"), seated.replace("no legacy model role", "the review fallback")]) {
-      const rejected = runPlan(changed);
-      expect(rejected.status).toBe(1);
-      expect(rejected.stderr).toContain("Verify, live must name ten verifier calls");
-    }
+    const rejected = runPlan(readable.replace("Ten verification lanes", "Nine verification lanes"));
+    expect(rejected.status).toBe(1);
+    expect(rejected.stderr).toContain("Verify, live must name ten verification lanes");
   });
 
   test.each([
@@ -338,6 +336,8 @@ test("host sync generates seat rows and rejects drift or invalid definitions", (
       "[worker seat](../../agents/reviewer.md)",
       "[unknown seat](../../agents/worker.md)",
       "[lead seat](../../agents/lead.md)",
+      "[Reviewer seat](../../agents/missing.md)",
+      "[reviewer seats](../../agents/missing.md)",
     ]) {
       writeFileSync(workflow, `${workflowText}\nDelegate to the ${reference}.\n`);
       const invalid = sync("--check");

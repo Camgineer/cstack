@@ -30,7 +30,7 @@ Decompose into atomic, independently landable units. A unit is one purpose with 
 
 - Build the verification harness before the work, with the baseline captured from the pre-change state, so the check reads as "old value vs new value".
 - For one-way-door design decisions, run the **architect** skill (it runs **arena**). Skip it for mechanical work whose shape is already concrete. A second arena over a settled design is over-engineering (the **laziness-protocol** principle skill).
-- Decide what fans out. Delegate each unit to the [builder seat](../../agents/cstack-agent.md), carrying the unit workflow, scope, and expected output in its brief under [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery) and [Before delegation](../cstack-mode/references/runtime.md#before-delegation). Keep `build` as the fallback for implementation units and no legacy role for other units. Parallelize only across seams, and give each builder its own worktree or branch (the **separate-before-serializing-shared-state** principle skill). Don't over-fan.
+- Decide what fans out. Delegate each unit to the [builder seat](../../agents/cstack-agent.md), carrying the unit workflow, scope, and expected output in its brief. Keep `build` as the fallback for implementation units and no legacy role for other units. Parallelize only across seams, and give each builder its own worktree or branch (the **separate-before-serializing-shared-state** principle skill). Don't over-fan.
 - Write the designed phase list down. That list is what the human reviews.
 
 Then execute the design. Add its steps to the todolist as concrete items, after the Phase C entry and before Phase D. Run each under the Phase C loop discipline, and weave the Phase D log through them, a row as each step lands, rather than saving the whole trail for the end.
@@ -41,7 +41,7 @@ Each step inside a unit is an experiment. State the hypothesis, make the smalles
 Apply the **sequence-verifiable-units** principle skill, verifying each unit before starting the next instead of batching checks at the end.
 
 - Verify by inspecting the artifact, never a self-report. When something passes too easily, suspect the observation method before the system.
-- Pair delegated work with the [reviewer seat](../../agents/reviewer.md), with no legacy model role. Carry the artifact, predicate, and evidence in its brief; it returns a verdict under [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery) and [Before delegation](../cstack-mode/references/runtime.md#before-delegation). If a worker games the gate, reset and harden the contract. If the gate itself is wrong, fix the gate in its own change rather than routing around it.
+- Pair delegated work with the [reviewer seat](../../agents/reviewer.md). Carry the artifact, predicate, and evidence in its brief; it returns a verdict. With no judge available, follow [Before delegation](../cstack-mode/references/runtime.md#before-delegation) and return the missing judgment to your parent as not run. If a worker games the gate, reset and harden the contract. If the gate itself is wrong, fix the gate in its own change rather than routing around it.
 - A verdict is VERIFIED, NOT VERIFIED, or INCONCLUSIVE. Inconclusive is not a pass. Don't hide a negative.
 
 ## Phase D: Keep the audit trail

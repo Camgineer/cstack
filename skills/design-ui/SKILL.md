@@ -72,7 +72,7 @@ Done when every state renders at every width with zero DOM or accessibility fail
 
 When [Before delegation](../cstack-mode/references/runtime.md#before-delegation) finds no available runner for this handoff, stop here. Return the screenshots, the system note, and the inventory to your parent for this step, and say you handed it off.
 
-Start the [reviewer seat](../../agents/reviewer.md), with no legacy model role, under [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery). It never saw your reasoning. Give it the screenshots, the system note, the inventory, the user's request, and [gates.md](references/gates.md). It returns findings that each cite a screenshot and an element, ranked:
+Start the [reviewer seat](../../agents/reviewer.md) under [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery). It never saw your reasoning. Give it the screenshots, the system note, the inventory, the user's request, and [gates.md](references/gates.md). It returns findings that each cite a screenshot and an element, ranked:
 
 - **P0.** Broken: clipped text, failed contrast, a missing state, an unreachable control.
 - **P1.** Off-system or confusing: a raw value, the wrong hierarchy, two primary actions.

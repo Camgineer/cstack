@@ -12,8 +12,6 @@ Investigate the motivation and intent behind code.
 
 Companion to the `how` skill. `how` answers what the code does and how it works. `why` answers what forces led to its shape.
 
-Follow [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery) and [Before delegation](../cstack-mode/references/runtime.md#before-delegation). Each handoff below keeps no legacy model role unless the person names its seat.
-
 ## Operating Posture
 
 Operate as a **careful, cautious, and precise investigator**. Be honest about what you know vs what you're inferring. Read `references/epistemics.md` for the full confidence framework and phrasing guide. The synthesizer must follow it.
@@ -83,7 +81,6 @@ Launch all matching investigators in a single message so they run concurrently. 
 
 Subagent config (each):
 - Seat: [investigator seat](../../agents/investigator.md). Carry the workflow reference prompt in the brief and return findings to the parent.
-- Compatibility fallback: no legacy role.
 - Scope: read-only source and connector investigation. Use supported read-only tools; never add write permissions to retain MCP access.
 
 Each investigator gets:
@@ -127,7 +124,6 @@ If your scope assessment suggests a single-commit trivial target where the PR de
 Spawn one synthesizer subagent:
 
 - Seat: [investigator seat](../../agents/investigator.md). Carry the workflow reference prompt in the brief and return findings to the parent.
-- Compatibility fallback: no legacy role.
 - Scope: read-only source and MCP citation checks. Do not enable writes to gain connector access.
 
 The synthesizer gets:

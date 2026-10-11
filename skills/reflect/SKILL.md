@@ -35,9 +35,7 @@ Then, in PR retro, check the evidence for a signal. A signal is a human correcti
 
 ### 2. Spawn three reviewers in parallel
 
-One message, three calls to the [investigator seat](../../agents/investigator.md), with no legacy model role. Carry each lens template in its brief and return findings to the parent. Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript). Use available read-only MCP operations; filesystem sandboxing does not determine connector-write authority.
-
-Follow [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery) and [Before delegation](../cstack-mode/references/runtime.md#before-delegation).
+One message, three calls to the [investigator seat](../../agents/investigator.md). Carry each lens template in its brief and return findings to the parent. Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript). Use available read-only MCP operations; filesystem sandboxing does not determine connector-write authority.
 
 | Lens | Seat | Prompt template |
 |---|---|---|
@@ -49,7 +47,7 @@ Pass each template verbatim, substituting the transcript path or digest where ma
 
 ### 3. Synthesize
 
-One call to the [investigator seat](../../agents/investigator.md), with no legacy model role and the synthesizer template in its brief. The synthesizer's quality check includes spot-verifying citations, which can require MCP access. Use available read-only MCP operations; filesystem sandboxing does not determine connector-write authority. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer returns a structured Accepted / Rejected / Backlog list.
+One call to the [investigator seat](../../agents/investigator.md) with the synthesizer template in its brief. The synthesizer's quality check includes spot-verifying citations, which can require MCP access. Use available read-only MCP operations; filesystem sandboxing does not determine connector-write authority. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer returns a structured Accepted / Rejected / Backlog list.
 
 ### 4. Structural enforcement check
 

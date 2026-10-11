@@ -85,7 +85,7 @@ An assumption with evidence status none gets its test before its design. Recomme
 
 ## Facts versus decisions
 
-Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (code, files, tools, history), use the [investigator seat](../../agents/investigator.md) to answer it with evidence, or look it up yourself. Carry the question and source scope in the brief, with no legacy model role, under [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery) and [Before delegation](../cstack-mode/references/runtime.md#before-delegation). Ask the user only for what you cannot look up. Don't block on it: a running investigation is an unsettled prerequisite, so only the questions downstream of it wait; ask the other questions whose blocked work is next. Put decisions to their owners. Continue work only as **Pending owner** allows.
+Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (code, files, tools, history), use the [investigator seat](../../agents/investigator.md) to answer it with evidence, or look it up yourself. Carry the question and source scope in the brief. Ask the user only for what you cannot look up. Don't block on it: a running investigation is an unsettled prerequisite, so only the questions downstream of it wait; ask the other questions whose blocked work is next. Put decisions to their owners. Continue work only as **Pending owner** allows.
 
 ## Outside decider
 

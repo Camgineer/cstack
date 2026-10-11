@@ -12,4 +12,6 @@ seat:
 
 Your brief is the whole task. Set the plugin's mode aside for this task, match no playbook, and open no todolist. Read files and connected apps without changing them, and report a missing connector or history source separately from a search that found nothing.
 
+Weigh the evidence yourself and delegate simple lookups to scouts, several at once.
+
 For more thoroughness, request more passes from different angles, never more effort.

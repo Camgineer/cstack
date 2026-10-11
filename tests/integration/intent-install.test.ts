@@ -244,8 +244,6 @@ require('node:module').syncBuiltinESMExports();`);
     const result = setupApply(home, [], { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` });
     expect(result.signal).toBe("SIGKILL");
     expect(setupRecord(home).phase).toBe("applying");
-    expect(setupRun(home, "revert").stderr).toContain("Setup is locked");
-    rmSync(join(home, ".local/share/cstack-setup-record.json.lock"));
     const leftover = join(home, ".intent/specialists/personal.md");
     writeFileSync(leftover, "My unrelated file.\n");
     const recovered = setupRun(home, "revert");
@@ -367,7 +365,7 @@ test("setup safety reports an already deleted generated seat without claiming to
   });
 });
 
-test.each(["truncated", "outdated", "unrecognized path"])("setup safety reports a %s record without authorizing any change", (kind) => {
+test.each(["truncated", "outdated", "unrecognized path"])("setup safety reports an invalid record (%s) without authorizing any change", (kind) => {
   withHome((home) => {
     setupFixture(home);
     expect(setupApply(home).status).toBe(0);
@@ -410,6 +408,8 @@ require('node:module').syncBuiltinESMExports();`);
     expect(setupApply(home, [], { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` }).signal).toBe("SIGKILL");
     const temporary = readFileSync(join(home, "crashed-temp.txt"), "utf8");
     const bytes = readFileSync(temporary, "utf8");
+    const lock = join(home, ".local/share/cstack-setup-record.json.lock");
+    writeFileSync(lock, readFileSync(lock, "utf8") + '{"partial":');
     const unrelated = join(home, ".intent/specialists/.setup-personal.tmp");
     writeFileSync(unrelated, "MY OWN LEFTOVER\n");
     const recovered = setupRun(home, "revert");
@@ -472,6 +472,115 @@ test("setup safety does not recreate a retired installer link after the installe
     expect(readFileSync(target, "utf8")).toBe(persona);
     expect(setupRun(home, "report", setupInput(home)).status).toBe(0);
     expect(setupApply(home).status).toBe(0);
+  });
+});
+
+test.each(["live process", "unknown owner"])("setup safety preserves a lock (%s)", (kind) => {
+  withHome((home) => {
+    setupFixture(home);
+    const lock = join(home, ".local/share/cstack-setup-record.json.lock");
+    writeFileSync(lock, kind === "live process" ? JSON.stringify({ schemaVersion: 1, name: "cstack", home, pid: process.pid, temporaries: [] }) + "\n" : "Unknown owner's file.\n");
+    const before = homeSnapshot(home);
+    const result = setupApply(home);
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain(`Setup is locked at ${lock}`);
+    expect(result.stderr).toContain(kind === "live process" ? "still running" : "keep a copy");
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+test("setup safety keeps each stacked original behind an unresolved later edit", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const builder = join(home, ".intent/specialists/cstack-agent.md");
+    mkdirSync(dirname(builder));
+    writeFileSync(builder, "MY FIRST ORIGINAL\n");
+    expect(setupApply(home).status).toBe(0);
+    writeFileSync(builder, "MY SECOND ORIGINAL\n");
+    expect(setupApply(home).status).toBe(0);
+    writeFileSync(builder, "My final edit.\n");
+    expect(setupRun(home, "revert").status).toBe(0);
+    const changes = setupRecord(home).changes;
+    expect(changes).toHaveLength(2);
+    expect(changes.map((change: { before: { content: string } }) => Buffer.from(change.before.content, "base64").toString())).toEqual(["MY FIRST ORIGINAL\n", "MY SECOND ORIGINAL\n"]);
+    const before = homeSnapshot(home);
+    expect(setupRun(home, "revert").status).toBe(0);
+    expect(homeSnapshot(home)).toEqual(before);
+    renameSync(builder, join(home, "final-edit.md"));
+    expect(setupRun(home, "revert").status).toBe(0);
+    expect(readFileSync(builder, "utf8")).toBe("MY SECOND ORIGINAL\n");
+    expect(setupRecord(home).changes).toHaveLength(1);
+    renameSync(builder, join(home, "second-original.md"));
+    expect(setupRun(home, "revert").status).toBe(0);
+    expect(readFileSync(builder, "utf8")).toBe("MY FIRST ORIGINAL\n");
+    expect(readFileSync(join(home, "second-original.md"), "utf8")).toBe("MY SECOND ORIGINAL\n");
+    expect(readFileSync(join(home, "final-edit.md"), "utf8")).toBe("My final edit.\n");
+    expect(setupRecord(home).changes).toEqual([]);
+  });
+});
+
+test("setup safety names a temporary file when this run cannot remove it", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const fault = join(home, "temporary-cleanup-failure.cjs");
+    writeFileSync(fault, `const fs = require('node:fs');
+const rename = fs.renameSync;
+const unlink = fs.unlinkSync;
+let leftover;
+fs.renameSync = function(from, to) {
+  if (to.endsWith('/specialists/cstack-reviewer.md')) {
+    leftover = from;
+    fs.writeFileSync(${JSON.stringify(join(home, "left-temp.txt"))}, from);
+    throw new Error('fixture disk failure');
+  }
+  return rename.apply(this, arguments);
+};
+fs.unlinkSync = function(path) {
+  if (path === leftover) throw new Error('fixture temp removal failure');
+  return unlink.apply(this, arguments);
+};
+require('node:module').syncBuiltinESMExports();`);
+    const result = setupApply(home, [], { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` });
+    const leftover = readFileSync(join(home, "left-temp.txt"), "utf8");
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain(`Left temporary file ${leftover}`);
+    expect(result.stderr).toContain("Rolled back this run");
+    expect(readFileSync(leftover, "utf8")).toContain('name: "cstack-reviewer"');
+    expect(setupApply(home).status).toBe(0);
+    expect(setupRun(home, "revert").status).toBe(0);
+    expect(readFileSync(leftover, "utf8")).toContain('name: "cstack-reviewer"');
+  });
+});
+
+test("setup safety retries an interrupted link restore without leaving its seat path empty", () => {
+  withHome((home) => {
+    setupFixture(home);
+    const builder = join(home, ".intent/specialists/cstack-agent.md");
+    mkdirSync(dirname(builder));
+    const target = join(root, "agents/cstack-agent.md");
+    symlinkSync(target, builder);
+    const installation = installRecord(home);
+    installation.entries.push({ path: builder, kind: "link", target });
+    writeFileSync(join(home, ".local/share/cstack-install-record.json"), JSON.stringify(installation));
+    expect(setupApply(home).status).toBe(0);
+    const seat = readFileSync(builder, "utf8");
+    const fault = join(home, "link-restore-crash.cjs");
+    writeFileSync(fault, `const fs = require('node:fs');
+const rename = fs.renameSync;
+fs.renameSync = function(from, to) {
+  if (to === ${JSON.stringify(builder)} && fs.lstatSync(from).isSymbolicLink()) process.kill(process.pid, 'SIGKILL');
+  return rename.apply(this, arguments);
+};
+require('node:module').syncBuiltinESMExports();`);
+    expect(setupRun(home, "revert", [], { NODE_OPTIONS: `--require ${JSON.stringify(fault)}` }).signal).toBe("SIGKILL");
+    expect(readFileSync(builder, "utf8")).toBe(seat);
+    expect(setupRecord(home).changes.some((change: { path: string }) => change.path === builder)).toBe(true);
+    const recovered = setupRun(home, "revert");
+    expect(recovered.status).toBe(0);
+    expect(recovered.stdout).toContain("Cleared stale lock");
+    expect(readlinkSync(builder)).toBe(target);
+    expect(setupRecord(home).changes).toEqual([]);
+    expect(setupRun(home, "revert").stdout).toBe("Nothing to revert.\n");
   });
 });
 

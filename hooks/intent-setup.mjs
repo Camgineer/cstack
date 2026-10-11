@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash, randomUUID } from "node:crypto";
-import { closeSync, fchmodSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, readlinkSync, realpathSync, renameSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { closeSync, fchmodSync, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, readlinkSync, realpathSync, renameSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync, writeSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -28,6 +28,10 @@ Choices are a JSON object keyed by seat. Every seat needs provider, model, and
 reasoningEffort. Reviewer and verifier also need modelOptions, an ordered array
 of those triples whose first entry equals the seat's triple. No duplicate pairs.
 Catalog is {providers:[{id,models:[{id,efforts:[...]}]}]}, collected from Intent.
+Revert keeps original bytes in the record until restored. Move a later-edited
+seat file aside, then run revert again to restore its original without overwriting.
+An unreadable record still supports revert --report-only. Keep a backup to recover it.
+Dead process locks are cleared; previous-run temporary files are named and kept.
 No provider, model, or effort is chosen for you. Without --yes, apply writes nothing.
 Install first. Setup reads its recorded mode link to find the plugin copy.
 Setup records only its file writes. It changes no daemon setting or rule.
@@ -44,13 +48,29 @@ function fileState(path) {
 function same(a, b) {
   return a.kind === b.kind && (a.kind === "absent" || (a.kind === "link" ? a.target === b.target : a.sha256 === b.sha256 && a.mode === b.mode));
 }
-function atomicWrite(path, bytes, mode) {
+let trackTemporary = () => {};
+function atomicReplace(path, create) {
   const temporary = join(dirname(path), `.setup-${randomUUID()}.tmp`);
-  const fd = openSync(temporary, "wx", mode);
+  trackTemporary(temporary, true);
+  let created;
   try {
-    try { writeFileSync(fd, bytes); fchmodSync(fd, mode); } finally { closeSync(fd); }
+    create(temporary, (entry) => { created = entry; });
     renameSync(temporary, path);
-  } finally { if (stat(temporary)) unlinkSync(temporary); }
+  } finally {
+    const remaining = stat(temporary);
+    if (created && remaining?.dev === created.dev && remaining.ino === created.ino) unlinkSync(temporary);
+    if (!stat(temporary)) trackTemporary(temporary, false);
+  }
+}
+function atomicWrite(path, bytes, mode) {
+  atomicReplace(path, (temporary, owned) => {
+    const fd = openSync(temporary, "wx", mode);
+    owned(fstatSync(fd));
+    try { writeFileSync(fd, bytes); fchmodSync(fd, mode); } finally { closeSync(fd); }
+  });
+}
+function atomicLink(path, target) {
+  atomicReplace(path, (temporary, owned) => { symlinkSync(target, temporary); owned(lstatSync(temporary)); });
 }
 function main() {
   const { values, positionals } = parseArgs({ allowPositionals: true, options: {
@@ -111,47 +131,113 @@ function main() {
     return record;
   }
   const save = (record) => atomicWrite(recordPath, json(record), 0o600);
-  function restore(change) {
+  function restore(change, rollingBack = false) {
     safeParents(change.path);
+    const kept = (reason) => ({
+      resolved: change.before.kind !== "file",
+      message: `${reason}${change.before.kind === "file" ? ` Original bytes are held in ${recordPath} for ${change.path}. To restore them, move the edited file aside, then run revert again.` : ""}`,
+    });
+    const done = (message) => ({ resolved: true, message });
     const entry = stat(change.path);
-    if (entry && !entry.isFile() && !entry.isSymbolicLink()) return `Kept ${change.path}. You replaced it after setup.`;
+    if (entry && !entry.isFile() && !entry.isSymbolicLink()) return kept(`Kept ${change.path}. You replaced it after setup.`);
     const current = fileState(change.path);
-    if (same(current, change.before)) return `Already reverted ${change.path}.`;
-    if (!same(current, change.after)) return `Kept ${change.path}. You changed it after setup.`;
+    if (current.kind === "absent" && change.before.kind === "absent") return done(`Already absent ${change.path}. You deleted it after setup.`);
+    if (same(current, change.before)) return done(`Already reverted ${change.path}.`);
+    if (current.kind !== "absent" && !same(current, change.after)) return kept(`Kept ${change.path}. You changed it after setup.`);
     if (change.before.kind === "file") atomicWrite(change.path, Buffer.from(change.before.content, "base64"), change.before.mode);
-    else {
-      unlinkSync(change.path);
-      if (change.before.kind === "link") symlinkSync(change.before.target, change.path);
-    }
-    return `${change.before.kind === "absent" ? "Removed" : "Restored"} ${change.path}.`;
+    else if (change.before.kind === "link") {
+      let owned = rollingBack;
+      if (!owned && stat(installPath)?.isFile()) {
+        try {
+          const installation = JSON.parse(readFileSync(installPath, "utf8"));
+          owned = installation.schemaVersion === 1 && installation.entries?.some((entry) => entry.path === change.path && same(entry, change.before));
+        } catch { owned = false; }
+      }
+      if (owned) atomicLink(change.path, change.before.target);
+      else {
+        if (current.kind !== "absent") unlinkSync(change.path);
+        return done(`Removed ${change.path}. The installer no longer owns its prior link.`);
+      }
+    } else if (current.kind !== "absent") unlinkSync(change.path);
+    return done(`${change.before.kind === "absent" ? "Removed" : "Restored"} ${change.path}.`);
   }
   function rollback(record) {
     const messages = [];
-    for (const change of [...record.pending].reverse()) messages.push(restore(change));
+    const unresolved = [];
+    for (const change of [...record.pending].reverse()) {
+      try {
+        const result = restore(change, true);
+        messages.push(result.message);
+        if (!result.resolved) unresolved.push(change.path);
+      } catch (error) { unresolved.push(change.path); messages.push(`Could not restore ${change.path}. ${error.message}`); }
+    }
+    if (unresolved.length) throw new Error(`Rollback is incomplete. Recorded recovery remains at ${recordPath}. Run revert to retry.
+${messages.join("\n")}
+Files still needing recovery:
+${unresolved.join("\n")}`);
     for (const directory of [...record.createdDirectories].reverse()) {
-      try { rmdirSync(directory); } catch (error) { if (!["ENOENT", "ENOTEMPTY", "EEXIST"].includes(error.code)) throw error; }
+      try { rmdirSync(directory); } catch (error) { if (!["ENOENT", "ENOTEMPTY", "EEXIST"].includes(error.code)) throw new Error(`Could not remove the empty directory ${directory}. Recovery remains at ${recordPath}. Run revert to retry. ${error.message}`); }
     }
     if (record.previousRecord.kind === "absent") unlinkSync(recordPath);
     else atomicWrite(recordPath, Buffer.from(record.previousRecord.content, "base64"), record.previousRecord.mode);
-    const ready = loadRecord();
-    return { ready, messages };
+    return { ready: loadRecord(), messages };
   }
   function withLock(action) {
     if (!stat(data)?.isDirectory()) throw new Error("Install first. The plugin data directory is missing.");
+    if (stat(lockPath)) {
+      const current = fileState(lockPath);
+      let owner;
+      try { owner = JSON.parse(Buffer.from(current.content, "base64").toString().split("\n").slice(0, -1).at(-1)); } catch { owner = null; }
+      const validTemporary = Array.isArray(owner?.temporaries) && owner.temporaries.every((path) => typeof path === "string" && [data, specialists].includes(dirname(path)) && /^\.setup-[a-f0-9-]{36}\.tmp$/.test(basename(path)) && resolve(path) === path);
+      if (current.kind !== "file" || owner?.schemaVersion !== 1 || owner.name !== name || owner.home !== home || !Number.isInteger(owner.pid) || owner.pid < 1 || !validTemporary) throw new Error(`Setup is locked at ${lockPath}. Its owner record is unreadable. Nothing was removed. Confirm the earlier run stopped, keep a copy of this lock, then move only that lock aside and run revert.`);
+      try { process.kill(owner.pid, 0); throw new Error(`Setup is locked at ${lockPath}. Its recorded PID ${owner.pid} is still running. Wait for that run to finish.`); }
+      catch (error) {
+        if (error.code !== "ESRCH") {
+          if (!error.code) throw error;
+          throw new Error(`Kept lock ${lockPath}. Could not confirm that its recorded PID ${owner.pid} stopped. ${error.message}`);
+        }
+      }
+      if (!same(fileState(lockPath), current)) throw new Error(`Setup lock changed at ${lockPath}. Nothing was removed. Retry the command.`);
+      unlinkSync(lockPath);
+      process.stdout.write(`Cleared stale lock ${lockPath} because no process has its recorded PID ${owner.pid}.\n`);
+      for (const path of owner.temporaries) if (stat(path)) process.stdout.write(`Left temporary file ${path}. The interrupted run listed it; this run did not create it. Keep it until recovery is verified, then remove it yourself.\n`);
+    }
     let fd;
     try { fd = openSync(lockPath, "wx", 0o600); }
-    catch (error) { if (error.code === "EEXIST") throw new Error(`Setup is locked at ${lockPath}. If a run crashed, confirm it stopped and remove only that lock before reverting.`); throw error; }
-    try { writeFileSync(fd, String(process.pid) + "\n"); closeSync(fd); return action(); }
-    finally { unlinkSync(lockPath); }
+    catch (error) { if (error.code === "EEXIST") throw new Error(`Setup is locked at ${lockPath}. Another run acquired it. Retry after that run finishes.`); throw error; }
+    const created = fstatSync(fd);
+    const owner = { schemaVersion: 1, name, home, pid: process.pid, temporaries: [] };
+    const updateLock = (temporary, present) => {
+      if (temporary) owner.temporaries = present ? [...owner.temporaries, temporary] : owner.temporaries.filter((path) => path !== temporary);
+      const bytes = Buffer.from(JSON.stringify(owner) + "\n");
+      for (let offset = 0; offset < bytes.length;) offset += writeSync(fd, bytes, offset, bytes.length - offset);
+    };
+    try {
+      updateLock(null);
+      trackTemporary = updateLock;
+      return action();
+    } finally {
+      trackTemporary = () => {};
+      closeSync(fd);
+      for (const path of owner.temporaries) if (stat(path)) process.stderr.write(`Left temporary file ${path}. Run revert to recover the recorded changes before removing the leftover yourself.\n`);
+      const remaining = stat(lockPath);
+      if (remaining?.dev === created.dev && remaining.ino === created.ino) unlinkSync(lockPath);
+    }
   }
-  const record = loadRecord();
+  let record;
+  try { record = loadRecord(); }
+  catch (error) {
+    const message = `Cannot use the setup record at ${recordPath}. It is damaged or belongs to a different setup.\n${error.message}\nNothing was changed. Run revert --report-only for a diagnostic report. Keep a backup of this record because it may hold your original files. Restore a known-good backup, or use the helper from the recorded release and home for an outdated record. If you move it aside to start over, keep that backup for manual recovery.`;
+    if (values["report-only"]) { process.stdout.write(json({ recordPath, error: message })); return; }
+    throw new Error(message, { cause: error });
+  }
   if (command === "revert") {
     if (values.choices || values.catalog || values["show-all"] || values.approval) throw new Error("Revert takes no choices, catalog, visibility, or approval digest.");
     if (values["report-only"]) {
       process.stdout.write(json({ recordPath, phase: record.phase, changes: [...record.changes, ...(record.pending ?? [])].reverse() }));
       return;
     }
-    if (!stat(recordPath)) { process.stdout.write("Nothing to revert.\n"); return; }
+    if (!stat(recordPath) && !stat(lockPath)) { process.stdout.write("Nothing to revert.\n"); return; }
     withLock(() => {
       let latest = loadRecord();
       if (latest.phase === "applying") {
@@ -160,14 +246,18 @@ function main() {
         process.stdout.write(`Recovered the interrupted apply.\n${recovery.messages.join("\n")}\n`);
       }
       if (latest.changes.length === 0) { process.stdout.write("Nothing to revert.\n"); return; }
-      while (latest.changes.length) {
-        const change = latest.changes.at(-1);
-        const message = restore(change);
-        latest.changes.pop();
-        save(latest);
-        process.stdout.write(message + "\n");
+      const blocked = new Set();
+      for (let index = latest.changes.length - 1; index >= 0; index--) {
+        const change = latest.changes[index];
+        if (blocked.has(change.path)) continue;
+        const result = restore(change);
+        if (result.resolved) {
+          latest.changes.splice(index, 1);
+          save(latest);
+        } else blocked.add(change.path);
+        process.stdout.write(result.message + "\n");
       }
-      process.stdout.write("Revert complete.\n");
+      process.stdout.write(latest.changes.length ? `Revert kept unresolved originals in ${recordPath}.\n` : "Revert complete.\n");
     });
     return;
   }
@@ -262,7 +352,9 @@ function main() {
       }
       save({ schemaVersion: 1, pluginRoot, ranUnderVersion: metadata.version, phase: "ready", changes: [...record.changes, ...operations] });
     } catch (error) {
-      const recovery = rollback(pending);
+      let recovery;
+      try { recovery = rollback(pending); }
+      catch (rollbackError) { throw new Error(`Apply failed. Rollback is incomplete. Recovery remains at ${recordPath}. Run revert to retry.\n${error.message}\n${rollbackError.message}`, { cause: rollbackError }); }
       throw new Error(`Apply failed. Rolled back this run.\n${recovery.messages.join("\n")}\n${error.message}`, { cause: error });
     }
     process.stdout.write(`Applied ${operations.length} seat files. Record saved at ${recordPath}.\n`);

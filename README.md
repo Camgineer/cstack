@@ -54,7 +54,7 @@ In Intent, `setup` asks for an explicit provider, model, and effort for each of 
 
 Setup writes regular files in your own specialist folder. Each points at its seat file in the delivered plugin copy, so a plugin update preserves your model choices and later edits. A personal file already at a seat's path is shown before replacement and restored by revert. An unrecorded link is kept for you to move aside. Setup keeps its undo record beside the installation record, outside the replaced copy.
 
-Ask `setup` to revert to undo its writes. Revert keeps a file you changed after setup and names it. A second revert changes nothing. The helper can also be run directly from the delivered plugin:
+Ask `setup` to revert to undo its writes. Revert keeps a file you changed after setup and names it. If setup replaced your own file, its original bytes stay in the undo record until restored. Move the edited file aside and run revert again to recover that original. A deleted seat file is restored when it replaced your own file. A second revert changes nothing until you clear an unresolved path. An unreadable record still supports a report-only diagnostic. Keep a backup of that record for recovery. The helper can also be run directly from the delivered plugin:
 
 ```bash
 node ~/.local/share/cstack/hooks/intent-setup.mjs --help

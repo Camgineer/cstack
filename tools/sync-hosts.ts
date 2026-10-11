@@ -88,6 +88,8 @@ function readSeats(root: string, plugin: string): Seat[] {
 }
 
 function seatTable(root: string, plugin: string): string {
+  const seats = readSeats(root, plugin);
+  checkSeatReferences(root, plugin, seats);
   const writes = {
     none: "No",
     "assigned-paths": "Only the directory or paths the brief names",
@@ -102,7 +104,7 @@ function seatTable(root: string, plugin: string): string {
     site: "The role each site resolves to today",
   };
   const cell = (text: string) => text.replace(/\|/g, "\\|").replace(/\s+/g, " ").trim();
-  const rows = readSeats(root, plugin).map((seat) => {
+  const rows = seats.map((seat) => {
     const tier = seat.tier === "main" ? "The person's main model" : seat.tier === "none" ? "Explicit choice" : `${seat.tier}${seat.menu ? ", with a menu" : ""}`;
     return `| \`${seat.name}\` | \`${seat.specialist}\` | ${tier} | ${seat.name === "lead" ? "Not delegated to" : fallback[seat.fallback]} | ${seat.name === "lead" ? "Yes" : writes[seat.writes]} | ${cell(seat.description)} |`;
   });
@@ -118,6 +120,25 @@ function seatTable(root: string, plugin: string): string {
   const region = /<!-- seats:start -->[\s\S]*?<!-- seats:end -->/g;
   if ([...runtime.matchAll(region)].length !== 1) throw new Error(`${relative(root, path)} needs one generated seat table region`);
   return runtime.replace(region, () => table);
+}
+
+function checkSeatReferences(root: string, plugin: string, seats: readonly Seat[]): void {
+  const targets = new Map(seats.map((seat) => [seat.name, join(root, "agents", `${seat.name === "builder" ? `${plugin}-agent` : seat.name}.md`)]));
+  for (const directory of ["skills", "agents"]) {
+    const base = join(root, directory);
+    for (const path of readdirSync(base, { recursive: true, encoding: "utf8" })) {
+      if (!path.endsWith(".md") || path.split(/[\\/]/).includes("node_modules")) continue;
+      const source = join(base, path);
+      const prose = readFileSync(source, "utf8").replace(/^(`{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$/gm, "");
+      for (const match of prose.matchAll(/\[([a-z][a-z-]*) seat\]\(([^)]+)\)/g)) {
+        const seat = seats.find((entry) => entry.name === match[1]);
+        const target = match[2]?.split("#")[0];
+        if (seat === undefined || target === undefined || resolve(dirname(source), target) !== targets.get(seat.name) || seat.name === "lead") {
+          throw new Error(`${relative(root, source)} has an invalid seat reference: ${match[0]}`);
+        }
+      }
+    }
+  }
 }
 
 const codexDescriptionLimit = 120;

@@ -17,7 +17,7 @@ Each workflow uses these capabilities by name. Use the native tool the host note
 
 | Capability | Meaning in a workflow |
 | --- | --- |
-| **Delegate** | Spawn a subagent with a brief, a role, and a scope. Check its status, wait for it, and resume it. |
+| **Delegate** | Spawn a subagent with a brief, a seat, and a scope. Check its status, wait for it, and resume it. |
 | **Ask** | Put a structured question with options to the user. For grill and align rounds, follow [grill-with-docs](../../grill-with-docs/SKILL.md). |
 | **Shared document** | Keep a document the people in the conversation can read and comment on. Read authors and replies, reply in a thread, close it, and watch for new comments. |
 | **Plan** | Keep a visible todolist of the workflow's steps. |
@@ -32,11 +32,19 @@ When a capability is missing, use the workflow's stated fallback. Without a fall
 
 Give each child the least permission it needs. Investigators get read-only scope for repository files and connected apps. Read-only scope protects repository files and connected apps. An agent with read-only scope still runs local checks, and runs probes in `tmp/<task>/` inside the project, within the brief's allowed paths, per [Scratch files](../SKILL.md#scratch-files). A filesystem sandbox does not grant connector write authority. Assign exclusive writable paths or isolated worktrees before parallel edits. If the spawn tool has no working-directory field, name the prepared worktree in the brief and have the child verify its directory before writing. Schedule lanes within actual capacity and report any missing coverage.
 
-The seat files live in `agents/` at the plugin root. `agents/cstack-agent.md` is the builder and reads the mode. The lead runs the mode, and each thin seat sets it aside for the brief. `agents/comment-sicko.md` stays a prompt to carry in a worker's brief. Delegation sites that have not migrated to seats keep their current personas and model roles.
+The seat files live in `agents/` at the plugin root. `agents/cstack-agent.md` is the builder and reads the mode. The lead runs the mode, and each thin seat sets it aside for the brief. `agents/comment-sicko.md` stays a prompt to carry in a worker's brief. Each delegation site links its seat to that file and carries its workflow prompt in the brief. Use Markdown labels of the form `[worker seat]` so the host reference check can validate the target. A caller-selected site names its default. A blinded test subject takes no seat and receives only its organic task prompt. The image command is outside seat delegation.
 
 Make the intended operation explicit in the brief. For a reading task, say whether it answers a question, digests material too large for the parent's context, or watches an event. For a writing task, say whether it produces a candidate within assigned paths or implements a repository change under a plugin playbook. These distinctions select investigator versus scout and worker versus builder without changing their descriptions.
 
 Reuse a child only when the host reports it resumable. Read its status without waking or duplicating it. Each follow-up carries the current objective, constraints, and evidence pointers. The parent reviews results and resolves disagreements.
+
+### Before delegation
+
+Resolve the step's runner first, then check whether that runner can delegate within its current depth and permissions. A command runner and a native runner may have different capabilities. Follow the host note for the check, and make no call that the runner will refuse.
+
+When delegation is unavailable, use the workflow's own fallback. Do the step yourself only when that fallback permits it. A builder keeps review and verification independent, and a verifier keeps a blinded subject fresh. Reflect returns its evidence to its parent for the missing readers and synthesizer. With no permitted fallback, return the missing lane and its evidence to your parent, or name them in your reply when you have no parent. Continue the steps that do not need that lane, and record its check as not run.
+
+A delegated agent that reaches a decision only a person can make raises the decision to its parent or through the host's escalation route, then ends its turn. It asks the person no structured question itself.
 
 ### Seat delivery
 
@@ -60,7 +68,7 @@ Models:
 
 A command runner runs on the person's machine, so only the person's own file may name one. A project's block may hold only `native` lines. For each role, a project's `native` line wins, then the person's line, then the host's model. Ignore a project line that names a command, and report it.
 
-The legacy roles remain available to delegation sites that have not migrated. `build` covers implementation and arena runners. `review` covers finished-change review and verification. `advisor` covers second opinions before sign-off or a one-way door. `image` covers an image command on hosts with no image capability and has no host-model fallback.
+Legacy roles remain compatibility keys for seated calls. `build` covers implementation and Arena candidates. `review` covers finished-change review and verification. `advisor` covers second opinions before sign-off or a one-way door. `image` covers an image command on hosts with no image capability and has no host-model fallback.
 
 The seat table is generated from agent frontmatter by `sync:hosts`. Its `seat` keys mean:
 
@@ -84,7 +92,7 @@ These keys generate the table. They do not configure specialists or enforce file
 | `scout` | `cstack-scout` | fast | The host's model | No | A step has a pass or fail result that needs no judgment, a lookup has one right answer, an input is too large for your context, or you are waiting on an event. You need back a result, a digest, or a wake-up. The child changes nothing. |
 <!-- seats:end -->
 
-On Intent, delegate by seat specialist as the host note says. Seat specialists replace role-based model routing there for migrated calls. Other calls keep their existing route until they migrate. On other hosts a `Models:` line may name a seat or a legacy role. Resolve a seat line first, with the project's `native` line before the person's line. Without a seat line, resolve the caller's existing role exactly as before. A `site` fallback uses the role the caller names, and a caller with no role stays on the host's model. Preserve `arena`'s `architect runners` exception, which has no role. A seat changes no model by itself.
+On Intent, delegate by seat specialist as the host note says. Seat specialists replace role-based model routing there. On other hosts a `Models:` line may name a seat or a legacy role. Resolve a seat line first, with the project's `native` line before the person's line. Without a seat line, resolve the caller's existing role exactly as before. Every site states its compatibility fallback separately from its seat. That site fallback wins over the seat's setup tier and table fallback, including a site with no legacy role. A caller with no role stays on the host's model. Arena candidates keep `build`, while Architect candidates keep no legacy role. Swarm keeps each caller's fallback, or no legacy role when none is named. A seat changes no model by itself.
 
 Keep the command-runner boundary for seat lines too. A project line can name only `native`. Ignore and report a project command line, then consider the person's line. Intent uses the configured specialist instead of a `Models:` block for a seated call.
 
@@ -101,7 +109,7 @@ Model ID and reasoning effort are separate choices. A requested model is not pro
 
 A review panel starts the reviewer seat once per angle. The delegating agent selects a different entry from its model menu on each call, as the host note says. A reviewer never delegates. Keep the existing menu overflow rule, which uses the host's model for lanes past the menu. For more thoroughness, request more passes from different angles, never more effort.
 
-A panel keeps its default three seats unless the user selected another size. A panel with no role, such as swarm workers or architect runners, uses the host's model unless the user names models for that run. Call a panel model-diverse only when its seats resolve to different model families, and report a panel whose seats share one family. Independent prompts alone do not make a panel diverse. When the user asks for diversity the host and roles cannot provide, report that and get their choice between a reduced panel and waiting. Treat a rejected model ID as a missing lane.
+A panel keeps its default three seats unless the user selected another size. A panel with no legacy role uses the host's model unless the user names models for that run. Call a panel model-diverse only when its seats resolve to different model families, and report a panel whose seats share one family. Independent prompts alone do not make a panel diverse. When the user asks for diversity the host and roles cannot provide, report that and get their choice between a reduced panel and waiting. Treat a rejected model ID as a missing lane.
 
 ## Skills, resources, and writing
 

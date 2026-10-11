@@ -6,7 +6,12 @@ set -eu
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 name=$(sed -n 's/^[[:space:]]*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$root/tools/metadata.json" 2>/dev/null | head -n 1)
 mode="${name:-plugin}-mode"
-state="${XDG_STATE_HOME:-$HOME/.local/state}/${name:-plugin}/$mode"
+case "${HOME:-}" in /*) ;; *) echo "HOME must be an absolute path." >&2; exit 2 ;; esac
+case "${XDG_STATE_HOME:-}" in
+  /*) state_home=$XDG_STATE_HOME ;;
+  *) state_home=$HOME/.local/state ;;
+esac
+state="$state_home/${name:-plugin}/$mode"
 env_switch=$(printf '%s' "$mode" | tr '[:lower:]-' '[:upper:]_')
 
 json_string() {
@@ -82,8 +87,12 @@ case "$command" in
     ;;
   session-start | prompt)
     input=$(cat)
-    cwd=${CLAUDE_PROJECT_DIR:-${CURSOR_PROJECT_DIR:-$(json_field "$input" cwd)}}
-    project=$(project_of "${cwd:-$(pwd)}")
+    cwd=$(json_field "$input" cwd)
+    for directory in "${CURSOR_PROJECT_DIR:-}" "${CLAUDE_PROJECT_DIR:-}"; do
+      case "$directory" in /*) cwd=$directory ;; esac
+    done
+    case "$cwd" in /*) ;; *) cwd=$(pwd) ;; esac
+    project=$(project_of "$cwd")
     flag=$(flag_for "$project")
     host=${2:-}
     if [ "$command" = session-start ]; then

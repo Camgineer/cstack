@@ -1,14 +1,196 @@
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, linkSync, cpSync, lstatSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "../..");
 const script = join(root, "hooks/intent-deliver.sh");
 
+test.each(["", "."])("delivery ignores an empty or relative data directory (%s) and preserves the working checkout", (value) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const cwd = join(home, "code");
+    const checkout = join(cwd, "cstack");
+    copyPlugin(checkout);
+    mkdirSync(join(checkout, ".git"));
+    writeFileSync(join(checkout, "unpushed-work.txt"), "My unpushed work.\n");
+    const before = homeSnapshot(checkout);
+    const result = spawnSync("sh", [from, "--hosts", "intent"], {
+      cwd, env: { HOME: home, PATH: join(home, "bin"), XDG_DATA_HOME: value }, encoding: "utf8",
+    });
+    expect(result.status).toBe(0);
+    expect(homeSnapshot(checkout)).toEqual(before);
+    expect(packageContents(join(home, ".local/share/cstack"))).toEqual(packageContents(dirname(dirname(from))));
+    expect(installRecord(home).entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(home, ".local/share/cstack/skills/how") });
+  });
+});
+
+test.each(["directory", "file", "dangling link"])("delivery refuses a live copy with a .git %s", (kind) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const shell = join(dirname(from), "intent-deliver.sh");
+    expect(install(home, shell).status).toBe(0);
+    const checkout = join(home, ".local/share/cstack");
+    const git = join(checkout, ".git");
+    if (kind === "directory") mkdirSync(git);
+    else if (kind === "file") writeFileSync(git, "gitdir: ../worktree\n");
+    else symlinkSync(join(home, "missing-git"), git);
+    writeFileSync(join(checkout, "unpushed-work.txt"), "My unpushed work.\n");
+    const before = homeSnapshot(home);
+    const result = install(home, shell);
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain(".git entry");
+    expect(homeSnapshot(home)).toEqual(before);
+    const table = commandRun(home, ["--hosts", "intent"], from);
+    expect(table.status).toBe(1);
+    expect(table.stdout + table.stderr).toContain(".git entry");
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+test.each(["", "."])("installer entry points refuse an empty or relative HOME (%s)", (value) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const before = homeSnapshot(home);
+    for (const command of [from, join(dirname(from), "intent-deliver.sh")]) {
+      const result = spawnSync("sh", [command], { cwd: home, env: { HOME: value, PATH: join(home, "bin") }, encoding: "utf8" });
+      expect(result.status).not.toBe(0);
+      expect(result.stdout + result.stderr).toContain("HOME must be an absolute path");
+      expect(homeSnapshot(home)).toEqual(before);
+    }
+  });
+});
+
+test("an interrupted competing install reports the staging folder and preserves both leftovers", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const shell = join(dirname(from), "intent-deliver.sh");
+    expect(install(home, shell).status).toBe(0);
+    const data = join(home, ".local/share/cstack");
+    const competitor = join(home, "competitor.cjs");
+    writeFileSync(competitor, `const fs = require('node:fs');
+const rename = fs.renameSync;
+fs.renameSync = function(a, b) {
+  const result = rename.apply(this, arguments);
+  if (a === ${JSON.stringify(data)}) process.kill(process.pid, 'SIGKILL');
+  return result;
+};
+require('node:module').syncBuiltinESMExports();`);
+    const preload = join(home, "competing.cjs");
+    writeFileSync(preload, `const fs = require('node:fs');
+const rename = fs.renameSync;
+fs.renameSync = function(a, b) {
+  if (a === ${JSON.stringify(data)}) {
+    const other = require('node:child_process').spawnSync('sh', [${JSON.stringify(shell)}], {
+      env: { ...process.env, NODE_OPTIONS: '--require ' + ${JSON.stringify(JSON.stringify(competitor))} }, encoding: 'utf8', timeout: 10000,
+    });
+    if (other.signal !== 'SIGKILL') throw new Error('The competing installer did not reach its interrupted swap: ' + other.stderr);
+    fs.writeFileSync(${JSON.stringify(join(home, "left-staging.txt"))}, require('node:path').dirname(b));
+  }
+  return rename.apply(this, arguments);
+};
+require('node:module').syncBuiltinESMExports();`);
+    const result = spawnSync("sh", [shell], {
+      env: { HOME: home, PATH: join(home, "bin"), NODE_OPTIONS: "--require " + JSON.stringify(preload) }, encoding: "utf8", timeout: 20000,
+    });
+    expect(result.status).toBe(2);
+    const staging = readFileSync(join(home, "left-staging.txt"), "utf8");
+    expect(result.stderr).toContain("Another install may be running");
+    expect(result.stderr).toContain(`Left temporary folder ${staging}`);
+    expect(result.stderr).toContain("run the installer again");
+    const parent = dirname(data);
+    const leftovers = readdirSync(parent).filter((entry) => entry.startsWith(".cstack-install-")).sort();
+    expect(leftovers).toHaveLength(2);
+    const snapshots = leftovers.map((entry) => homeSnapshot(join(parent, entry)));
+    expect(install(home, shell).status).toBe(0);
+    expect(packageContents(data)).toEqual(packageContents(dirname(dirname(from))));
+    expect(readdirSync(parent).filter((entry) => entry.startsWith(".cstack-install-")).sort()).toEqual(leftovers);
+    expect(leftovers.map((entry) => homeSnapshot(join(parent, entry)))).toEqual(snapshots);
+    expect(installRecord(home).entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
+  });
+});
+
+test.each(["live copy", "missing copy"])("delivery preserves an unrecorded sibling backup with %s", (state) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const shell = join(dirname(from), "intent-deliver.sh");
+    if (state === "live copy") expect(install(home, shell).status).toBe(0);
+    const staging = join(home, ".local/share/.cstack-install-personal-backup");
+    const previous = join(staging, "previous");
+    copyPlugin(previous);
+    writeFileSync(join(previous, "personal-notes.txt"), "My saved notes.\n");
+    const before = homeSnapshot(staging);
+    const result = install(home, shell);
+    expect(result.status).toBe(0);
+    expect(homeSnapshot(staging)).toEqual(before);
+    expect(readFileSync(join(previous, "personal-notes.txt"), "utf8")).toBe("My saved notes.\n");
+    expect(readFileSync(join(home, ".local/share/cstack/skills/how/SKILL.md"), "utf8")).toBe(readFileSync(join(dirname(dirname(from)), "skills/how/SKILL.md"), "utf8"));
+  });
+});
+
+test("delivery ignores a planted swap journal that names a personal folder", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const parent = join(home, ".local/share");
+    const staging = join(parent, ".cstack-install-personal");
+    mkdirSync(join(staging, "copy"), { recursive: true });
+    writeFileSync(join(staging, "copy/notes.txt"), "Private notes.\n");
+    const journal = join(parent, ".cstack-swap.json");
+    const content = JSON.stringify({ schemaVersion: 1, name: "cstack", data: join(parent, "cstack"), staging });
+    writeFileSync(journal, content);
+    const before = homeSnapshot(staging);
+    const result = install(home, join(dirname(from), "intent-deliver.sh"));
+    expect(result.status).toBe(0);
+    expect(homeSnapshot(staging)).toEqual(before);
+    expect(readFileSync(journal, "utf8")).toBe(content);
+    expect(readFileSync(join(staging, "copy/notes.txt"), "utf8")).toBe("Private notes.\n");
+  });
+});
+
+test("a sibling backup cannot supply ownership for an unrecorded host file", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const shell = join(dirname(from), "intent-deliver.sh");
+    expect(install(home, shell).status).toBe(0);
+    const parent = join(home, ".local/share");
+    rmSync(join(parent, "cstack-install-record.json"));
+    const staging = join(parent, ".cstack-install-backup");
+    const previous = join(staging, "previous");
+    mkdirSync(join(previous, "tools"), { recursive: true });
+    cpSync(join(root, "tools/metadata.json"), join(previous, "tools/metadata.json"));
+    const personal = join(home, ".intent/skills/personal-notes");
+    writeFileSync(personal, "Personal host contents.\n", { mode: 0o644 });
+    writeFileSync(join(previous, "install-record.json"), JSON.stringify({ schemaVersion: 1, modeRule: { location: "Intent's Settings, under Agent Behavior", status: "unchanged" }, entries: [{ path: personal, kind: "file", sha256: new Bun.CryptoHasher("sha256").update("Personal host contents.\n").digest("hex"), mode: 0o644 }] }));
+    const before = homeSnapshot(staging);
+    expect(install(home, shell).status).toBe(0);
+    expect(readFileSync(personal, "utf8")).toBe("Personal host contents.\n");
+    expect(homeSnapshot(staging)).toEqual(before);
+    expect(installRecord(home).entries.some((entry: { path: string }) => entry.path === personal)).toBe(false);
+  });
+});
+
+test("an unreadable record leaves a dropped skill link and reports its missing target on later runs", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    writeFileSync(join(home, ".local/share/cstack-install-record.json"), "broken json");
+    rmSync(join(dirname(dirname(from)), "skills/how"), { recursive: true });
+    const link = join(home, ".intent/skills/how");
+    for (let run = 0; run < 2; run++) {
+      const result = commandRun(home, ["--hosts", "intent"], from);
+      expect(result.status).toBe(0);
+      expect(readlinkSync(link)).toBe(join(home, ".local/share/cstack/skills/how"));
+      expect(existsSync(link)).toBe(false);
+      const row = result.stdout.split("\n").find((line) => line.startsWith("Intent ")) ?? "";
+      expect(row).toContain(`kept ${link}: its link target is gone`);
+      expect(row).not.toContain("left your own how");
+    }
+  });
+});
+
 function withHome(run: (home: string) => void): void {
-  const home = mkdtempSync(join(tmpdir(), "intent home "));
+  const home = realpathSync(mkdtempSync(join(tmpdir(), "intent home ")));
   try {
     fixturePath(home);
     run(home);
@@ -47,11 +229,11 @@ test("links every visible skill into Intent, and leaves specialist setup alone",
 
     const rerun = install(home);
     expect(rerun.status).toBe(0);
-    expect(rerun.stdout).toBe("");
+    expect(rerun.stdout).toContain("Left the cstack-mode rule unchanged in Intent's Settings");
   });
 });
 
-test("an update drops links to removed or hidden skills and keeps the person's own entries", () => {
+test("a missing record preserves unrecorded retired links and the person's own entries", () => {
   withHome((home) => {
     const skills = join(home, ".intent/skills");
     mkdirSync(join(skills, "align"), { recursive: true });
@@ -62,15 +244,15 @@ test("an update drops links to removed or hidden skills and keeps the person's o
 
     const result = install(home);
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain(`removed ${join(skills, "retired")}\n`);
-    expect(result.stdout).toContain(`removed ${join(skills, "principle-laziness-protocol")}\n`);
+    expect(result.stdout).toContain("Installation record missing. No host entries were removed.");
+    expect(readlinkSync(join(skills, "principle-laziness-protocol"))).toBe(join(root, "skills/principle-laziness-protocol"));
     expect(result.stderr).toBe("");
     expect(result.stdout).toContain("left your own align as it is\n");
     expect(result.stdout).toContain("left your own how as it is\n");
 
     const linked = readdirSync(skills);
-    expect(linked).not.toContain("retired");
-    expect(linked).not.toContain("principle-laziness-protocol");
+    expect(linked).toContain("retired");
+    expect(linked).toContain("principle-laziness-protocol");
     expect(readdirSync(join(skills, "align"))).toEqual([]);
     expect(readlinkSync(join(skills, "how"))).toBe(join(home, "elsewhere/how"));
     expect(readlinkSync(join(skills, "cstack-mode"))).toBe(join(root, "skills/cstack-mode"));
@@ -98,7 +280,7 @@ function copyPlugin(to: string): void {
 function npxInstall(home: string, cache: string) {
   const bin = join(cache, "node_modules/.bin");
   mkdirSync(bin, { recursive: true });
-  symlinkSync("../cstack/hooks/intent-deliver.sh", join(bin, "cstack-intent"));
+  if (!existsSync(join(bin, "cstack-intent"))) symlinkSync("../cstack/hooks/intent-deliver.sh", join(bin, "cstack-intent"));
   return install(home, join(bin, "cstack-intent"));
 }
 
@@ -112,7 +294,7 @@ test("run by npx, it links to its own copy, which outlives npx's cache and follo
     const result = npxInstall(home, first);
     expect(result.stderr).toBe("");
     expect(result.status).toBe(0);
-    expect(result.stdout.split("\n")[0]).toBe(`copied the plugin to ${copy}`);
+    expect(result.stdout).toContain(`copied the plugin to ${copy}`);
     expect(readlinkSync(join(skills, "cstack-mode"))).toBe(join(copy, "skills/cstack-mode"));
     expect(existsSync(join(home, ".intent/specialists"))).toBe(false);
     rmSync(first, { recursive: true });
@@ -155,7 +337,7 @@ test("a checkout reached through an alias, then moved, keeps working links", () 
     expect(readlinkSync(join(skills, "cstack-mode"))).toBe(join(realpathSync(checkout), "skills/cstack-mode"));
     const again = install(home, join(checkout, "hooks/intent-deliver.sh"));
     expect(again.status).toBe(0);
-    expect(again.stdout).toBe("");
+    expect(again.stdout).toContain("Left the cstack-mode rule unchanged in Intent's Settings");
 
     const moved = join(home, "moved checkout");
     renameSync(checkout, moved);
@@ -181,7 +363,7 @@ case "$1" in settings) echo 'git.autoCommit = false' ;; esac
 `, { mode: 0o755 });
     const run = () => spawnSync("sh", [script], { env: { PATH: bin, HOME: home }, encoding: "utf8" });
 
-    expect(run().stdout).toContain("added the cstack-mode rule to Intent's Settings, under Agent Behavior\n");
+    expect(run().stdout).toContain("added the cstack-mode rule in Intent's Settings, under Agent Behavior, at the top of your personal rule text.");
     const update = JSON.parse(readFileSync(join(home, "updates"), "utf8"));
     expect(update).toEqual({
       workspaceId: "global",
@@ -190,7 +372,7 @@ case "$1" in settings) echo 'git.autoCommit = false' ;; esac
       content: "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session.",
     });
 
-    expect(run().stdout).toBe("");
+    expect(run().stdout).toContain("Left the cstack-mode rule unchanged in Intent's Settings");
     expect(readFileSync(join(home, "updates"), "utf8").trim().split("\n")).toHaveLength(1);
   });
 });
@@ -407,7 +589,8 @@ test("npx delivery leaves a person's own specialist intact and succeeds with tha
     const result = commandRun(home, ["--hosts", "intent"], fetchedPackage(home));
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
-    expect(result.stdout).toContain("left your own cstack-agent.md as it is. Nothing is needed for your own files.");
+    expect(result.stdout).toContain("left your own cstack-agent.md as it is");
+    expect(result.stdout).toContain("Nothing is needed for your own files.");
     expect(result.stdout.indexOf("left your own")).toBeGreaterThan(result.stdout.indexOf("Host"));
     expect(readFileSync(join(specialists, "cstack-agent.md"), "utf8")).toBe("My provider and model.\n");
     expect(readdirSync(specialists)).toEqual(["cstack-agent.md"]);
@@ -753,7 +936,8 @@ test("a second run reports every unchanged installed host as already current wit
       if (host === "Cursor") expect(row).toContain("Open Cursor Customize, find cstack, and select Install or update. Native installation and version are unknown.");
       else expect(row).not.toContain("Open Cursor");
     }
-    expect(second.stdout).toContain("left your own cstack-agent.md as it is. Nothing is needed for your own files.");
+    expect(second.stdout).toContain("left your own cstack-agent.md as it is");
+    expect(second.stdout).toContain("Nothing is needed for your own files.");
     expect(readFileSync(join(specialists, "cstack-agent.md"), "utf8")).toBe("My specialist.\n");
   });
 }, 15000);
@@ -874,5 +1058,574 @@ test.each([
     const after = JSON.parse(readFileSync(join(home, "state.json"), "utf8"));
     expect(after.codex).toEqual([{ name: "cstack", pluginId: "cstack@cstack", marketplaceName: "cstack", version: "9.0.0", marketplaceSource: { sourceType: "git", source: "configured" } }]);
     expect(after.markets).toEqual([{ name: "cstack", marketplaceSource: { sourceType: "git", source: "other/fork" } }]);
+  });
+});
+
+function installRecord(home: string) {
+  return JSON.parse(readFileSync(join(home, ".local/share/cstack-install-record.json"), "utf8"));
+}
+
+test("delivery records host links and keeps copied files outside the ownership record", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    const record = installRecord(home);
+    const data = join(home, ".local/share/cstack");
+    expect(record.schemaVersion).toBe(1);
+    expect(record.entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
+    expect(record.entries.every((entry: { path: string }) => !entry.path.startsWith(data + "/"))).toBe(true);
+    expect(lstatSync(join(data, "hooks/intent-deliver.sh")).mode & 0o777).toBe(0o755);
+    expect(record.modeRule).toEqual({ location: "Intent's Settings, under Agent Behavior", status: "existing" });
+    expect(record.entries.some((entry: { path: string }) => entry.path.includes("node_modules") || entry.path.endsWith("install-record.json"))).toBe(false);
+  });
+});
+
+test("a valid record never claims an unrecorded link even when it points at the plugin", () => {
+  withHome((home) => {
+    expect(install(home).status).toBe(0);
+    const record = installRecord(home);
+    const path = join(home, ".intent/skills/how");
+    record.entries = record.entries.filter((entry: { path: string }) => entry.path !== path);
+    writeFileSync(join(home, ".local/share/cstack-install-record.json"), JSON.stringify(record));
+    const result = install(home);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("left your own how as it is");
+    expect(readlinkSync(path)).toBe(join(root, "skills/how"));
+    expect(installRecord(home).entries.some((entry: { path: string }) => entry.path === path)).toBe(false);
+  });
+});
+
+test("the first recorded run adopts exact legacy skill links and keeps unrelated and broken links", () => {
+  withHome((home) => {
+    const skills = join(home, ".intent/skills");
+    mkdirSync(skills, { recursive: true });
+    symlinkSync(join(root, "skills/cstack-mode"), join(skills, "cstack-mode"));
+    symlinkSync(join(root, "skills/align"), join(skills, "align"));
+    const own = join(home, "my how");
+    mkdirSync(own);
+    symlinkSync(own, join(skills, "how"));
+    symlinkSync(join(home, "missing"), join(skills, "why"));
+    const first = install(home);
+    expect(first.status).toBe(0);
+    expect(installRecord(home).entries).toContainEqual({ path: join(skills, "align"), kind: "link", target: join(root, "skills/align") });
+    expect(first.stdout).toContain("left your own how as it is");
+    expect(first.stdout).toContain(`kept ${join(skills, "why")}: its link target is gone`);
+    expect(readlinkSync(join(skills, "how"))).toBe(own);
+    expect(readlinkSync(join(skills, "why"))).toBe(join(home, "missing"));
+    expect(install(home).status).toBe(0);
+    expect(readlinkSync(join(skills, "why"))).toBe(join(home, "missing"));
+  });
+});
+
+test("updates replace the whole copy and remove recorded retired host links while preserving personal host files", () => {
+  withHome((home) => {
+    const cache = join(home, "npx/first");
+    const plugin = join(cache, "node_modules/cstack");
+    copyPlugin(plugin);
+    expect(npxInstall(home, cache).status).toBe(0);
+    const data = join(home, ".local/share/cstack");
+    const own = join(home, ".intent/skills/personal.txt");
+    writeFileSync(own, "My notes.\n");
+    writeFileSync(join(data, "skills/how/SKILL.md"), "My edited skill.\n");
+    rmSync(join(plugin, "skills/how"), { recursive: true });
+    rmSync(join(plugin, "skills/why"), { recursive: true });
+    const hidden = join(plugin, "skills/align/SKILL.md");
+    writeFileSync(hidden, readFileSync(hidden, "utf8").replace("---\n", "---\ndisable-model-invocation: true\n"));
+    const result = npxInstall(home, cache);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(`removed ${join(home, ".intent/skills/how")}`);
+    expect(result.stdout).toContain(`removed ${join(home, ".intent/skills/why")}`);
+    expect(result.stdout).toContain(`removed ${join(home, ".intent/skills/align")}`);
+    expect(existsSync(join(home, ".intent/skills/how"))).toBe(false);
+    expect(existsSync(join(data, "skills/why/SKILL.md"))).toBe(false);
+    expect(existsSync(join(data, "skills/how/SKILL.md"))).toBe(false);
+    expect(readFileSync(own, "utf8")).toBe("My notes.\n");
+    expect(result.stdout).not.toContain("left your own SKILL.md as it is");
+    expect(installRecord(home).entries.some((entry: { path: string }) => entry.path === join(data, "skills/how/SKILL.md"))).toBe(false);
+  });
+});
+
+test("a changed recorded link and a personal file replacing a recorded link survive every update", () => {
+  withHome((home) => {
+    expect(install(home).status).toBe(0);
+    const skills = join(home, ".intent/skills");
+    rmSync(join(skills, "how"));
+    symlinkSync(join(home, "my missing how"), join(skills, "how"));
+    rmSync(join(skills, "why"));
+    writeFileSync(join(skills, "why"), "My own file.\n");
+    for (let index = 0; index < 2; index++) {
+      const result = install(home);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain(`kept ${join(skills, "how")}: its link target is gone`);
+      expect(result.stdout).toContain("left your own why as it is");
+      expect(readlinkSync(join(skills, "how"))).toBe(join(home, "my missing how"));
+      expect(readFileSync(join(skills, "why"), "utf8")).toBe("My own file.\n");
+    }
+  });
+});
+
+test.each(["missing", "unreadable", "unreadable permissions", "outside path"])("a %s record removes no unproven host entries from an earlier install", (state) => {
+  withHome((home) => {
+    const cache = join(home, "npx/first");
+    const plugin = join(cache, "node_modules/cstack");
+    copyPlugin(plugin);
+    expect(npxInstall(home, cache).status).toBe(0);
+    const path = join(home, ".local/share/cstack-install-record.json");
+    const protectedFile = join(home, "keep.txt");
+    writeFileSync(protectedFile, "Keep me.\n");
+    if (state === "missing") rmSync(path);
+    else if (state === "unreadable") writeFileSync(path, "broken json");
+    else if (state === "unreadable permissions") chmodSync(path, 0o000);
+    else {
+      const record = installRecord(home);
+      record.entries.push({ path: protectedFile, kind: "file", sha256: new Bun.CryptoHasher("sha256").update("Keep me.\n").digest("hex"), mode: 0o644 });
+      writeFileSync(path, JSON.stringify(record));
+    }
+    rmSync(join(plugin, "skills/how"), { recursive: true });
+    const result = npxInstall(home, cache);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(`Installation record ${state === "missing" ? "missing" : "unreadable"}. No host entries were removed.`);
+    expect(readlinkSync(join(home, ".intent/skills/how"))).toBe(join(home, ".local/share/cstack/skills/how"));
+    expect(existsSync(join(home, ".local/share/cstack/skills/how/SKILL.md"))).toBe(false);
+    expect(readFileSync(protectedFile, "utf8")).toBe("Keep me.\n");
+    expect(result.stdout).not.toContain("removed ");
+  });
+});
+
+test("delivery replaces a directory link inside the copy without writing through its personal target", () => {
+  withHome((home) => {
+    const cache = join(home, "npx/first");
+    copyPlugin(join(cache, "node_modules/cstack"));
+    expect(npxInstall(home, cache).status).toBe(0);
+    const data = join(home, ".local/share/cstack");
+    const own = join(home, "own how");
+    mkdirSync(own);
+    writeFileSync(join(own, "SKILL.md"), "My skill.\n");
+    rmSync(join(data, "skills/how"), { recursive: true });
+    symlinkSync(own, join(data, "skills/how"));
+    const result = npxInstall(home, cache);
+    expect(result.status).toBe(0);
+    expect(readFileSync(join(own, "SKILL.md"), "utf8")).toBe("My skill.\n");
+    expect(lstatSync(join(data, "skills/how")).isDirectory()).toBe(true);
+    expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe(readFileSync(join(root, "skills/how/SKILL.md"), "utf8"));
+  });
+});
+
+test.each(["shell", "node"])("direct %s delivery honors report-only without creating files or writing a rule", (route) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const binary = route === "shell" ? "sh" : join(home, "bin/node");
+    const target = join(dirname(from), route === "shell" ? "intent-deliver.sh" : "intent-deliver.mjs");
+    const result = spawnSync(binary, [target, "--report-only"], { env: { HOME: home, PATH: join(home, "bin") }, encoding: "utf8" });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Report only. No install, update, move, delivery, or rule write was run.");
+    expect(result.stdout).toContain("Installation record");
+    expect(existsSync(join(home, ".intent"))).toBe(false);
+    expect(existsSync(join(home, ".local"))).toBe(false);
+    expect(install(home, join(dirname(from), "intent-deliver.sh")).status).toBe(0);
+    expect(readlinkSync(join(home, ".intent/skills/how"))).toBe(join(home, ".local/share/cstack/skills/how"));
+  });
+});
+
+test("the final table identifies the first rule's position and updates leave personal rule edits alone", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    writeFileSync(join(home, "bin/intentd"), `#!/bin/sh
+case "$2" in
+rules.get) printf '{"enabled":true,"content":"My other rule."}' ;;
+rules.update) printf '%s\\n' "$4" > "${join(home, "rule-update")}"; printf '{}' ;;
+esac
+`, { mode: 0o755 });
+    const result = commandRun(home, ["--hosts", "intent"], from);
+    expect(result.status).toBe(0);
+    const row = result.stdout.split("\n").find((line) => /^Intent\s/.test(line));
+    expect(row).toContain("added the cstack-mode rule in Intent's Settings, under Agent Behavior, at the top of your personal rule text");
+    expect(JSON.parse(readFileSync(join(home, "rule-update"), "utf8")).content).toEndWith("\n\nMy other rule.");
+    expect(installRecord(home).modeRule.status).toBe("added");
+    writeFileSync(join(home, "rule-update"), "My replacement rule.");
+    const again = commandRun(home, ["--hosts", "intent"], from);
+    expect(again.status).toBe(0);
+    expect(again.stdout).toContain("Already current");
+    expect(again.stdout).toContain("Left the cstack-mode rule unchanged in Intent's Settings, under Agent Behavior");
+    expect(readFileSync(join(home, "rule-update"), "utf8")).toBe("My replacement rule.");
+  });
+});
+
+test("the record follows XDG_DATA_HOME and leaves no default data folder", () => {
+  withHome((home) => {
+    const data = join(home, "custom data");
+    const result = spawnSync("sh", [script], { env: { HOME: home, PATH: join(home, "bin"), XDG_DATA_HOME: data }, encoding: "utf8" });
+    expect(result.status).toBe(0);
+    const record = JSON.parse(readFileSync(join(data, "cstack-install-record.json"), "utf8"));
+    expect(record.entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(root, "skills/how") });
+    expect(existsSync(join(home, ".local/share/cstack"))).toBe(false);
+    expect(readlinkSync(join(home, ".intent/skills/how"))).toBe(join(root, "skills/how"));
+  });
+});
+
+test("a copied file can become a link and return to a file when the whole copy is replaced", () => {
+  withHome((home) => {
+    const cache = join(home, "npx/first");
+    const plugin = join(cache, "node_modules/cstack");
+    copyPlugin(plugin);
+    const sourceFile = join(plugin, "hooks/example.txt");
+    writeFileSync(sourceFile, "Original.\n");
+    expect(npxInstall(home, cache).status).toBe(0);
+    const installed = join(home, ".local/share/cstack/hooks/example.txt");
+    expect(readFileSync(installed, "utf8")).toBe("Original.\n");
+    rmSync(sourceFile);
+    symlinkSync("install.mjs", sourceFile);
+    expect(npxInstall(home, cache).status).toBe(0);
+    expect(readlinkSync(installed)).toBe("install.mjs");
+    rmSync(sourceFile);
+    writeFileSync(sourceFile, "Replacement.\n");
+    expect(npxInstall(home, cache).status).toBe(0);
+    expect(readFileSync(installed, "utf8")).toBe("Replacement.\n");
+  });
+});
+
+test("a legacy link to a prior checkout is recorded before its target can be replaced", () => {
+  withHome((home) => {
+    const old = join(home, "old checkout");
+    const next = join(home, "next checkout");
+    copyPlugin(old);
+    copyPlugin(next);
+    mkdirSync(join(next, ".git"));
+    const skills = join(home, ".intent/skills");
+    mkdirSync(skills, { recursive: true });
+    symlinkSync(join(old, "skills/cstack-mode"), join(skills, "cstack-mode"));
+    symlinkSync(join(old, "skills/how"), join(skills, "how"));
+    const from = join(next, "hooks/intent-deliver.sh");
+    const first = install(home, from);
+    expect(first.status).toBe(0);
+    expect(first.stdout).toContain("Recorded the earlier how link. Run the installer again to update its target.");
+    expect(first.stdout).not.toContain("left your own how");
+    expect(readlinkSync(join(skills, "how"))).toBe(join(old, "skills/how"));
+    expect(installRecord(home).entries).toContainEqual({ path: join(skills, "how"), kind: "link", target: join(old, "skills/how") });
+    expect(install(home, from).status).toBe(0);
+    expect(readlinkSync(join(skills, "how"))).toBe(join(next, "skills/how"));
+  });
+});
+
+test("copy updates preserve hard-linked personal backups and the previous record", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const plugin = dirname(dirname(from));
+    const sourceFile = join(plugin, "hooks/example.txt");
+    writeFileSync(sourceFile, "Original.\n", { mode: 0o644 });
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    const data = join(home, ".local/share/cstack");
+    const installed = join(data, "hooks/example.txt");
+    const backup = join(home, "personal-backup.txt");
+    const recordBackup = join(home, "record-backup.json");
+    const recordPath = join(dirname(data), "cstack-install-record.json");
+    const recordBefore = readFileSync(recordPath, "utf8");
+    linkSync(installed, backup);
+    linkSync(recordPath, recordBackup);
+    writeFileSync(sourceFile, "Replacement.\n");
+    chmodSync(sourceFile, 0o600);
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    expect(readFileSync(installed, "utf8")).toBe("Replacement.\n");
+    expect(lstatSync(installed).mode & 0o777).toBe(0o600);
+    expect(readFileSync(backup, "utf8")).toBe("Original.\n");
+    expect(lstatSync(backup).mode & 0o777).toBe(0o644);
+    expect(readFileSync(recordBackup, "utf8")).toBe(recordBefore);
+    expect(installRecord(home).schemaVersion).toBe(1);
+  });
+});
+
+function packageContents(base: string): string[] {
+  const result: string[] = [];
+  const visit = (path: string) => {
+    const full = join(base, path);
+    const stat = lstatSync(full);
+    if (stat.isDirectory()) {
+      for (const child of readdirSync(full).sort()) if (child !== "node_modules") visit(join(path, child));
+    } else if (stat.isSymbolicLink()) result.push(JSON.stringify([path, "link", readlinkSync(full)]));
+    else result.push(JSON.stringify([path, "file", stat.mode & 0o777, readFileSync(full).toString("base64")]));
+  };
+  for (const path of ["agents", "hooks", "skills", "tools/metadata.json", "LICENSE"]) if (existsSync(join(base, path))) visit(path);
+  return result;
+}
+
+function homeSnapshot(base: string): string[] {
+  const rows: string[] = [];
+  const visit = (path: string) => {
+    const full = join(base, path);
+    const stat = lstatSync(full);
+    if (stat.isSymbolicLink()) rows.push(JSON.stringify([path, "link", readlinkSync(full)]));
+    else if (stat.isDirectory()) {
+      rows.push(JSON.stringify([path, "directory"]));
+      for (const child of readdirSync(full).sort()) visit(join(path, child));
+    } else rows.push(JSON.stringify([path, "file", stat.mode & 0o777, readFileSync(full).toString("base64")]));
+  };
+  for (const child of readdirSync(base).sort()) visit(child);
+  return rows;
+}
+
+test.each(["empty object", "wrong name", "directory", "linked metadata", "valid record without metadata", "malformed", "null", "linked tools"])("copy identity refusal preserves unrelated folders with %s", (kind) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const data = join(home, ".local/share/cstack");
+    mkdirSync(join(data, "tools"), { recursive: true });
+    writeFileSync(join(data, "personal.txt"), "My personal file.\n");
+    const metadata = join(data, "tools/metadata.json");
+    if (kind === "empty object") writeFileSync(metadata, "{}");
+    else if (kind === "wrong name") writeFileSync(metadata, '{"name":"other-plugin"}');
+    else if (kind === "directory") mkdirSync(metadata);
+    else if (kind === "linked metadata") symlinkSync(join(root, "tools/metadata.json"), metadata);
+    else if (kind === "malformed") writeFileSync(metadata, "broken json");
+    else if (kind === "null") writeFileSync(metadata, "null");
+    else if (kind === "linked tools") {
+      rmSync(join(data, "tools"), { recursive: true });
+      symlinkSync(join(root, "tools"), join(data, "tools"));
+    } else {
+      const owned = join(home, ".intent/skills/how");
+      mkdirSync(dirname(owned), { recursive: true });
+      symlinkSync(join(data, "skills/how"), owned);
+      writeFileSync(join(data, "install-record.json"), JSON.stringify({ schemaVersion: 1, entries: [{ path: owned, kind: "link", target: join(data, "skills/how") }], modeRule: { location: "Intent's Settings, under Agent Behavior", status: "unchanged" } }));
+    }
+    const before = homeSnapshot(home);
+    const result = install(home, join(dirname(from), "intent-deliver.sh"));
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("it is not a copy of this plugin");
+    expect(readFileSync(join(data, "personal.txt"), "utf8")).toBe("My personal file.\n");
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+test.each(["home", "ancestor", "linked parent", "intent skills", "intent specialists", "codex folder", "codex skills", "claude cache", "record target"])("copy path refusal preserves protected folders at %s", (kind) => {
+  withHome((outer) => {
+    const from = fetchedPackage(outer);
+    let home = join(outer, "home");
+    let data = join(outer, "data/cstack");
+    let xdg = dirname(data);
+    if (kind === "home" || kind === "linked parent") {
+      home = join(outer, "cstack");
+      data = home;
+      xdg = outer;
+    } else if (kind === "ancestor") {
+      data = join(outer, "cstack");
+      home = join(data, "nested/home");
+      xdg = outer;
+    }
+    mkdirSync(home, { recursive: true });
+    copyPlugin(data);
+    if (kind === "linked parent") {
+      xdg = join(outer, "data alias");
+      symlinkSync(outer, xdg);
+    }
+    const host = join(home, ".intent/skills");
+    mkdirSync(host, { recursive: true });
+    writeFileSync(join(home, "personal.txt"), "My home data.\n");
+    writeFileSync(join(host, "personal"), "My host entry.\n");
+    if (kind === "intent skills" || kind === "intent specialists") {
+      const redirected = kind === "intent skills" ? host : join(home, ".intent/specialists");
+      rmSync(redirected, { recursive: true, force: true });
+      mkdirSync(join(data, "host"));
+      writeFileSync(join(data, "host/personal"), "My redirected host entry.\n");
+      symlinkSync(join(data, "host"), redirected);
+    } else if (["codex folder", "codex skills", "claude cache"].includes(kind)) {
+      mkdirSync(join(data, "host"));
+      writeFileSync(join(data, "host/personal"), "My redirected host entry.\n");
+      const hostPath = join(home, kind === "codex folder" ? ".codex" : kind === "codex skills" ? ".codex/skills" : ".claude/plugins/cache");
+      mkdirSync(dirname(hostPath), { recursive: true });
+      symlinkSync(join(data, "host"), hostPath);
+    } else if (kind === "record target") {
+      writeFileSync(join(data, "personal-record.json"), "My personal record.\n");
+      symlinkSync(join(data, "personal-record.json"), join(dirname(data), "cstack-install-record.json"));
+    }
+    const before = homeSnapshot(outer);
+    const result = spawnSync("sh", [join(dirname(from), "intent-deliver.sh")], { env: { HOME: home, PATH: join(outer, "bin"), XDG_DATA_HOME: xdg }, encoding: "utf8" });
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("protected");
+    expect(homeSnapshot(outer)).toEqual(before);
+  });
+});
+
+test.each(["after staging creation", "before old rename", "after old rename", "after new rename", "before old cleanup", "after old cleanup"])("an interrupted swap installs afresh and preserves every leftover %s", (phase) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const shell = join(dirname(from), "intent-deliver.sh");
+    const plugin = dirname(dirname(from));
+    const retired = join(plugin, "skills/retired-review");
+    mkdirSync(retired);
+    writeFileSync(join(retired, "SKILL.md"), "---\nname: retired-review\n---\nRetired skill.\n");
+    expect(install(home, shell).status).toBe(0);
+    const data = join(home, ".local/share/cstack");
+    const parent = dirname(data);
+    const recordPath = join(parent, "cstack-install-record.json");
+    const recordBefore = readFileSync(recordPath, "utf8");
+    const link = join(home, ".intent/skills/retired-review");
+    expect(readlinkSync(link)).toBe(join(data, "skills/retired-review"));
+    const personal = join(parent, ".cstack-install-personal-backup");
+    copyPlugin(join(personal, "previous"));
+    writeFileSync(join(personal, "previous/notes.txt"), "Keep my backup.\n");
+    rmSync(retired, { recursive: true });
+    const nextSkill = "---\nname: how\n---\nReplacement release.\n";
+    writeFileSync(join(plugin, "skills/how/SKILL.md"), nextSkill);
+    const preload = join(home, "crash.cjs");
+    writeFileSync(preload, `const fs = require('node:fs');
+const path = require('node:path');
+const phase = ${JSON.stringify(phase)};
+const data = ${JSON.stringify(data)};
+const temporary = fs.mkdtempSync;
+fs.mkdtempSync = function(a) {
+  const result = temporary.apply(this, arguments);
+  if (phase === 'after staging creation' && path.basename(a).startsWith('.cstack-install-')) process.kill(process.pid, 'SIGKILL');
+  return result;
+};
+const rename = fs.renameSync;
+fs.renameSync = function(a, b) {
+  if (phase === 'before old rename' && a === data && path.basename(b) === 'previous') process.kill(process.pid, 'SIGKILL');
+  const result = rename.apply(this, arguments);
+  if (phase === 'after old rename' && a === data && path.basename(b) === 'previous' || phase === 'after new rename' && b === data && path.basename(a) === 'copy') process.kill(process.pid, 'SIGKILL');
+  return result;
+};
+const remove = fs.rmSync;
+fs.rmSync = function(a) {
+  if (phase === 'before old cleanup' && path.basename(a).startsWith('.cstack-install-')) process.kill(process.pid, 'SIGKILL');
+  const result = remove.apply(this, arguments);
+  if (phase === 'after old cleanup' && path.basename(a).startsWith('.cstack-install-')) process.kill(process.pid, 'SIGKILL');
+  return result;
+};
+require('node:module').syncBuiltinESMExports();`);
+    const crash = spawnSync("sh", [shell], { env: { HOME: home, PATH: join(home, "bin"), NODE_OPTIONS: "--require " + JSON.stringify(preload) }, encoding: "utf8" });
+    expect(crash.signal).toBe("SIGKILL");
+    expect(readFileSync(recordPath, "utf8")).toBe(recordBefore);
+    const leftovers = readdirSync(parent).filter((entry) => entry.startsWith(".cstack-install-")).sort();
+    const snapshots = leftovers.map((entry) => homeSnapshot(join(parent, entry)));
+    for (let run = 0; run < 2; run++) {
+      const retry = install(home, shell);
+      expect(retry.status).toBe(0);
+      expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe(nextSkill);
+      expect(packageContents(data)).toEqual(packageContents(plugin));
+      expect(readdirSync(join(home, ".intent/skills"))).not.toContain("retired-review");
+      const record = JSON.parse(readFileSync(recordPath, "utf8"));
+      expect(record.entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
+      expect(readdirSync(parent).filter((entry) => entry.startsWith(".cstack-install-")).sort()).toEqual(leftovers);
+      expect(leftovers.map((entry) => homeSnapshot(join(parent, entry)))).toEqual(snapshots);
+      expect(readFileSync(join(personal, "previous/notes.txt"), "utf8")).toBe("Keep my backup.\n");
+    }
+  });
+});
+
+function beforeRecordInstall(home: string) {
+  const from = fetchedPackage(home);
+  const plugin = dirname(dirname(from));
+  cpSync(join(root, "tests/fixtures/intent-deliver-before-record.sh"), join(plugin, "hooks/intent-deliver.sh"));
+  writeFileSync(join(plugin, "skills/how/SKILL.md"), "---\nname: how\n---\nOlder release.\n");
+  expect(install(home, join(plugin, "hooks/intent-deliver.sh")).status).toBe(0);
+  return from;
+}
+
+test.each(["missing", "unreadable", "empty"])("a pre-record package upgrade with a %s record replaces the whole copy and protects host files", (state) => {
+  withHome((home) => {
+    const from = beforeRecordInstall(home);
+    const plugin = dirname(dirname(from));
+    const data = join(home, ".local/share/cstack");
+    const own = join(home, ".intent/skills/why");
+    rmSync(own);
+    writeFileSync(own, "My own host skill.\n");
+    if (state === "unreadable") writeFileSync(join(data, "install-record.json"), "broken json");
+    if (state === "empty") writeFileSync(join(data, "install-record.json"), JSON.stringify({ schemaVersion: 1, entries: [], modeRule: { location: "Intent's Settings, under Agent Behavior", status: "unchanged" } }));
+    writeFileSync(join(data, "hooks/retired.txt"), "Earlier release.\n");
+    copyPlugin(plugin);
+    const nextSkill = "---\nname: how\n---\nNew release.\n";
+    writeFileSync(join(plugin, "skills/how/SKILL.md"), nextSkill);
+    const result = commandRun(home, ["--hosts", "intent"], from);
+    expect(result.status).toBe(0);
+    expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe(nextSkill);
+    expect(packageContents(data)).toEqual(packageContents(plugin));
+    expect(readFileSync(join(data, "hooks/intent-deliver.sh"), "utf8")).toBe(readFileSync(join(root, "hooks/intent-deliver.sh"), "utf8"));
+    expect(existsSync(join(data, "hooks/retired.txt"))).toBe(false);
+    expect(readFileSync(own, "utf8")).toBe("My own host skill.\n");
+    expect(installRecord(home).entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(data, "skills/how") });
+    expect(installRecord(home).entries.every((entry: { path: string }) => !entry.path.startsWith(data + "/"))).toBe(true);
+    expect(result.stdout).not.toContain("left your own SKILL.md");
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    writeFileSync(join(plugin, "skills/how/SKILL.md"), "---\nname: how\n---\nLater release.\n");
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    expect(readFileSync(join(data, "skills/how/SKILL.md"), "utf8")).toBe("---\nname: how\n---\nLater release.\n");
+    expect(readFileSync(own, "utf8")).toBe("My own host skill.\n");
+  });
+});
+
+test("delivery refuses a data-folder link without touching its personal target", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const personal = join(home, "personal folder");
+    copyPlugin(personal);
+    writeFileSync(join(personal, "notes.txt"), "My notes.\n");
+    const data = join(home, ".local/share/cstack");
+    mkdirSync(dirname(data), { recursive: true });
+    symlinkSync(personal, data);
+    const result = commandRun(home, ["--hosts", "intent"], from);
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("the plugin data folder is a link");
+    expect(readlinkSync(data)).toBe(personal);
+    expect(readFileSync(join(personal, "notes.txt"), "utf8")).toBe("My notes.\n");
+    expect(existsSync(join(personal, "install-record.json"))).toBe(false);
+    expect(existsSync(join(home, ".intent/skills"))).toBe(false);
+  });
+});
+
+test("the final table summarizes many preserved host entries with a count and one example", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const skills = join(home, ".intent/skills");
+    mkdirSync(skills, { recursive: true });
+    for (const skill of ["how", "why", "align"]) writeFileSync(join(skills, skill), "My host skill.\n");
+    const result = commandRun(home, ["--hosts", "intent"], from);
+    expect(result.status).toBe(0);
+    const row = result.stdout.split("\n").find((line) => line.startsWith("Intent ")) ?? "";
+    expect(row).toContain("3 personal entries untouched. For example, left your own align as it is");
+    expect(row).not.toContain("left your own how");
+    expect(row).not.toContain("left your own why");
+    for (const skill of ["how", "why", "align"]) expect(readFileSync(join(skills, skill), "utf8")).toBe("My host skill.\n");
+  });
+});
+
+
+test.each(["parent link", "dot dot", "home"])("safe custom data location still installs through %s", (kind) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const target = join(home, "custom");
+    mkdirSync(target);
+    writeFileSync(join(target, "sibling.txt"), "Keep sibling.\n");
+    let xdg = target;
+    if (kind === "parent link") {
+      xdg = join(home, "alias");
+      symlinkSync(target, xdg);
+    }
+    if (kind === "dot dot") xdg = join(home, "unused") + "/../custom";
+    if (kind === "home") xdg = home;
+    const result = spawnSync("sh", [join(dirname(from), "intent-deliver.sh")], { env: { HOME: home, PATH: join(home, "bin"), XDG_DATA_HOME: xdg }, encoding: "utf8" });
+    expect(result.status).toBe(0);
+    expect(readFileSync(join(target, "sibling.txt"), "utf8")).toBe("Keep sibling.\n");
+    const parent = kind === "home" ? home : target;
+    expect(readFileSync(join(parent, "cstack/tools/metadata.json"), "utf8")).toBe(readFileSync(join(root, "tools/metadata.json"), "utf8"));
+    const record = JSON.parse(readFileSync(join(parent, "cstack-install-record.json"), "utf8"));
+    expect(record.entries).toContainEqual({ path: join(home, ".intent/skills/how"), kind: "link", target: join(parent, "cstack/skills/how") });
+  });
+});
+
+test("an internal copy record cannot supply ownership for an unrecorded host file", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const shell = join(dirname(from), "intent-deliver.sh");
+    expect(install(home, shell).status).toBe(0);
+    const data = join(home, ".local/share/cstack");
+    const record = installRecord(home);
+    const personal = join(home, ".intent/skills/personal-notes");
+    writeFileSync(personal, "My host notes.\n", { mode: 0o644 });
+    record.entries.push({ path: personal, kind: "file", sha256: new Bun.CryptoHasher("sha256").update("My host notes.\n").digest("hex"), mode: 0o644 });
+    writeFileSync(join(data, "install-record.json"), JSON.stringify(record));
+    rmSync(join(dirname(data), "cstack-install-record.json"));
+    const result = install(home, shell);
+    expect(result.status).toBe(0);
+    expect(readFileSync(personal, "utf8")).toBe("My host notes.\n");
+    expect(installRecord(home).entries.some((entry: { path: string }) => entry.path === personal)).toBe(false);
+    expect(existsSync(join(data, "install-record.json"))).toBe(false);
   });
 });

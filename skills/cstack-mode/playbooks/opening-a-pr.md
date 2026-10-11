@@ -10,6 +10,8 @@ Invoked at the end of every other playbook.
 
 **PRs.** Run the **deslop** skill over the diff before commit. Run `no-comments` before review, and let its edits land before you start any reviewer, so every reviewer judges the tree that ships. Write every PR title, PR description, and commit body with `technical-writing`, then apply `simple-as-prose`. Apply every technical-writing layer except Diátaxis. Use one word for each action, keep articles, and avoid `-ing` when a plain verb works.
 
+**File recovery.** Before the first review of code that deletes, overwrites, or restores a person's files, test its public command with the run interrupted before and after each write, rename, and delete, and with a second run started while the first is paused, then follow every printed instruction to the end and require a recovered state.
+
 **Titles.** Use Conventional Commits in the form `type(scope): subject`. Use `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, or `perf` as the type. Use the changed area, such as `cstack-mode` or `swarm`, as the scope. Keep the subject short and imperative. Name a real symbol when one carries the change. For example, `fix(cstack-mode): retarget opening-a-pr babysit trigger`. Do not add a trailing period.
 
 **Descriptions.** The PR body is a briefing, not the lab notebook. A reviewer who has the diff should learn why the change exists, what is out of scope, and how you proved the change works. The squash commit body is the PR body. If the body would make the squash commit longer than about 40 lines, cut the body.

@@ -3167,7 +3167,7 @@ test.each(["unchanged", "personal edit"])("fix round rereads a rule after attemp
   });
 });
 
-test.each(["intended link", "personal file"])("fix round finishes a paused replacement when another run makes an %s", async (kind) => {
+test.each(["intended link", "personal file"])("live overlap preserves expected ownership for %s", async (kind) => {
   await withHome(async (home) => {
     const fixture = deliveryRecoveryFixture(home);
     expect(fixture.kit.runSync([]).status).toBe(0);

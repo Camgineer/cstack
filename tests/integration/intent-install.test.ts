@@ -1353,6 +1353,27 @@ test.each(["before", "after"] as const)("a recorded replacement recovers %s its 
   });
 });
 
+test("a settled install with only personal skill destinations never restores a removed rule", () => {
+  withHome((home) => {
+    const fixture = deliveryRecoveryFixture(home);
+    for (const path of fixture.paths) mkdirSync(path, { recursive: true });
+    const personal = fixture.kit.snapshot(fixture.paths);
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    expect(installRecord(home).entries).toEqual([]);
+    expect(readFileSync(fixture.updates, "utf8").trim().split("\n")).toHaveLength(1);
+    writeFileSync(fixture.state, '{"content":"My replacement rule.","enabled":false}');
+    const updates = readFileSync(fixture.updates, "utf8");
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    expect(fixture.kit.snapshot(fixture.paths)).toEqual(personal);
+    expect(readFileSync(fixture.updates, "utf8")).toBe(updates);
+    expect(JSON.parse(readFileSync(fixture.state, "utf8"))).toEqual({ content: "My replacement rule.", enabled: false });
+    writeFileSync(fixture.state, '{"content":"","enabled":false}');
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    expect(readFileSync(fixture.updates, "utf8")).toBe(updates);
+    expect(JSON.parse(readFileSync(fixture.state, "utf8"))).toEqual({ content: "", enabled: false });
+  });
+});
+
 test("links every visible skill into Intent, and leaves specialist setup alone", () => {
   withHome((home) => {
     const result = install(home);

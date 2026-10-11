@@ -1,6 +1,6 @@
 ---
 name: advisor
-description: You are about to sign a spec or pass a step you cannot undo, and want one second opinion.
+description: You want a second opinion on a spec or before a step you cannot undo. Use when the lead reverses a limit in its own brief, gives code a power to delete or overwrite, or a fix adds a mechanism. Run beside the builder.
 seat:
   tier: advisor
   fallback: advisor

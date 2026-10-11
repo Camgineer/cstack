@@ -43,7 +43,7 @@ After these sections, attach videos or screenshots when they prove a claim. Do n
 
 At least one gate agent must come from another model family than the builder when the host or a configured runner offers one. When only one family is available, use fresh agents of that family for delegated gates and name the missing second family in the PR. The non-builder owner may still run either gate itself. When no non-builder agent can run a gate, keep the draft and name the missing gate. CI, a retro, and a person's review or permission are not readiness gates. A failing check is fixed while the PR stays ready, whether the check is required or optional.
 
-An agent that fixes a finding is a builder of that fix wave. A rule or behavior change in a fix wave needs fresh review by an agent that did not make it.
+An agent that fixes a finding is a builder of that fix wave. When a decision triggers [the advisor](../../../agents/advisor.md), start it beside the builder while the fix proceeds. A rule or behavior change in a fix wave needs fresh review by an agent that did not make it.
 
 The review covers the finished change and its claims:
 

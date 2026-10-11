@@ -80,7 +80,7 @@ These keys generate the table. They do not configure specialists or enforce file
 | `investigator` | `cstack-investigator` | Explicit choice | The host's model | No | The child reads and reports back, and changes nothing. It answers a question from source, history, or connected apps, merges what other children found, or returns lessons or open questions about a session or a draft. |
 | `reviewer` | `cstack-reviewer` | review, with a menu | The role each site resolves to today | No | The child reads a finished diff, candidate, screenshot, or run that it did not make, and returns its defects or a verdict. |
 | `verifier` | `cstack-verifier` | review, with a menu | `review` | Commands, and one verdict or ledger row. No source edits | The child proves behavior by running the gates, the app, or a recipe, and records the result. |
-| `advisor` | `cstack-advisor` | advisor | `advisor` | No | You are about to sign a spec or pass a step you cannot undo, and want one second opinion. |
+| `advisor` | `cstack-advisor` | advisor | `advisor` | No | You want a second opinion on a spec or before a step you cannot undo. Use when the lead reverses a limit in its own brief, gives code a power to delete or overwrite, or a fix adds a mechanism. Run beside the builder. |
 | `scout` | `cstack-scout` | fast | The host's model | No | A step has a pass or fail result that needs no judgment, a lookup has one right answer, an input is too large for your context, or you are waiting on an event. You need back a result, a digest, or a wake-up. The child changes nothing. |
 <!-- seats:end -->
 

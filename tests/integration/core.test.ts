@@ -278,6 +278,15 @@ test("host sync generates seat rows and rejects drift or invalid definitions", (
     expect(readFileSync(runtime, "utf8")).toContain(`| \`worker\` | \`${pluginName}-worker\` | build | The role each site resolves to today | Only the directory or paths the brief names | Write a report \\| preserve its columns. |`);
     expect(sync("--check").status).toBe(0);
 
+    const scout = join(directory, "agents/scout.md");
+    writeFileSync(scout, readFileSync(scout, "utf8").replace(/^description: .*$/m, "description: Run a check. Return its result without judgment."));
+    const scoutDrift = sync("--check");
+    expect(scoutDrift.status).toBe(1);
+    expect(scoutDrift.stderr).toContain(`out of date: skills/${pluginName}-mode/references/runtime.md`);
+    expect(sync().status).toBe(0);
+    expect(readFileSync(runtime, "utf8")).toContain(`| \`scout\` | \`${pluginName}-scout\` | fast | The host's model | No | Run a check. Return its result without judgment. |`);
+    expect(sync("--check").status).toBe(0);
+
     writeFileSync(runtime, readFileSync(runtime, "utf8").replace("Write a report", "Stale report"));
     const tableDrift = sync("--check");
     expect(tableDrift.status).toBe(1);

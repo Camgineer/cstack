@@ -1030,7 +1030,7 @@ esac
   const expected = paths.map((path) => ({ path, kind: "link", target: join(source, "skills", path.split("/").at(-1) ?? "") }));
   const complete = () => {
     expect(installRecord(home).entries).toEqual([...expected].sort((a, b) => a.path.localeCompare(b.path)));
-    expect(kit.snapshot(paths)).toEqual(expected);
+    expect(kit.snapshot(paths)).toEqual(expected.map((entry) => JSON.stringify([entry.path, "link", entry.target])).sort());
     expect(readFileSync(updates, "utf8").trim().split("\n")).toHaveLength(1);
     expect(JSON.parse(readFileSync(state, "utf8")).content).toContain('unless a plugin seat file');
   };
@@ -1041,7 +1041,7 @@ test.each(visibleSkills())("interrupted delivery records %s and finishes the fir
   withHome((home) => {
     const fixture = deliveryRecoveryFixture(home);
     const index = visibleSkills().indexOf(skill);
-    const killed = fixture.kit.runSync([], [{ name: "link-created", operation: "rename", edge: "before", target: { path: fixture.record, occurrence: index + 1 }, action: { kind: "kill" } }]);
+    const killed = fixture.kit.runSync([], [{ name: "link-created", operation: "rename", edge: "before", target: { path: fixture.record }, occurrence: index + 1, action: { kind: "kill" } }]);
     expect(killed.signal).toBe("SIGKILL");
     expect(readlinkSync(fixture.paths[index] ?? "")).toBe(join(root, "skills", skill));
     const recovered = fixture.kit.runSync([]);

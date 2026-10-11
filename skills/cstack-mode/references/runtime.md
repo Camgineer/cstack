@@ -32,9 +32,9 @@ When a capability is missing, use the workflow's stated fallback. Without a fall
 
 ## Project task file
 
-Use this route only when the host note maps **Track work** to a project task file. A host with a lasting native task list uses that list and writes no task file.
+Use this route only when the host note maps **Track work** to a project task file. When the host note selects a lasting native task list, use that list and write no task file.
 
-Read the project instructions file for a `Retro task file: <project-relative path>` line. When it is absent, ask the person once for a lasting path in the project, outside scratch. Record the agreed path in that instructions file before appending items. Reuse the path in later sessions. Open no forge issue for these items.
+Read the project instructions file the host loads for a `Retro task file: <project-relative path>` line. Before proposing a write, inspect that file and resolve any symlink so the question names the actual destination. When the pointer is absent, ask the person once for a lasting path in the project, outside scratch. In that question, propose the task-file path and disclose both writes. Name the instructions file and show the exact `Retro task file: <proposed path>` line to append there. If the instructions file says it is generated, ask where the pointer should go in that same question. Record the agreed path in the agreed instructions source before appending items, and preserve its other content. Reuse the path in later sessions. Open no forge issue for these items.
 
 Append each item as an unchecked Markdown task with a stable identifier, the lesson, the target file, and the retro link or identifier. Preserve existing content. Read the file to find existing items and to confirm each write. Update an item's checkbox and base-commit evidence at that same path when it is complete.
 

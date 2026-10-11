@@ -9,7 +9,7 @@ Apply [the runtime contract](../runtime.md) first. This note maps its capabiliti
 | **End a subagent** | Use this session's native tool for closing completed agent threads when offered. Read its schema. The [subagent management docs](https://learn.chatgpt.com/docs/agent-configuration/subagents.md#managing-subagents) describe closing completed threads in the app, CLI, and IDE. |
 | **Shared document** | None mapped. See [grill-with-docs](../../../grill-with-docs/SKILL.md). |
 | **Plan** | The native plan tool. |
-| **Track work** | Plugin workflow. Use the [project task file](../runtime.md#project-task-file) route and record the agreed path in the project's `AGENTS.override.md` when present, otherwise `AGENTS.md`, per [project instruction discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md#how-codex-discovers-guidance). OpenAI's [long-running work guide](https://developers.openai.com/blog/run-long-horizon-tasks-with-codex#the-key-idea-durable-project-memory) uses Markdown plans and status files as durable project memory. |
+| **Track work** | Plugin workflow. Use the [project task file](../runtime.md#project-task-file) route and record the agreed path in the project file selected under [Instructions file](#instructions-file). OpenAI's [long-running work guide](https://developers.openai.com/blog/run-long-horizon-tasks-with-codex#the-key-idea-durable-project-memory) uses Markdown plans and status files as durable project memory. |
 | **Invoke a skill** | `$<plugin>:<skill>`. Skills marked explicit-only in `agents/openai.yaml` stay out of the default selector, but their files remain readable. |
 | **History** | Thread and history tools when the session exposes them. Otherwise use a transcript or digest the user supplies. |
 | **Continue later** | A native automation or scheduled task the user authorized. Otherwise report the gap. |
@@ -25,7 +25,9 @@ Codex starts a seat through this session's native subagent schema with the seat 
 
 Skill directories. `<project-skills>` is `.agents/skills` in the project. `<user-skills>` is `~/.agents/skills`.
 
-Instructions file. Codex reads `AGENTS.md` at the project root at session start.
+## Instructions file
+
+Codex discovers project guidance from the project root down to the working directory. In each directory, it checks `AGENTS.override.md`, then `AGENTS.md`, then configured fallback names. It skips empty files and includes at most one file per directory, per the [instruction discovery docs](https://learn.chatgpt.com/docs/agent-configuration/agents-md#how-codex-discovers-guidance). For the retro pointer, use the project's non-empty `AGENTS.override.md`, otherwise `AGENTS.md`. Preserve the discovery choice by leaving an empty or absent override alone.
 
 User instructions file. `~/.codex/AGENTS.md`, which Codex loads in every project.
 

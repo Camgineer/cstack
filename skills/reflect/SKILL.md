@@ -19,7 +19,7 @@ Run in one of two scopes. Both use the same pipeline. They differ in the evidenc
 - **Session.** The user says "reflect", or says "retro" while the current branch has no open PR. The evidence is the active transcript.
 - **PR retro.** **Retro** in `../cstack-mode/playbooks/opening-a-pr.md` calls for it, or the user asks for a retro on a PR or says "retro" on a branch with an open PR. The evidence is the session that built the PR plus the PR's record.
 
-A **lessons PR** is the PR a retro opens. Its description starts with the line `Lessons from <PR link>`. Run PR retro once per PR. Skip it when the PR is a lessons PR, or when a lessons PR or a `Retro: no lessons` comment already links the PR.
+A **lessons PR** is the PR a retro opens. Its description starts with the line `Lessons from <PR link>`. Run PR retro once per PR. Before skipping a lessons PR or an already-retroed PR, reconcile any recorded lesson items against the linked lessons PR and the base branch under the lifecycle rule in [step 3](#3-synthesize). Then skip mining when the PR is a lessons PR, or when a lessons PR or a `Retro: no lessons` comment already links the PR.
 
 In Session scope, skip when the session is trivial, off-topic, or already covered by an existing skill the parent followed correctly. One-offs are not lessons. In PR retro, the signal check at the end of step 1 decides instead.
 

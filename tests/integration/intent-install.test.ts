@@ -3228,3 +3228,88 @@ test("fix round ignores an obsolete pending link operation", () => {
     fixture.complete();
   });
 });
+
+
+test("fix round preserves due evidence through an old-to-new double interruption", () => {
+  withHome((home) => {
+    const source = join(home, "same-checkout");
+    copyPlugin(source);
+    mkdirSync(join(source, ".git"));
+    const fixture = deliveryRecoveryFixture(home, source);
+    const old = spawnSync("git", ["show", "e4f268b917ea5a4c9289ef4d576f3c03663b094d:hooks/intent-deliver.mjs"], { cwd: root, encoding: "utf8" });
+    expect(old.status).toBe(0);
+    writeFileSync(join(source, "hooks/intent-deliver.mjs"), old.stdout);
+    const mode = join(home, ".intent/skills/cstack-mode");
+    expect(fixture.kit.runSync([], [{ name: "old-before-mode", operation: "rename", edge: "before", target: { path: fixture.record }, occurrence: visibleSkills().indexOf("cstack-mode"), action: { kind: "kill" } }]).signal).toBe("SIGKILL");
+    expect(existsSync(mode)).toBe(false);
+    writeFileSync(join(source, "hooks/intent-deliver.mjs"), readFileSync(join(root, "hooks/intent-deliver.mjs")));
+    expect(fixture.kit.runSync([], [{ name: "new-mode", operation: "open", edge: "before", target: { parent: dirname(fixture.record) }, exists: mode, action: { kind: "kill" } }]).signal).toBe("SIGKILL");
+    expect(installRecord(home).ruleLifecycle).toBeUndefined();
+    expect(installRecord(home).entries.some((entry: { path: string }) => entry.path === mode)).toBe(false);
+    const pending = readdirSync(dirname(fixture.record)).find((file) => /^\.cstack-install-pending-.+\.json$/.test(file));
+    if (!pending) throw new Error("Missing due evidence.");
+    const journal = JSON.parse(readFileSync(join(dirname(fixture.record), pending), "utf8"));
+    expect(journal.ruleLifecycle).toBe("due");
+    expect(journal.entries.some((entry: { path: string }) => entry.path === mode)).toBe(false);
+    expect(journal.operation.after).toEqual({ path: mode, kind: "link", target: join(source, "skills/cstack-mode") });
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    expect(readFileSync(fixture.updates, "utf8").trim().split("\n")).toHaveLength(1);
+    expect(installRecord(home).entries).toContainEqual({ path: mode, kind: "link", target: join(source, "skills/cstack-mode") });
+    const before = homeSnapshot(home);
+    expect(fixture.kit.runSync([]).status).toBe(0);
+    expect(homeSnapshot(home)).toEqual(before);
+  });
+});
+
+const ruleDecisionRows = [
+  { id: "R01", records: ["none", "unreadable", "older without mode"], pending: ["none", "malformed"], modes: ["absent"], phase: "due" },
+  { id: "R02", records: ["none", "unreadable", "older without mode"], pending: ["none", "malformed"], modes: ["present"], phase: "settled" },
+  { id: "R03", records: ["none", "unreadable", "older without mode"], pending: ["due"], modes: ["absent", "present"], phase: "due" },
+  { id: "R04", records: ["none", "unreadable", "older without mode"], pending: ["attempted"], modes: ["absent", "present"], phase: "attempted" },
+  { id: "R05", records: ["none", "unreadable", "older without mode"], pending: ["settled"], modes: ["absent", "present"], phase: "settled" },
+  { id: "R06", records: ["older with mode", "settled"], pending: ["none", "malformed", "due", "attempted", "settled"], modes: ["absent", "present"], phase: "settled" },
+  { id: "R07", records: ["due"], pending: ["none", "malformed", "due"], modes: ["absent", "present"], phase: "due" },
+  { id: "R08", records: ["due"], pending: ["attempted"], modes: ["absent", "present"], phase: "attempted" },
+  { id: "R09", records: ["due"], pending: ["settled"], modes: ["absent", "present"], phase: "settled" },
+  { id: "R10", records: ["attempted"], pending: ["none", "malformed", "due", "attempted"], modes: ["absent", "present"], phase: "attempted" },
+  { id: "R11", records: ["attempted"], pending: ["settled"], modes: ["absent", "present"], phase: "settled" },
+].flatMap((row) => row.records.flatMap((record) => row.pending.flatMap((pending) => row.modes.map((mode) => [row.id, record, pending, mode, row.phase]))));
+
+test.each(ruleDecisionRows)("rule decision table %s record %s pending %s mode %s yields %s", (id, recordKind, pendingKind, mode, phase) => {
+  const old = spawnSync("git", ["show", "e4f268b917ea5a4c9289ef4d576f3c03663b094d:hooks/intent-deliver.mjs"], { cwd: root, encoding: "utf8" });
+  expect(old.status).toBe(0);
+  for (const release of ["head", "main"]) {
+    withHome((home) => {
+      const source = release === "head" ? root : join(home, "main-checkout");
+      if (release === "main") { copyPlugin(source); mkdirSync(join(source, ".git")); writeFileSync(join(source, "hooks/intent-deliver.mjs"), old.stdout); }
+      const fixture = deliveryRecoveryFixture(home, source);
+      mkdirSync(join(home, ".intent/skills"), { recursive: true });
+      mkdirSync(dirname(fixture.record), { recursive: true });
+      const align = { path: join(home, ".intent/skills/align"), kind: "link", target: join(source, "skills/align") };
+      const modeEntry = { path: join(home, ".intent/skills/cstack-mode"), kind: "link", target: join(source, "skills/cstack-mode") };
+      symlinkSync(align.target, align.path);
+      if (mode === "present") symlinkSync(modeEntry.target, modeEntry.path);
+      const entries = recordKind === "older with mode" || mode === "present" && ["due", "attempted", "settled"].includes(recordKind) ? [align, modeEntry] : [align];
+      const record = { schemaVersion: 1, entries, modeRule: { location: "Intent's Settings, under Agent Behavior", status: "unchanged" }, ...(["due", "attempted", "settled"].includes(recordKind) ? { ruleLifecycle: recordKind } : {}) };
+      if (recordKind === "unreadable") writeFileSync(fixture.record, "{");
+      else if (recordKind !== "none") writeFileSync(fixture.record, JSON.stringify(record));
+      const evidence = join(dirname(fixture.record), ".cstack-install-pending-00000000-0000-0000-0000-000000000000.json");
+      if (pendingKind !== "none") writeFileSync(evidence, pendingKind === "malformed" ? "{" : JSON.stringify({ schemaVersion: 1, pid: 99999999, entries: [], operation: null, ruleLifecycle: pendingKind }));
+      const result = fixture.kit.runSync([]);
+      expect(result.status).toBe(0);
+      const adds = release === "main" ? mode === "absent" : phase === "due";
+      if (adds) {
+        expect(readFileSync(fixture.updates, "utf8").trim().split("\n")).toHaveLength(1);
+        expect(JSON.parse(readFileSync(fixture.state, "utf8")).content).toContain("unless a plugin seat file");
+        expect(result.stdout).toContain("added the cstack-mode rule");
+      } else {
+        expect(existsSync(fixture.updates)).toBe(false);
+        expect(JSON.parse(readFileSync(fixture.state, "utf8"))).toEqual({ content: "", enabled: true });
+        if (release === "head" && phase === "attempted") expect(result.stdout).toContain("earlier install may not have finished adding the cstack-mode rule");
+        else expect(result.stdout).toContain("Left the cstack-mode rule unchanged");
+      }
+      expect(readlinkSync(modeEntry.path)).toBe(modeEntry.target);
+      if (release === "head") expect(installRecord(home).ruleLifecycle).toBe("settled");
+    });
+  }
+}, 15000);

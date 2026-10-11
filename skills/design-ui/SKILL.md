@@ -70,15 +70,15 @@ Done when every state renders at every width with zero DOM or accessibility fail
 
 ## 6. Critique blind
 
-When you have no **Delegate** capability, as inside a subagent, stop here. Return the screenshots, the system note, and the inventory to your parent for this step, and say you handed it off.
+When [Before delegation](../cstack-mode/references/runtime.md#before-delegation) finds no available runner for this handoff, stop here. Return the screenshots, the system note, and the inventory to your parent for this step, and say you handed it off.
 
-Use the **Delegate** capability to start a reviewer that never saw your reasoning. Give it the screenshots, the system note, the inventory, the user's request, and [gates.md](references/gates.md). It returns findings that each cite a screenshot and an element, ranked:
+Start the [reviewer seat](../../agents/reviewer.md), with no legacy model role, under [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery). It never saw your reasoning. Give it the screenshots, the system note, the inventory, the user's request, and [gates.md](references/gates.md). It returns findings that each cite a screenshot and an element, ranked:
 
 - **P0.** Broken: clipped text, failed contrast, a missing state, an unreachable control.
 - **P1.** Off-system or confusing: a raw value, the wrong hierarchy, two primary actions.
 - **P2.** Polish.
 
-It runs the Removal Test on every decorative element: name it, state its job, and remove it if the screen stays as clear without it.
+It runs the Removal Test on every decorative element: name it, state its job, and recommend removal if the screen stays as clear without it. The parent makes the edits.
 
 Fix every P0 and P1, re-render, and send the new screenshots to the same reviewer. Repeat until a pass returns no P0 or P1.
 

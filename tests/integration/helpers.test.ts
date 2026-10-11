@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
@@ -15,7 +15,7 @@ function inTemporaryDirectory(run: (directory: string) => void): void {
   }
 }
 
-test.each(["orch/orch.ts", "watch-pr/watch-pr"])(
+test.each(["orch/orch.ts", "watch-pr/watch-pr", "check-receipt.ts"])(
   "%s reports missing dependencies without running an installer or adding files",
   (entry) => {
     inTemporaryDirectory((directory) => {
@@ -125,5 +125,198 @@ test("decision log keeps one header, one line per row, and guards formula cells"
     expect(rows.map((row) => row.length)).toEqual([6, 6]);
     expect(rows[0]?.slice(1)).toEqual(["build", "'=HYPERLINK(\"x\")", "tab here", "line break", "ok"]);
     expect(rows[1]?.slice(1)).toEqual(["verify", "plain", "why", "evidence", "'-1"]);
+  });
+});
+
+function withReceiptRepository(run: (fixture: {
+  repository: string;
+  git: (...args: string[]) => string;
+  cli: (...args: string[]) => ReturnType<typeof spawnSync>;
+}) => void): void {
+  inTemporaryDirectory((directory) => {
+    const repository = join(directory, "receipt repository");
+    const home = join(directory, "home");
+    mkdirSync(repository);
+    mkdirSync(home);
+    const env = { ...process.env, HOME: home, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1", GIT_TERMINAL_PROMPT: "0" };
+    const git = (...args: string[]) => {
+      const result = spawnSync("git", ["-c", "core.hooksPath=/dev/null", "-C", repository, ...args], { env, encoding: "utf8", timeout: 10_000 });
+      if (result.status !== 0) throw new Error(`fixture git ${args[0]} failed\n${result.stderr}`);
+      return result.stdout;
+    };
+    git("init", "-b", "main");
+    writeFileSync(join(repository, ".gitignore"), "ignored\n");
+    writeFileSync(join(repository, "tracked.txt"), "original\n");
+    git("add", ".gitignore", "tracked.txt");
+    git("-c", "user.name=Fixture", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", "commit", "-m", "fixture");
+    const cli = (...args: string[]) => spawnSync(process.execPath, [join(scripts, "check-receipt.ts"), "--receipts", "tmp/checks with spaces", ...args], { cwd: repository, env, encoding: "utf8", timeout: 10_000 });
+    run({ repository, git, cli });
+  });
+}
+
+test("check receipt passes on an unchanged tree and ignores scratch output", () => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    const recorded = cli("record", "typecheck", "printf 'check output\\n'");
+    expect(recorded.status).toBe(0);
+    expect(recorded.stdout).toContain("check output\n");
+    expect(recorded.stdout).toContain("typecheck recorded. Exit code 0.");
+    writeFileSync(join(repository, "ignored"), "ignored changes");
+    const result = cli("check");
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("All 1 check receipts passed on tree ");
+    expect(git("status", "--porcelain")).toBe("");
+    const receipt = JSON.parse(readFileSync(join(repository, "tmp/checks with spaces/typecheck.json"), "utf8"));
+    expect(receipt.command).toBe("printf 'check output\\n'");
+    expect(receipt.exitCode).toBe(0);
+    expect(receipt.treeHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(receipt.startedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+});
+
+test.each(["tracked edit", "staged edit", "untracked file", "deleted file", "executable mode", "symlink", "tracked ignored file"])("check receipt refuses a stale receipt after a %s", (change) => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    if (change === "tracked ignored file") {
+      writeFileSync(join(repository, "ignored"), "original");
+      git("add", "-f", "ignored");
+    }
+    expect(cli("record", "unit-tests", "exit 0").status).toBe(0);
+    const tracked = join(repository, "tracked.txt");
+    if (change === "tracked edit" || change === "staged edit") writeFileSync(tracked, "changed\n");
+    if (change === "staged edit") git("add", "tracked.txt");
+    if (change === "untracked file") writeFileSync(join(repository, "new file\nwith newline.txt"), "new\n");
+    if (change === "deleted file" || change === "symlink") rmSync(tracked);
+    if (change === "executable mode") chmodSync(tracked, 0o755);
+    if (change === "tracked ignored file") writeFileSync(join(repository, "ignored"), "changed");
+    if (change === "symlink") symlinkSync("ignored", tracked);
+    const result = cli("check");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("unit-tests is stale. Run it again on the current tree.");
+  });
+});
+
+test("check receipt binds untracked files across staging and committing", () => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    writeFileSync(join(repository, "new.txt"), "new\n");
+    expect(cli("record", "new-file", "exit 0").status).toBe(0);
+    git("add", "new.txt");
+    git("-c", "user.name=Fixture", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", "commit", "-m", "new file");
+    expect(cli("check").status).toBe(0);
+    writeFileSync(join(repository, "new.txt"), "edit\n");
+    expect(cli("check").stderr).toContain("new-file is stale.");
+  });
+});
+
+test("check receipt names every failed or stale check and replaces a rerun", () => {
+  withReceiptRepository(({ repository, cli }) => {
+    expect(cli("record", "failed-check", "exit 7").status).toBe(7);
+    expect(cli("record", "passing-check", "exit 0").status).toBe(0);
+    const failed = cli("check");
+    expect(failed.status).toBe(1);
+    expect(failed.stderr).toContain("failed-check failed with exit code 7.");
+    writeFileSync(join(repository, "tracked.txt"), "edit\n");
+    const stale = cli("check");
+    expect(stale.status).toBe(1);
+    expect(stale.stderr).toContain("failed-check is stale.");
+    expect(stale.stderr).toContain("passing-check is stale.");
+    expect(cli("record", "failed-check", "exit 0").status).toBe(0);
+    expect(cli("record", "passing-check", "exit 0").status).toBe(0);
+    expect(cli("check").status).toBe(0);
+  });
+});
+
+test("check receipt refuses a command that changes its own input tree", () => {
+  withReceiptRepository(({ cli }) => {
+    const record = cli("record", "formatter", "printf changed > tracked.txt");
+    expect(record.status).toBe(1);
+    expect(record.stdout).toContain("The working tree changed during the check.");
+    const result = cli("check");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("formatter is stale.");
+  });
+});
+
+test("check receipt refuses empty, malformed, and interrupted results", () => {
+  withReceiptRepository(({ repository, cli }) => {
+    const empty = cli("check");
+    expect(empty.status).toBe(1);
+    expect(empty.stderr).toContain("No check receipts found.");
+    expect(cli("record", "complete", "exit 0").status).toBe(0);
+    const path = join(repository, "tmp/checks with spaces/complete.json");
+    const receipt = JSON.parse(readFileSync(path, "utf8"));
+    writeFileSync(path, JSON.stringify({ ...receipt, status: "running" }));
+    const interrupted = cli("check");
+    expect(interrupted.status).toBe(1);
+    expect(interrupted.stderr).toContain("complete is unfinished.");
+    writeFileSync(path, "{}");
+    const malformed = cli("check");
+    expect(malformed.status).toBe(1);
+    expect(malformed.stderr).toContain("complete.json cannot be read. Invalid receipt.");
+  });
+});
+
+test("check receipt refuses storage outside ignored project scratch", () => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    for (const target of ["receipts", "tmp", "../escape"]) {
+      const result = cli("--receipts", target, "record", "check", "exit 0");
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain("Keep receipts in a task directory");
+    }
+    mkdirSync(join(repository, "tmp/tracked"), { recursive: true });
+    writeFileSync(join(repository, "tmp/tracked/saved.txt"), "tracked");
+    git("add", "tmp/tracked/saved.txt");
+    const tracked = cli("--receipts", "tmp/tracked", "record", "check", "exit 0");
+    expect(tracked.status).toBe(1);
+    expect(tracked.stderr).toContain("contains tracked files");
+    mkdirSync(join(repository, "other"));
+    symlinkSync(join(repository, "other"), join(repository, "tmp/linked"));
+    const linked = cli("--receipts", "tmp/linked", "record", "check", "exit 0");
+    expect(linked.status).toBe(1);
+    expect(linked.stderr).toContain("must not contain symlinks");
+  });
+});
+
+test("check receipt uses the project root for default storage and runs from the caller directory", () => {
+  withReceiptRepository(({ repository, cli }) => {
+    const nested = join(repository, "nested");
+    mkdirSync(nested);
+    const result = spawnSync(process.execPath, [join(scripts, "check-receipt.ts"), "record", "cwd", "pwd"], {
+      cwd: nested,
+      env: { ...process.env, HOME: join(dirname(repository), "home"), GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" },
+      encoding: "utf8",
+      timeout: 10_000,
+    });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(`${realpathSync(nested)}\n`);
+    expect(existsSync(join(repository, "tmp/check-receipt/cwd.json"))).toBe(true);
+    expect(cli("--receipts", "tmp/check-receipt", "check").status).toBe(0);
+  });
+});
+
+test("check receipt refuses a submodule tree rather than omit its files", () => {
+  withReceiptRepository(({ git, cli }) => {
+    git("update-index", "--add", "--cacheinfo", `160000,${git("rev-parse", "HEAD").trim()},module`);
+    const result = cli("record", "submodule-check", "exit 0");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Check receipts do not support submodules.");
+  });
+});
+
+
+test("check receipt preserves existing scratch ignore rules and refuses a linked ignore file", () => {
+  withReceiptRepository(({ repository, cli }) => {
+    const scratch = join(repository, "tmp/checks with spaces");
+    mkdirSync(scratch, { recursive: true });
+    const ignore = join(scratch, ".gitignore");
+    writeFileSync(ignore, "existing-rule");
+    expect(cli("record", "preserved", "exit 0").status).toBe(0);
+    expect(readFileSync(ignore, "utf8")).toBe("existing-rule\n*\n");
+    rmSync(ignore);
+    const target = join(repository, "ignored");
+    writeFileSync(target, "outside rules");
+    symlinkSync(target, ignore);
+    const linked = cli("record", "linked", "exit 0");
+    expect(linked.status).toBe(1);
+    expect(linked.stderr).toContain("The scratch ignore file must not be a symlink.");
+    expect(readFileSync(target, "utf8")).toBe("outside rules");
   });
 });

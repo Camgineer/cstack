@@ -119,7 +119,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Resolve model and effort through the step's role in the runtime contract: the host model unless a `Models:` block names one. Preserve the workflow's independent review coverage and verify any claimed model diversity. When a signed spec or another grant covers the work, cite its path and the sections the delegate must read, and quote any authorization word for word, because a paraphrase can narrow it. Before you delegate, check each file pointer exists at the delegate's base with `git cat-file -e <base>:<path>`.
 
-You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. After a child that edits returns, re-read each file it touched before you edit that file. Use supported status and resumption tools, and include the current constraints on every follow-up. A second opinion is the same prompt against a different model. Agreement is high-signal.
+You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. After a child that edits returns, re-read each file it touched before you edit that file. Use supported status and resumption tools, and include the current constraints on every follow-up. Send a finding that changes the round in progress through the host's interrupt route. Have the builder list each finding as fixed or pending in its completion report. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
 ## Writing the reply
 

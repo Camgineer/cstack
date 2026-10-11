@@ -982,7 +982,7 @@ test("a changed recorded link and a personal file replacing a recorded link surv
   });
 });
 
-test.each(["missing", "unreadable", "outside path"])("a %s record removes no unproven host entries from an earlier install", (state) => {
+test.each(["missing", "unreadable", "unreadable permissions", "outside path"])("a %s record removes no unproven host entries from an earlier install", (state) => {
   withHome((home) => {
     const cache = join(home, "npx/first");
     const plugin = join(cache, "node_modules/cstack");
@@ -993,6 +993,7 @@ test.each(["missing", "unreadable", "outside path"])("a %s record removes no unp
     writeFileSync(protectedFile, "Keep me.\n");
     if (state === "missing") rmSync(path);
     else if (state === "unreadable") writeFileSync(path, "broken json");
+    else if (state === "unreadable permissions") chmodSync(path, 0o000);
     else {
       const record = installRecord(home);
       record.entries.push({ path: protectedFile, kind: "file", sha256: new Bun.CryptoHasher("sha256").update("Keep me.\n").digest("hex"), mode: 0o644 });

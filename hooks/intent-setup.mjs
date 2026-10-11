@@ -185,16 +185,31 @@ ${unresolved.join("\n")}`);
     else atomicWrite(recordPath, Buffer.from(record.previousRecord.content, "base64"), record.previousRecord.mode);
     return { ready: loadRecord(), messages };
   }
-  function withLock(action) {
-    if (!stat(data)?.isDirectory()) throw new Error("Install first. The plugin data directory is missing.");
-    const quote = (value) => "'" + value.replaceAll("'", "'\\''") + "'";
-    const locked = (path, reason) => new Error(`Setup is locked at ${path}.
+  const quote = (value) => "'" + value.replaceAll("'", "'\\''") + "'";
+  const locked = (path, reason) => new Error(`Setup is locked at ${path}.
 This lock keeps two setup runs from writing together. ${reason}
 Nothing was removed. Wait for any active setup run to finish, then run the same ${command} command again.
 If the lock remains after you confirm no setup run is active, keep a copy by moving only this lock aside:
 mv ${quote(path)} ${quote(`${path}.saved-${randomUUID()}`)}
 Then run the same ${command} command again.`);
-    const acquisitionPath = `${lockPath}.acquire`;
+  const acquisitionPath = `${lockPath}.acquire`;
+  function checkLockOwner() {
+    const current = fileState(lockPath);
+    let previousOwner;
+    try { previousOwner = JSON.parse(Buffer.from(current.content, "base64").toString().split("\n").slice(0, -1).at(-1)); } catch { previousOwner = null; }
+    const validTemporary = Array.isArray(previousOwner?.temporaries) && previousOwner.temporaries.every((path) => typeof path === "string" && [data, specialists].includes(dirname(path)) && /^\.setup-[a-f0-9-]{36}\.tmp$/.test(basename(path)) && resolve(path) === path);
+    if (current.kind !== "file" || previousOwner?.schemaVersion !== 1 || previousOwner.name !== name || previousOwner.home !== home || !Number.isInteger(previousOwner.pid) || previousOwner.pid < 1 || !validTemporary) throw locked(lockPath, "Its owner record is unreadable, so the helper cannot prove the earlier run stopped.");
+    try { process.kill(previousOwner.pid, 0); throw locked(lockPath, `Its recorded PID ${previousOwner.pid} is still running. The helper cannot confirm that this process is a setup run, so it will not clear the lock.`); }
+    catch (error) {
+      if (error.code !== "ESRCH") {
+        if (!error.code) throw error;
+        throw locked(lockPath, `The helper could not check whether recorded PID ${previousOwner.pid} stopped, so it will not clear the lock. ${error.message}`);
+      }
+    }
+    return { current, previousOwner };
+  }
+  function withLock(action) {
+    if (!stat(data)?.isDirectory()) throw new Error("Install first. The plugin data directory is missing.");
     let acquisition;
     try { acquisition = openSync(acquisitionPath, "wx", 0o600); }
     catch (error) { if (error.code === "EEXIST") throw locked(acquisitionPath, "Another run may be taking the setup lock. The helper cannot safely clear this acquisition file."); throw error; }
@@ -209,18 +224,7 @@ Then run the same ${command} command again.`);
     };
     try {
       if (stat(lockPath)) {
-        const current = fileState(lockPath);
-        let previousOwner;
-        try { previousOwner = JSON.parse(Buffer.from(current.content, "base64").toString().split("\n").slice(0, -1).at(-1)); } catch { previousOwner = null; }
-        const validTemporary = Array.isArray(previousOwner?.temporaries) && previousOwner.temporaries.every((path) => typeof path === "string" && [data, specialists].includes(dirname(path)) && /^\.setup-[a-f0-9-]{36}\.tmp$/.test(basename(path)) && resolve(path) === path);
-        if (current.kind !== "file" || previousOwner?.schemaVersion !== 1 || previousOwner.name !== name || previousOwner.home !== home || !Number.isInteger(previousOwner.pid) || previousOwner.pid < 1 || !validTemporary) throw locked(lockPath, "Its owner record is unreadable, so the helper cannot prove the earlier run stopped.");
-        try { process.kill(previousOwner.pid, 0); throw locked(lockPath, `Its recorded PID ${previousOwner.pid} is still running. The helper cannot confirm that this process is a setup run, so it will not clear the lock.`); }
-        catch (error) {
-          if (error.code !== "ESRCH") {
-            if (!error.code) throw error;
-            throw locked(lockPath, `The helper could not check whether recorded PID ${previousOwner.pid} stopped, so it will not clear the lock. ${error.message}`);
-          }
-        }
+        const { current, previousOwner } = checkLockOwner();
         if (!same(fileState(lockPath), current)) throw new Error(`Setup lock changed at ${lockPath}. Nothing was removed. Retry the command.`);
         unlinkSync(lockPath);
         process.stdout.write(`Cleared stale lock ${lockPath} because no process has its recorded PID ${previousOwner.pid}.\n`);
@@ -290,7 +294,12 @@ Then run the same ${command} command again.`);
     });
     return;
   }
-  if (record.phase !== "ready") throw new Error("An apply was interrupted. Run revert before a new report or apply.");
+  if (record.phase !== "ready") {
+    if (stat(acquisitionPath)) throw locked(acquisitionPath, "Another run may be taking the setup lock. The helper cannot safely clear this acquisition file.");
+    if (stat(lockPath)) checkLockOwner();
+    record = loadRecord();
+    if (record.phase !== "ready") throw new Error("An apply was interrupted. Run revert before a new report or apply.");
+  }
   if (!values.choices || !values.catalog) throw new Error("Report and apply need --choices and --catalog. No seat inherits a default.");
   if (!stat(installPath)?.isFile()) throw new Error("Install first. A regular installation record is required.");
   const installation = JSON.parse(readFileSync(installPath, "utf8"));

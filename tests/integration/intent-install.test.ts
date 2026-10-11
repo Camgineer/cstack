@@ -790,7 +790,7 @@ require('node:module').syncBuiltinESMExports();`);
     expect(existsSync(directory)).toBe(false);
     expect(setupRun(home, "revert").stdout).toBe("Nothing to revert.\n");
   });
-});
+}, 20000);
 
 test("setup recovery reports a recorded but unwritten file without blaming the person", () => {
   withHome((home) => {

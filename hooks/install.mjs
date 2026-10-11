@@ -1,6 +1,6 @@
 import { accessSync, constants, existsSync, readFileSync, realpathSync, readdirSync, lstatSync, readlinkSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { dirname, join, basename, delimiter } from "node:path";
+import { dirname, join, basename, delimiter, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline/promises";
@@ -10,7 +10,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const metadata = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8"));
 const { name } = metadata;
 const home = process.env.HOME;
-if (!home) throw new Error("HOME is required.");
+if (!home || !isAbsolute(home)) throw new Error("HOME must be an absolute path.");
 const entry = `${name}-intent`;
 let commandTimeout = 120000;
 let deliveryChild = false;

@@ -38,9 +38,13 @@ test.each(["directory", "file", "dangling link"])("delivery refuses a live copy 
     else symlinkSync(join(home, "missing-git"), git);
     writeFileSync(join(checkout, "unpushed-work.txt"), "My unpushed work.\n");
     const before = homeSnapshot(home);
-    const result = commandRun(home, ["--hosts", "intent"], from);
+    const result = install(home, shell);
     expect(result.status).toBe(2);
-    expect(result.stdout + result.stderr).toContain(".git entry");
+    expect(result.stderr).toContain(".git entry");
+    expect(homeSnapshot(home)).toEqual(before);
+    const table = commandRun(home, ["--hosts", "intent"], from);
+    expect(table.status).toBe(1);
+    expect(table.stdout + table.stderr).toContain(".git entry");
     expect(homeSnapshot(home)).toEqual(before);
   });
 });

@@ -37,16 +37,16 @@ Each host command has a hard two-minute limit. Use `--timeout-ms MS` to change i
 
 Cursor's CLI can add or refresh a marketplace. To install or finish an update, open **Customize**, find the plugin, and select **Install** or update. The command reports native Cursor installation and version as unknown because its CLI has no installed-plugin list. It also detects enabled user plugins that Cursor imports from Claude Code and updates those through Claude Code. The final table labels their versions as Claude imports.
 
-Intent keeps the fetched package in `~/.local/share/cstack` and its host record beside it at `~/.local/share/cstack-install-record.json`. Both use `XDG_DATA_HOME` when set. Every fetched-package run replaces this whole plugin copy, including old files and local edits inside it. Keep personal work outside that folder.
+Intent keeps the fetched package in `~/.local/share/cstack` and its host record beside it at `~/.local/share/cstack-install-record.json`. Both use `XDG_DATA_HOME` when it is an absolute path. Empty and relative values use the default. Every fetched-package run replaces this whole plugin copy, including old files and local edits inside it. Keep personal work outside that folder.
 
 The installer removes or replaces a directory in exactly two cases:
 
-1. The live copy at its fixed path. It must not be a link. Its regular metadata file must parse and name this plugin. The installer refuses the filesystem root, your home, ancestors of your home, and copy paths that contain a host folder or the record. It resolves parent links before this check.
+1. The live copy at its fixed path. It must not be a link or hold a `.git` entry. Its regular metadata file must parse and name this plugin. The installer refuses the filesystem root, your home, ancestors of your home, and copy paths that contain a host folder or the record. It resolves parent links before this check.
 2. An exact temporary path this process created or renamed during the current run, tracked in memory.
 
 The record governs only entries in your host folders. It stores a link's exact target or a file's content hash and permission bits. Updates replace or remove a host entry only when its current value matches the record. Your own host files and unrecorded broken links stay untouched. The table summarizes the entries it keeps and reports preserved links whose targets are gone. With a missing or unreadable record, the installer recognizes exact links to known skills from an earlier install and records them again. It removes no unproven host entry.
 
-The record stays outside the copy during replacement. After an interrupted swap, the next run builds a fresh copy when the live path is missing, or replaces the checked live copy as usual. Earlier leftover folders stay untouched. The installer never scans them or reads a record from inside them. Files are written beside their destinations before being renamed into place, so hard-linked backups keep their previous bytes and permissions.
+The record stays outside the copy during replacement. After an interrupted swap, the next run builds a fresh copy when the live path is missing, or replaces the checked live copy as usual. If another install interrupts the swap, the error asks you to rerun and names the temporary folder left for you to inspect. Earlier leftover folders stay untouched. The installer never scans them or reads a record from inside them. Files are written beside their destinations before being renamed into place, so hard-linked backups keep their previous bytes and permissions.
 
 On the first install Intent adds the mode rule at the top of your personal rule text under **Settings**, **Agent Behavior**. If it cannot reach Intent, it prints the rule to paste there. Updates leave that rule alone. The final table says where the rule went. Run `setup` to configure specialists and other settings. Installing does not create specialists.
 

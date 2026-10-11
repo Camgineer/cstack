@@ -8,10 +8,11 @@ import { parseArgs } from "node:util";
 const source = realpathSync(dirname(dirname(fileURLToPath(import.meta.url))));
 const { name } = JSON.parse(readFileSync(join(source, "tools/metadata.json"), "utf8"));
 if (!/^[a-z0-9-]+$/.test(name)) throw new Error("The plugin has no valid name.");
-if (!process.env.HOME) throw new Error("HOME is required.");
+if (!process.env.HOME || !isAbsolute(process.env.HOME)) throw new Error("HOME must be an absolute path.");
 const home = realpathSync(process.env.HOME);
 const physical = (path) => existsSync(path) ? realpathSync(path) : join(physical(dirname(path)), basename(path));
-const data = join(physical(resolve(process.env.XDG_DATA_HOME ?? join(home, ".local/share"))), name);
+const dataHome = process.env.XDG_DATA_HOME;
+const data = join(physical(dataHome && isAbsolute(dataHome) ? dataHome : join(home, ".local/share")), name);
 const skills = physical(join(home, ".intent/skills"));
 const specialists = physical(join(home, ".intent/specialists"));
 const recordPath = join(dirname(data), `${name}-install-record.json`);
@@ -79,6 +80,7 @@ function preflight() {
   if (statAt(data)?.isSymbolicLink()) throw new Error(`kept ${data}: the plugin data folder is a link. Move that link aside before installing.`);
   if (overlapsProtected(data)) throw new Error(`kept ${data}: the copy path overlaps a protected home, host folder, or installation record. Choose a separate data folder.`);
   if (statAt(data) && !pluginCopy(data)) throw new Error(`kept ${data}: it is not a copy of this plugin`);
+  if (statAt(join(data, ".git"))) throw new Error(`kept ${data}: it holds a .git entry and may be your checkout. Choose a separate data folder.`);
   const entry = statAt(recordPath);
   if (entry && !entry.isFile()) throw new Error(`kept ${recordPath}: this protected installation state is not a regular file. Move it aside before installing.`);
 }
@@ -102,8 +104,13 @@ function replaceCopy() {
     }
   };
   for (const path of ["agents", "hooks", "skills", "tools/metadata.json", "LICENSE"]) if (existsSync(join(source, path))) copy(path);
-  if (existsSync(data)) renameSync(data, previous);
-  renameSync(incoming, data);
+  try {
+    if (existsSync(data)) renameSync(data, previous);
+    renameSync(incoming, data);
+  } catch (error) {
+    const changed = ["ENOENT", "EEXIST", "ENOTEMPTY"].includes(error.code);
+    throw new Error(`Could not replace the plugin copy at ${data}. ${changed ? "Another install may be running; let it finish, then run the installer again." : "Fix the error below, then run the installer again."} Left temporary folder ${staging} for you to inspect. ${error.message}`, { cause: error });
+  }
   rmSync(staging, { recursive: true, force: true });
   console.log(`copied the plugin to ${data}`);
 }

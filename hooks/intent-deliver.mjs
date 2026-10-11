@@ -361,9 +361,10 @@ function main() {
     const binary = intentCommand();
     modeRule = { location, status: "manual" };
     const unchanged = `Left the ${name}-mode rule unchanged in ${location}.`;
-    let message = `${unchanged} New rule text is available. To use it, paste this at the top of your personal rule text:\n${rule}`;
+    const manual = `${unchanged} New rule text is available. To use it, paste this at the top of your personal rule text:\n${rule}`;
+    const interrupted = `The earlier install may not have finished adding the ${name}-mode rule in ${location}. To finish it, paste this at the top of your personal rule text:\n${rule}`;
+    let message = uncertain ? interrupted : manual;
     let ruleChanged = false;
-    if (uncertain) message = `The earlier install may not have finished adding the ${name}-mode rule in ${location}. To finish it, paste this at the top of your personal rule text:\n${rule}`;
     if (binary) {
       const call = (method, params) => {
         try { return JSON.parse(execFileSync(binary, ["call", method, "--params", JSON.stringify(params)], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 120000, killSignal: "SIGKILL" })); }
@@ -406,6 +407,7 @@ function main() {
         } catch {}
       }
     }
+    if (ruleLifecycle === "attempted" && message === manual) message = interrupted;
     console.log(message);
     ruleLifecycle = "settled";
     if (journalStarted || firstInstall || uncertain || ruleChanged) savePending();

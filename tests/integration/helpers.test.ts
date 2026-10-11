@@ -15,7 +15,7 @@ function inTemporaryDirectory(run: (directory: string) => void): void {
   }
 }
 
-test.each(["orch/orch.ts", "watch-pr/watch-pr", "check-receipt.ts"])(
+test.each(["orch/orch.ts", "watch-pr/watch-pr"])(
   "%s reports missing dependencies without running an installer or adding files",
   (entry) => {
     inTemporaryDirectory((directory) => {
@@ -170,7 +170,7 @@ test("check receipt passes on an unchanged tree and ignores scratch output", () 
     const receipt = JSON.parse(readFileSync(join(repository, "tmp/checks with spaces/typecheck.json"), "utf8"));
     expect(receipt.command).toBe("printf 'check output\\n'");
     expect(receipt.exitCode).toBe(0);
-    expect(receipt.treeHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(receipt.treeHash).toMatch(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/);
     expect(receipt.startedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 });
@@ -210,7 +210,8 @@ test("check receipt binds untracked files across staging and committing", () => 
 
 test("check receipt names every failed or stale check and replaces a rerun", () => {
   withReceiptRepository(({ repository, cli }) => {
-    expect(cli("record", "failed-check", "exit 7").status).toBe(7);
+    const failingCommand = 'test "$(cat tracked.txt)" = edit || exit 7';
+    expect(cli("record", "failed-check", failingCommand).status).toBe(7);
     expect(cli("record", "passing-check", "exit 0").status).toBe(0);
     const failed = cli("check");
     expect(failed.status).toBe(1);
@@ -220,7 +221,7 @@ test("check receipt names every failed or stale check and replaces a rerun", () 
     expect(stale.status).toBe(1);
     expect(stale.stderr).toContain("failed-check is stale.");
     expect(stale.stderr).toContain("passing-check is stale.");
-    expect(cli("record", "failed-check", "exit 0").status).toBe(0);
+    expect(cli("record", "failed-check", failingCommand).status).toBe(0);
     expect(cli("record", "passing-check", "exit 0").status).toBe(0);
     expect(cli("check").status).toBe(0);
   });

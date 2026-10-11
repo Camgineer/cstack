@@ -1,14 +1,13 @@
 #!/usr/bin/env bun
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync, realpathSync, renameSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
-import { ensureDependenciesInstalled } from "./bootstrap.ts";
-
-ensureDependenciesInstalled();
-const { Command } = await import("commander");
+import { parseArgs } from "node:util";
 
 type Receipt = {
+  format: 2;
+  repositoryRoot: string;
   name: string;
   command: string;
   cwd: string;
@@ -19,38 +18,36 @@ type Receipt = {
   | { status: "finished"; exitCode: number; finishedAt: string; endTreeHash: string }
 );
 
-function git(cwd: string, ...args: string[]): string {
-  const result = spawnSync("git", ["-C", cwd, ...args], { encoding: "utf8" });
+const HELP = `Usage: bun check-receipt.ts [--receipts <directory>] record <name> '<command>'
+       bun check-receipt.ts [--receipts <directory>] check [--head <commit>]
+
+Run a named shell command in the current directory and save its result.
+Receipts default to tmp/check-receipt under the project root.
+Reuse a name only for the same command and working directory.
+check refuses failed, unfinished, foreign, or stale receipts.
+--head also requires the index and named commit to hold the checked tree.
+Receipts are local bookkeeping that exclude ignored files, state outside the repository, and changes restored before exit, and prove no authenticity.
+`;
+
+function git(root: string, args: string[], indexFile?: string): string {
+  const result = spawnSync("git", ["-C", root, ...args], {
+    encoding: "utf8",
+    env: indexFile ? { ...process.env, GIT_INDEX_FILE: indexFile } : process.env,
+  });
   if (result.status !== 0) throw new Error(result.stderr.trim() || "Cannot read the Git working tree.");
-  return result.stdout;
+  return result.stdout.trim();
 }
 
-function treeHash(root: string): string {
-  const entries = git(root, "ls-files", "--stage", "-z").split("\0");
-  if (entries.some((entry) => entry.startsWith("160000 "))) {
-    throw new Error("Check receipts do not support submodules. Run checks in each repository separately.");
+function statIfPresent(path: string) {
+  try {
+    return lstatSync(path);
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined;
+    throw error;
   }
-  const paths = new Set(git(root, "ls-files", "--cached", "--others", "--exclude-standard", "-z").split("\0").filter(Boolean));
-  const hash = createHash("sha256");
-  for (const path of [...paths].sort()) {
-    const absolute = join(root, path);
-    let stat;
-    try {
-      stat = lstatSync(absolute);
-    } catch (error) {
-      if (error instanceof Error && "code" in error && error.code === "ENOENT") continue;
-      throw error;
-    }
-    if (!stat.isFile() && !stat.isSymbolicLink()) throw new Error(`Cannot fingerprint ${path}. Expected a file or a symlink.`);
-    const content = stat.isSymbolicLink() ? Buffer.from(readlinkSync(absolute)) : readFileSync(absolute);
-    hash.update(JSON.stringify([path, stat.isSymbolicLink() ? "symlink" : "file", stat.mode & 0o111, createHash("sha256").update(content).digest("hex")]));
-    hash.update("\n");
-  }
-  return hash.digest("hex");
 }
 
-function receiptDirectory(root: string, value: string): string {
-  const directory = resolve(root, value);
+function checkContainment(root: string, directory: string): void {
   const inside = relative(join(root, "tmp"), directory);
   if (!inside || inside === ".." || inside.startsWith(`..${sep}`) || isAbsolute(inside)) {
     throw new Error("Keep receipts in a task directory under the project's tmp directory.");
@@ -58,41 +55,67 @@ function receiptDirectory(root: string, value: string): string {
   let current = root;
   for (const part of relative(root, directory).split(sep)) {
     current = join(current, part);
-    if (existsSync(current) && lstatSync(current).isSymbolicLink()) throw new Error("The receipt directory must not contain symlinks.");
+    if (statIfPresent(current)?.isSymbolicLink()) throw new Error("The receipt directory must not contain symlinks.");
   }
-  if (git(root, "ls-files", "-z", "--", relative(root, directory)).length) {
+}
+
+function writeAtomic(directory: string, name: string, content: string): void {
+  const temporary = join(directory, `${name}.${randomUUID()}.pending`);
+  writeFileSync(temporary, content, { flag: "wx" });
+  renameSync(temporary, join(directory, name));
+}
+
+function receiptDirectory(root: string, value: string): string {
+  const directory = resolve(root, value);
+  checkContainment(root, directory);
+  if (git(root, ["ls-files", "-z", "--", relative(root, directory)]).length) {
     throw new Error("The receipt directory contains tracked files. Use an untracked scratch directory.");
   }
   mkdirSync(directory, { recursive: true });
+  const ignoreFile = join(directory, ".gitignore");
+  const ignoreStat = statIfPresent(ignoreFile);
+  if (ignoreStat?.isSymbolicLink()) throw new Error("The scratch ignore file must not be a symlink.");
   const probe = relative(root, join(directory, "probe.json"));
   const ignored = () => spawnSync("git", ["-C", root, "check-ignore", "-q", "--", probe]).status === 0;
   if (!ignored()) {
-    const ignoreFile = join(directory, ".gitignore");
-    if (existsSync(ignoreFile) && lstatSync(ignoreFile).isSymbolicLink()) throw new Error("The scratch ignore file must not be a symlink.");
-    const existing = existsSync(ignoreFile) ? readFileSync(ignoreFile, "utf8") : "";
-    writeFileSync(ignoreFile, `${existing}${existing && !existing.endsWith("\n") ? "\n" : ""}*\n`);
+    const existing = ignoreStat ? readFileSync(ignoreFile, "utf8") : "";
+    writeAtomic(directory, ".gitignore", `${existing}${existing && !existing.endsWith("\n") ? "\n" : ""}*\n`);
   }
   if (!ignored()) throw new Error("The receipt directory must be ignored by Git.");
   return directory;
 }
 
+function treeHash(root: string, directory: string): string {
+  if (git(root, ["ls-files", "--stage", "-z"]).split("\0").some((entry) => entry.startsWith("160000 "))) {
+    throw new Error("Check receipts do not support submodules. Run checks in each repository separately.");
+  }
+  const indexFile = join(directory, `index-${randomUUID()}`);
+  try {
+    git(root, ["read-tree", git(root, ["write-tree"])], indexFile);
+    git(root, ["-c", "core.filemode=true", "add", "-A", "--", "."], indexFile);
+    return git(root, ["write-tree"], indexFile);
+  } finally {
+    rmSync(indexFile, { force: true });
+    rmSync(`${indexFile}.lock`, { force: true });
+  }
+}
+
 function save(directory: string, receipt: Receipt): void {
-  const path = join(directory, `${receipt.name}.json`);
-  const temporary = `${path}.${process.pid}.pending`;
-  writeFileSync(temporary, `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx" });
-  renameSync(temporary, path);
+  writeAtomic(directory, `${receipt.name}.json`, `${JSON.stringify(receipt, null, 2)}\n`);
 }
 
 function parseReceipt(path: string): Receipt {
   const value: unknown = JSON.parse(readFileSync(path, "utf8"));
   if (typeof value !== "object" || value === null ||
+    !("format" in value) || value.format !== 2 ||
+    !("repositoryRoot" in value) || typeof value.repositoryRoot !== "string" ||
     !("name" in value) || typeof value.name !== "string" ||
     !("command" in value) || typeof value.command !== "string" ||
     !("cwd" in value) || typeof value.cwd !== "string" ||
     !("treeHash" in value) || typeof value.treeHash !== "string" ||
     !("startedAt" in value) || typeof value.startedAt !== "string" ||
-    !("status" in value)) throw new Error("Invalid receipt.");
-  const base = { name: value.name, command: value.command, cwd: value.cwd, treeHash: value.treeHash, startedAt: value.startedAt };
+    !("status" in value)) throw new Error("Invalid receipt. Use a fresh receipt directory and rerun the checks.");
+  const base = { format: 2, repositoryRoot: value.repositoryRoot, name: value.name, command: value.command, cwd: value.cwd, treeHash: value.treeHash, startedAt: value.startedAt } satisfies Omit<Receipt, "status">;
   if (value.status === "running") return { ...base, status: "running" };
   if (value.status === "finished" &&
     "exitCode" in value && typeof value.exitCode === "number" && Number.isInteger(value.exitCode) &&
@@ -103,66 +126,72 @@ function parseReceipt(path: string): Receipt {
   throw new Error("Invalid receipt.");
 }
 
-const program = new Command()
-  .name("check-receipt")
-  .description("Run checks and bind their results to the working files.")
-  .option("--receipts <directory>", "receipt directory relative to the project root", "tmp/check-receipt");
-
-function context(): { root: string; directory: string } {
-  const root = realpathSync(git(process.cwd(), "rev-parse", "--show-toplevel").trim());
-  const options: { receipts: string } = program.opts();
-  return { root, directory: receiptDirectory(root, options.receipts) };
+function record(root: string, directory: string, name: string, command: string): void {
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name) || !command.trim()) throw new Error("Provide a check name and a nonempty command.");
+  const cwd = realpathSync(process.cwd());
+  const path = join(directory, `${name}.json`);
+  if (statIfPresent(path)) {
+    const previous = parseReceipt(path);
+    if (previous.repositoryRoot !== root) throw new Error(`${name} belongs to another repository.`);
+    if (previous.command !== command || previous.cwd !== cwd) {
+      throw new Error(`${name} already records ${JSON.stringify(previous.command)} in ${previous.cwd}. Requested ${JSON.stringify(command)} in ${cwd}. Use another name.`);
+    }
+  }
+  const originalDirectory = lstatSync(directory);
+  const running: Receipt = { format: 2, repositoryRoot: root, name, command, cwd, treeHash: treeHash(root, directory), startedAt: new Date().toISOString(), status: "running" };
+  save(directory, running);
+  const result = spawnSync("sh", ["-c", command], { stdio: "inherit" });
+  checkContainment(root, directory);
+  const currentDirectory = lstatSync(directory);
+  if (currentDirectory.dev !== originalDirectory.dev || currentDirectory.ino !== originalDirectory.ino) throw new Error("The receipt directory changed during the check. Run it again.");
+  const receipt: Receipt = { ...running, status: "finished", exitCode: result.status ?? 1, finishedAt: new Date().toISOString(), endTreeHash: treeHash(root, directory) };
+  save(directory, receipt);
+  if (result.error) console.error(result.error.message);
+  const changed = receipt.treeHash !== receipt.endTreeHash;
+  console.log(`${name} recorded. Exit code ${receipt.exitCode}.${changed ? " The working tree changed during the check." : ""}`);
+  process.exitCode = receipt.exitCode || (changed ? 1 : 0);
 }
 
-program.command("record")
-  .description("Run a named shell command in the current directory and save its result.")
-  .argument("<name>", "check name, using letters, digits, dots, underscores, or hyphens")
-  .argument("<command>", "shell command as one quoted argument")
-  .action((name: string, command: string) => {
-    if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name) || !command.trim()) throw new Error("Provide a check name and a nonempty command.");
-    const { root, directory } = context();
-    const running: Receipt = { name, command, cwd: process.cwd(), treeHash: treeHash(root), startedAt: new Date().toISOString(), status: "running" };
-    save(directory, running);
-    const result = spawnSync("sh", ["-c", command], { stdio: "inherit" });
-    const receipt: Receipt = { ...running, status: "finished", exitCode: result.status ?? 1, finishedAt: new Date().toISOString(), endTreeHash: treeHash(root) };
-    save(directory, receipt);
-    if (result.error) console.error(result.error.message);
-    const changed = receipt.treeHash !== receipt.endTreeHash;
-    console.log(`${name} recorded. Exit code ${receipt.exitCode}.${changed ? " The working tree changed during the check." : ""}`);
-    process.exitCode = receipt.exitCode || (changed ? 1 : 0);
-  });
-
-program.command("check")
-  .description("Refuse failed, unfinished, or stale receipts before a push or a verified-head report.")
-  .action(() => {
-    const { root, directory } = context();
-    const current = treeHash(root);
-    const files = readdirSync(directory).filter((file) => file.endsWith(".json")).sort();
-    if (!files.length) throw new Error("No check receipts found. Record the required checks first.");
-    const problems: string[] = [];
-    for (const file of files) {
-      try {
-        const receipt = parseReceipt(join(directory, file));
-        if (`${receipt.name}.json` !== file) throw new Error("Receipt name does not match its file.");
-        if (receipt.status === "running") problems.push(`${receipt.name} is unfinished. Run it again.`);
-        else {
-          if (receipt.exitCode !== 0) problems.push(`${receipt.name} failed with exit code ${receipt.exitCode}. Run it again.`);
-          if (receipt.treeHash !== current || receipt.endTreeHash !== current) problems.push(`${receipt.name} is stale. Run it again on the current tree.`);
-        }
-      } catch (error) {
-        problems.push(`${file} cannot be read. ${error instanceof Error ? error.message : String(error)}`);
+function check(root: string, directory: string, head: string | undefined): void {
+  const current = treeHash(root, directory);
+  const files = readdirSync(directory).filter((file) => file.endsWith(".json")).sort();
+  if (!files.length) throw new Error("No check receipts found. Record the required checks first.");
+  const problems: string[] = [];
+  for (const file of files) {
+    try {
+      const receipt = parseReceipt(join(directory, file));
+      if (`${receipt.name}.json` !== file) throw new Error("Receipt name does not match its file.");
+      if (receipt.repositoryRoot !== root) problems.push(`${receipt.name} belongs to another repository. Run it again here.`);
+      if (receipt.status === "running") problems.push(`${receipt.name} is unfinished. Run it again.`);
+      else {
+        if (receipt.exitCode !== 0) problems.push(`${receipt.name} failed with exit code ${receipt.exitCode}. Run it again.`);
+        if (receipt.treeHash !== current || receipt.endTreeHash !== current) problems.push(`${receipt.name} is stale. Run it again on the current tree.`);
       }
+    } catch (error) {
+      problems.push(`${file} cannot be read. ${error instanceof Error ? error.message : String(error)}`);
     }
-    if (problems.length) {
-      for (const problem of problems) console.error(problem);
-      process.exitCode = 1;
-    } else {
-      console.log(`All ${files.length} check receipts passed on tree ${current}.`);
-    }
-  });
-program.action(() => { program.help({ error: true }); });
+  }
+  if (head !== undefined) {
+    if (git(root, ["write-tree"]) !== current) problems.push("The index tree differs from the checked working tree.");
+    if (git(root, ["rev-parse", "--verify", "--end-of-options", `${head}^{tree}`]) !== current) problems.push(`${head} does not contain the checked working tree.`);
+  }
+  if (problems.length) {
+    for (const problem of problems) console.error(problem);
+    process.exitCode = 1;
+  } else console.log(`All ${files.length} check receipts passed on tree ${current}.${head === undefined ? "" : ` ${head} contains that tree.`}`);
+}
+
 try {
-  await program.parseAsync();
+  const { values, positionals } = parseArgs({ allowPositionals: true, options: { receipts: { type: "string", default: "tmp/check-receipt" }, head: { type: "string" }, help: { type: "boolean", short: "h" } } });
+  if (values.help) console.log(HELP);
+  else {
+    const [action, name, command] = positionals;
+    if (!((action === "record" && positionals.length === 3 && values.head === undefined) || (action === "check" && positionals.length === 1))) throw new Error(HELP);
+    const root = realpathSync(git(process.cwd(), ["rev-parse", "--show-toplevel"]));
+    const directory = receiptDirectory(root, values.receipts);
+    if (action === "record" && name !== undefined && command !== undefined) record(root, directory, name, command);
+    else check(root, directory, values.head);
+  }
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

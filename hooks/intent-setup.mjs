@@ -32,6 +32,7 @@ Revert keeps original bytes in the record until restored. Move a later-edited
 seat file aside, then run revert again to restore its original without overwriting.
 An unreadable record still supports revert --report-only. Keep a backup to recover it.
 Dead process locks are cleared; previous-run temporary files are named and kept.
+Other locks are kept, with a command to move them aside after you confirm setup stopped.
 No provider, model, or effort is chosen for you. Without --yes, apply writes nothing.
 Install first. Setup reads its recorded mode link to find the plugin copy.
 Setup records only its file writes. It changes no daemon setting or rule.
@@ -131,7 +132,7 @@ function main() {
     return record;
   }
   const save = (record) => atomicWrite(recordPath, json(record), 0o600);
-  function restore(change, rollingBack = false) {
+  function restore(change) {
     safeParents(change.path);
     const kept = (reason) => ({
       resolved: change.before.kind !== "file",
@@ -146,8 +147,8 @@ function main() {
     if (current.kind !== "absent" && !same(current, change.after)) return kept(`Kept ${change.path}. You changed it after setup.`);
     if (change.before.kind === "file") atomicWrite(change.path, Buffer.from(change.before.content, "base64"), change.before.mode);
     else if (change.before.kind === "link") {
-      let owned = rollingBack;
-      if (!owned && stat(installPath)?.isFile()) {
+      let owned = false;
+      if (stat(installPath)?.isFile()) {
         try {
           const installation = JSON.parse(readFileSync(installPath, "utf8"));
           owned = installation.schemaVersion === 1 && installation.entries?.some((entry) => entry.path === change.path && same(entry, change.before));
@@ -164,11 +165,12 @@ function main() {
   function rollback(record) {
     const messages = [];
     const unresolved = [];
+    const held = [];
     for (const change of [...record.pending].reverse()) {
       try {
-        const result = restore(change, true);
+        const result = restore(change);
         messages.push(result.message);
-        if (!result.resolved) unresolved.push(change.path);
+        if (!result.resolved) held.unshift(change);
       } catch (error) { unresolved.push(change.path); messages.push(`Could not restore ${change.path}. ${error.message}`); }
     }
     if (unresolved.length) throw new Error(`Rollback is incomplete. Recorded recovery remains at ${recordPath}. Run revert to retry.
@@ -178,34 +180,26 @@ ${unresolved.join("\n")}`);
     for (const directory of [...record.createdDirectories].reverse()) {
       try { rmdirSync(directory); } catch (error) { if (!["ENOENT", "ENOTEMPTY", "EEXIST"].includes(error.code)) throw new Error(`Could not remove the empty directory ${directory}. Recovery remains at ${recordPath}. Run revert to retry. ${error.message}`); }
     }
-    if (record.previousRecord.kind === "absent") unlinkSync(recordPath);
+    if (held.length) save({ schemaVersion: 1, pluginRoot: record.pluginRoot, ranUnderVersion: record.ranUnderVersion, phase: "ready", changes: [...record.changes, ...held] });
+    else if (record.previousRecord.kind === "absent") unlinkSync(recordPath);
     else atomicWrite(recordPath, Buffer.from(record.previousRecord.content, "base64"), record.previousRecord.mode);
     return { ready: loadRecord(), messages };
   }
   function withLock(action) {
     if (!stat(data)?.isDirectory()) throw new Error("Install first. The plugin data directory is missing.");
-    if (stat(lockPath)) {
-      const current = fileState(lockPath);
-      let owner;
-      try { owner = JSON.parse(Buffer.from(current.content, "base64").toString().split("\n").slice(0, -1).at(-1)); } catch { owner = null; }
-      const validTemporary = Array.isArray(owner?.temporaries) && owner.temporaries.every((path) => typeof path === "string" && [data, specialists].includes(dirname(path)) && /^\.setup-[a-f0-9-]{36}\.tmp$/.test(basename(path)) && resolve(path) === path);
-      if (current.kind !== "file" || owner?.schemaVersion !== 1 || owner.name !== name || owner.home !== home || !Number.isInteger(owner.pid) || owner.pid < 1 || !validTemporary) throw new Error(`Setup is locked at ${lockPath}. Its owner record is unreadable. Nothing was removed. Confirm the earlier run stopped, keep a copy of this lock, then move only that lock aside and run revert.`);
-      try { process.kill(owner.pid, 0); throw new Error(`Setup is locked at ${lockPath}. Its recorded PID ${owner.pid} is still running. Wait for that run to finish.`); }
-      catch (error) {
-        if (error.code !== "ESRCH") {
-          if (!error.code) throw error;
-          throw new Error(`Kept lock ${lockPath}. Could not confirm that its recorded PID ${owner.pid} stopped. ${error.message}`);
-        }
-      }
-      if (!same(fileState(lockPath), current)) throw new Error(`Setup lock changed at ${lockPath}. Nothing was removed. Retry the command.`);
-      unlinkSync(lockPath);
-      process.stdout.write(`Cleared stale lock ${lockPath} because no process has its recorded PID ${owner.pid}.\n`);
-      for (const path of owner.temporaries) if (stat(path)) process.stdout.write(`Left temporary file ${path}. The interrupted run listed it; this run did not create it. Keep it until recovery is verified, then remove it yourself.\n`);
-    }
+    const quote = (value) => "'" + value.replaceAll("'", "'\\''") + "'";
+    const locked = (path, reason) => new Error(`Setup is locked at ${path}.
+This lock keeps two setup runs from writing together. ${reason}
+Nothing was removed. After you confirm no setup run is active, keep a copy by moving only this lock aside:
+mv ${quote(path)} ${quote(`${path}.saved-${randomUUID()}`)}
+Then run revert.`);
+    const acquisitionPath = `${lockPath}.acquire`;
+    let acquisition;
+    try { acquisition = openSync(acquisitionPath, "wx", 0o600); }
+    catch (error) { if (error.code === "EEXIST") throw locked(acquisitionPath, "Another run may be taking the setup lock. The helper cannot safely clear this acquisition file."); throw error; }
+    const acquired = fstatSync(acquisition);
     let fd;
-    try { fd = openSync(lockPath, "wx", 0o600); }
-    catch (error) { if (error.code === "EEXIST") throw new Error(`Setup is locked at ${lockPath}. Another run acquired it. Retry after that run finishes.`); throw error; }
-    const created = fstatSync(fd);
+    let created;
     const owner = { schemaVersion: 1, name, home, pid: process.pid, temporaries: [] };
     const updateLock = (temporary, present) => {
       if (temporary) owner.temporaries = present ? [...owner.temporaries, temporary] : owner.temporaries.filter((path) => path !== temporary);
@@ -213,7 +207,41 @@ ${unresolved.join("\n")}`);
       for (let offset = 0; offset < bytes.length;) offset += writeSync(fd, bytes, offset, bytes.length - offset);
     };
     try {
+      if (stat(lockPath)) {
+        const current = fileState(lockPath);
+        let previousOwner;
+        try { previousOwner = JSON.parse(Buffer.from(current.content, "base64").toString().split("\n").slice(0, -1).at(-1)); } catch { previousOwner = null; }
+        const validTemporary = Array.isArray(previousOwner?.temporaries) && previousOwner.temporaries.every((path) => typeof path === "string" && [data, specialists].includes(dirname(path)) && /^\.setup-[a-f0-9-]{36}\.tmp$/.test(basename(path)) && resolve(path) === path);
+        if (current.kind !== "file" || previousOwner?.schemaVersion !== 1 || previousOwner.name !== name || previousOwner.home !== home || !Number.isInteger(previousOwner.pid) || previousOwner.pid < 1 || !validTemporary) throw locked(lockPath, "Its owner record is unreadable, so the helper cannot prove the earlier run stopped.");
+        try { process.kill(previousOwner.pid, 0); throw locked(lockPath, `Its recorded PID ${previousOwner.pid} is still running. The helper cannot confirm that this process is a setup run, so it will not clear the lock.`); }
+        catch (error) {
+          if (error.code !== "ESRCH") {
+            if (!error.code) throw error;
+            throw locked(lockPath, `The helper could not check whether recorded PID ${previousOwner.pid} stopped, so it will not clear the lock. ${error.message}`);
+          }
+        }
+        if (!same(fileState(lockPath), current)) throw new Error(`Setup lock changed at ${lockPath}. Nothing was removed. Retry the command.`);
+        unlinkSync(lockPath);
+        process.stdout.write(`Cleared stale lock ${lockPath} because no process has its recorded PID ${previousOwner.pid}.\n`);
+        for (const path of previousOwner.temporaries) if (stat(path)) process.stdout.write(`Left temporary file ${path}. The interrupted run listed it; this run did not create it. Keep it until recovery is verified, then remove it yourself.\n`);
+      }
+      try { fd = openSync(lockPath, "wx", 0o600); }
+      catch (error) { if (error.code === "EEXIST") throw locked(lockPath, "Another run acquired it. The helper will not clear that run's lock."); throw error; }
+      created = fstatSync(fd);
       updateLock(null);
+    } catch (error) {
+      if (fd !== undefined) {
+        closeSync(fd);
+        const remaining = stat(lockPath);
+        if (created && remaining?.dev === created.dev && remaining.ino === created.ino) unlinkSync(lockPath);
+      }
+      throw error;
+    } finally {
+      closeSync(acquisition);
+      const remaining = stat(acquisitionPath);
+      if (remaining?.dev === acquired.dev && remaining.ino === acquired.ino) unlinkSync(acquisitionPath);
+    }
+    try {
       trackTemporary = updateLock;
       return action();
     } finally {
@@ -237,7 +265,7 @@ ${unresolved.join("\n")}`);
       process.stdout.write(json({ recordPath, phase: record.phase, changes: [...record.changes, ...(record.pending ?? [])].reverse() }));
       return;
     }
-    if (!stat(recordPath) && !stat(lockPath)) { process.stdout.write("Nothing to revert.\n"); return; }
+    if (!stat(recordPath) && !stat(lockPath) && !stat(`${lockPath}.acquire`)) { process.stdout.write("Nothing to revert.\n"); return; }
     withLock(() => {
       let latest = loadRecord();
       if (latest.phase === "applying") {
@@ -337,7 +365,7 @@ ${unresolved.join("\n")}`);
     if (json(loadRecord()) !== json(record)) throw new Error("The setup record changed after the report. Report again.");
     for (const operation of operations) if (!same(fileState(operation.path), operation.before)) throw new Error(`Kept ${operation.path}. It changed after the report.`);
     const missingDirectories = [join(home, ".intent"), specialists].filter((path) => !stat(path));
-    const pending = { schemaVersion: 1, pluginRoot, ranUnderVersion: metadata.version, phase: "applying", changes: record.changes, pending: operations, createdDirectories: [], previousRecord: fileState(recordPath) };
+    const pending = { schemaVersion: 1, pluginRoot, ranUnderVersion: metadata.version, phase: "applying", changes: record.changes, pending: [], createdDirectories: [], previousRecord: fileState(recordPath) };
     save(pending);
     try {
       for (const directory of missingDirectories) {
@@ -348,6 +376,8 @@ ${unresolved.join("\n")}`);
       for (const operation of operations) {
         safeParents(operation.path);
         if (!same(fileState(operation.path), operation.before)) throw new Error(`${operation.path} changed during setup.`);
+        pending.pending.push(operation);
+        save(pending);
         atomicWrite(operation.path, Buffer.from(operation.after.content, "base64"), operation.after.mode);
       }
       save({ schemaVersion: 1, pluginRoot, ranUnderVersion: metadata.version, phase: "ready", changes: [...record.changes, ...operations] });

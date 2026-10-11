@@ -468,7 +468,7 @@ test("the installed mode rule's exemption matches every generated thin seat and 
   });
 });
 
-test("the documented mode rules match the rule written by the installer", () => {
+test("the documented mode rules and project mode lines match the installer's exemption", () => {
   withHome((home) => {
     const from = fetchedPackage(home);
     const files = ruleCommand(home, { content: "", enabled: true });
@@ -480,6 +480,19 @@ test("the documented mode rules match the rule written by the installer", () => 
       const quotes = [...doc.matchAll(/```markdown\n([\s\S]*?)\n```/g)]
         .map((match) => match[1]).filter((quote) => quote.startsWith("Before any other step,"));
       expect(quotes, file).toEqual([rule]);
+    }
+    const exemption = rule.match(/unless .+$/);
+    if (!exemption) throw new Error("The installed rule does not state its exemption");
+    const setup = readFileSync(join(root, "skills/setup/SKILL.md"), "utf8").replaceAll("<plugin>", plugin);
+    const modeLines = [...setup.matchAll(/```markdown\n[ \t]*(Invoke [^\n]+)\n[ \t]*```/g)].map((match) => match[1]);
+    expect(modeLines).toHaveLength(1);
+    const [modeLine] = modeLines;
+    if (modeLine === undefined) throw new Error("Setup does not quote a project mode line");
+    expect(modeLine).toContain(`, ${exemption[0]}`);
+    for (const file of ["AGENTS.md", "CLAUDE.md"]) {
+      const lines = readFileSync(join(root, file), "utf8").split(/\r?\n/)
+        .filter((line) => line.startsWith(`Invoke the \`${plugin}-mode\` skill as your first action`));
+      expect(lines, file).toEqual([modeLine]);
     }
   });
 });

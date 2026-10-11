@@ -1,6 +1,8 @@
 # Working mode
 
-Invoke the `cstack-mode` skill as your first action in every session in this repository, before any other tool call, even for a quick question. Work under it for the rest of the session unless the user turns it off. New and cloud sessions start with the mode off, so don't wait for the plugin's hooks to turn it on.
+Invoke the `cstack-mode` skill as your first action in every session in this repository, before any other tool call, unless a plugin seat file in your instructions says "Set the plugin's mode aside for this task". In that case, your brief is the whole task. Otherwise, work under it for the rest of the session unless the user turns it off.
+
+When the mode applies, invoke it even for a quick question and in new or cloud sessions, where it starts off.
 
 # Writing standards
 

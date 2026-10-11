@@ -60,7 +60,7 @@ A failure in one host does not stop the others. The command exits nonzero for co
 
 ## Get started
 
-Run `setup` once in each repository. It turns off AI attribution where your harness allows, fixes the commit identity, and makes the mode start in every session. Then run `cstack-mode` for an engineering task. Each harness has its own command form.
+Run `setup` once in each repository. It turns off AI attribution where your harness allows, fixes the commit identity, and adds the project instruction to start the mode, with the thin-seat exemption. Rerun it to upgrade an exact old line; edited lines stay unchanged. Then run `cstack-mode` for an engineering task. Each harness has its own command form.
 
 | Harness | Command |
 | --- | --- |

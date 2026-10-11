@@ -547,3 +547,16 @@ test("check receipt fix N5 refuses sparse checkouts in plain words", () => {
     }
   });
 });
+
+test("check receipt tracked path replacement keeps ignored directory children outside the tree", () => {
+  withReceiptRepository(({ repository, cli }) => {
+    const tracked = join(repository, "tracked.txt");
+    rmSync(tracked);
+    mkdirSync(tracked);
+    const ignored = join(tracked, "ignored");
+    writeFileSync(ignored, "first input\n");
+    expect(cli("record", "directory-replacement", "exit 0").status).toBe(0);
+    writeFileSync(ignored, "changed input\n");
+    expect(cli("check").status).toBe(0);
+  });
+});

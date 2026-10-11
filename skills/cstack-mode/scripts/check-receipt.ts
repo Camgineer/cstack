@@ -104,11 +104,15 @@ function treeHash(root: string, directory: string, tree: "working" | "index" = "
     } catch {
       git(root, ["read-tree", "--empty"], indexFile);
     }
-    git(root, ["-c", "core.filemode=true", "add", "-A", "--", "."], indexFile);
-    const trackedIgnored = git(root, ["ls-files", "--cached", "--ignored", "--exclude-standard", "-z"]).split("\0").filter((path) => path && statIfPresent(join(root, path)));
-    if (trackedIgnored.length) {
-      git(root, ["--literal-pathspecs", "-c", "core.filemode=true", "add", "-f", "--pathspec-from-file=-", "--pathspec-file-nul"], indexFile, `${trackedIgnored.join("\0")}\0`);
+    const trackedPaths = git(root, ["ls-files", "--cached", "-z"]).split("\0").filter((path) => {
+      if (!path) return false;
+      const file = statIfPresent(join(root, path));
+      return file?.isFile() || file?.isSymbolicLink();
+    });
+    if (trackedPaths.length) {
+      git(root, ["--literal-pathspecs", "-c", "core.filemode=true", "add", "-f", "--pathspec-from-file=-", "--pathspec-file-nul"], indexFile, `${trackedPaths.join("\0")}\0`);
     }
+    git(root, ["-c", "core.filemode=true", "add", "-A", "--", "."], indexFile);
     return git(root, ["write-tree"], indexFile);
   } finally {
     rmSync(indexFile, { force: true });

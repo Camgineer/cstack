@@ -445,3 +445,19 @@ test("check receipt fix B1 refuses commit -a omitting a checked untracked file",
     expect(cli("check", "--head", "HEAD").status).toBe(0);
   });
 });
+
+test.each(["record", "check", "head"])("check receipt fix N2 preserves real index bytes during %s", (action) => {
+  withReceiptRepository(({ repository, git, cli }) => {
+    if (action !== "record") expect(cli("record", "index-bytes", "exit 0").status).toBe(0);
+    writeFileSync(join(repository, "tracked.txt"), "staged input\n");
+    git("add", "tracked.txt");
+    writeFileSync(join(repository, "tracked.txt"), "working input\n");
+    writeFileSync(join(repository, "new.txt"), "untracked input\n");
+    const index = resolve(repository, git("rev-parse", "--git-path", "index").trim());
+    const before = readFileSync(index);
+    const result = action === "record" ? cli("record", "index-bytes", "exit 0") : action === "head" ? cli("check", "--head", "HEAD") : cli("check");
+    expect(result.status).toBe(action === "record" ? 0 : 1);
+    expect(readFileSync(index)).toEqual(before);
+    expect(git("show", ":tracked.txt")).toBe("staged input\n");
+  });
+});

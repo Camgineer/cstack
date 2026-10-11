@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseArgs } from "node:util";
 
@@ -26,7 +26,7 @@ Receipts default to tmp/check-receipt under the project root.
 Reuse a name only for the same command and working directory.
 check refuses failed, unfinished, foreign, or stale receipts.
 --head also requires the index and named commit to hold the checked tree.
-Receipts are local bookkeeping that exclude ignored files, state outside the repository, and changes restored before exit, and prove no authenticity.
+Receipts are local bookkeeping that track the content Git puts in a commit after file conversions, can miss changes to raw file bytes, exclude ignored files, state outside the repository, and changes restored before exit, prove no authenticity, and leave loose Git objects in the repository.
 `;
 
 function git(root: string, args: string[], indexFile?: string): string {
@@ -85,13 +85,17 @@ function receiptDirectory(root: string, value: string): string {
   return directory;
 }
 
-function treeHash(root: string, directory: string): string {
-  if (git(root, ["ls-files", "--stage", "-z"]).split("\0").some((entry) => entry.startsWith("160000 "))) {
-    throw new Error("Check receipts do not support submodules. Run checks in each repository separately.");
-  }
+function treeHash(root: string, directory: string, tree: "working" | "index" = "working"): string {
   const indexFile = join(directory, `index-${randomUUID()}`);
   try {
-    git(root, ["read-tree", git(root, ["write-tree"])], indexFile);
+    const realIndex = resolve(root, git(root, ["rev-parse", "--git-path", "index"]));
+    if (statIfPresent(realIndex)) copyFileSync(realIndex, indexFile);
+    else git(root, ["read-tree", "--empty"], indexFile);
+    if (git(root, ["ls-files", "--stage", "-z"], indexFile).split("\0").some((entry) => entry.startsWith("160000 "))) {
+      throw new Error("Check receipts do not support submodules. Run checks in each repository separately.");
+    }
+    const stagedTree = git(root, ["write-tree"], indexFile);
+    if (tree === "index") return stagedTree;
     git(root, ["-c", "core.filemode=true", "add", "-A", "--", "."], indexFile);
     return git(root, ["write-tree"], indexFile);
   } finally {
@@ -172,7 +176,7 @@ function check(root: string, directory: string, head: string | undefined): void 
     }
   }
   if (head !== undefined) {
-    if (git(root, ["write-tree"]) !== current) problems.push("The index tree differs from the checked working tree.");
+    if (treeHash(root, directory, "index") !== current) problems.push("The index tree differs from the checked working tree.");
     if (git(root, ["rev-parse", "--verify", "--end-of-options", `${head}^{tree}`]) !== current) problems.push(`${head} does not contain the checked working tree.`);
   }
   if (problems.length) {

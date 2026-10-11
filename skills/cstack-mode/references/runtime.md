@@ -151,4 +151,4 @@ Qualify each environment (local CLI, desktop app, cloud task) with its own evide
 
 ## Helpers
 
-The Bun helpers provide bookkeeping and PR watching. They need an existing Bun runtime and their declared dependencies in an owned working copy. Discovery and startup never install them. `watch-pr` also needs authorized `gh` access. The Orchestrate stack frontier needs Graphite and its local stack metadata. Without those, report that capability as unavailable. A plain GitHub base-ref list does not establish the same frontier.
+The Bun helpers provide bookkeeping and PR watching. `check-receipt.ts` needs only Bun and Git and runs directly from the installed copy. The other helpers need an existing Bun runtime and their declared dependencies in an owned working copy. Discovery and startup never install them. `watch-pr` also needs authorized `gh` access. The Orchestrate stack frontier needs Graphite and its local stack metadata. Without those, report that capability as unavailable. A plain GitHub base-ref list does not establish the same frontier.

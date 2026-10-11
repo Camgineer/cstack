@@ -156,7 +156,7 @@ Cloud agents (Claude Code on the web, Codex cloud tasks, Cursor cloud agents) ca
 
 The [skill directory](skills/) has the full catalog. Playbooks, principles, persona prompts, and references are instructions the agent loads as needed. This README is the repository's only human guide.
 
-Some workflows need extra tools. The Bun helpers need their locked dependencies, the PR watcher needs `gh`, and the Orchestrate stack frontier needs Graphite.
+Some workflows need extra tools. The check-receipt helper needs only Bun and Git. Other Bun helpers need their locked dependencies, the PR watcher needs `gh`, and the Orchestrate stack frontier needs Graphite.
 
 ## How the repository is laid out
 

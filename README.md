@@ -56,6 +56,18 @@ Before any other step, read the `cstack-mode` skill's SKILL.md from your skills 
 
 Updates replace only a first paragraph that matches a rule an earlier release wrote, ignoring trailing whitespace. They keep that whitespace, the rest of your text, and the rule's enabled state. Any other edit, a moved rule, or a removed rule stays unchanged. The final table reports the replacement, or says that new rule text is available and gives you the text to paste. If the installer cannot reach Intent, it also prints the text. Run `setup` to configure specialists and other settings. Installing does not create specialists.
 
+In Intent, `setup` asks for an explicit provider, model, and effort for each of the eight seats, from the choices your Intent offers. It recommends no model. It shows the current and proposed files and waits for your yes. The lead appears in the picker. The other seven seats are hidden for delegation, with an all-visible fallback if hidden delegation fails. Reviewer and verifier carry your ordered model menu.
+
+Setup writes regular files in your own specialist folder. Each points at its seat file in the delivered plugin copy, so a plugin update preserves your model choices and later edits. A personal file already at a seat's path is shown before replacement and restored by revert. An unrecorded link is kept for you to move aside. Setup keeps its undo record beside the installation record, outside the replaced copy.
+
+Ask `setup` to revert to undo its writes. Revert keeps a file you changed after setup and names it. If setup replaced your own file, its original bytes stay in the undo record until restored. Move the edited file aside and run revert again to recover that original. A deleted seat file is restored when it replaced your own file. A second revert changes nothing until you clear an unresolved path. An unreadable record still supports a report-only diagnostic. Keep a backup of that record for recovery. The helper can also be run directly from the delivered plugin:
+
+```bash
+node ~/.local/share/cstack/hooks/intent-setup.mjs --help
+node ~/.local/share/cstack/hooks/intent-setup.mjs revert --report-only
+node ~/.local/share/cstack/hooks/intent-setup.mjs revert
+```
+
 A failure in one host does not stop the others. The command exits nonzero for command or inspection failures. Preserving your own file is a successful result. On a new computer, run the same command and select the hosts you want.
 
 ## Get started
@@ -164,7 +176,7 @@ flowchart LR
 | Path | Role |
 | --- | --- |
 | `skills/` | The core. Skills in the shared `SKILL.md` format, with no harness tool names. |
-| `agents/` | Persona prompts. Claude Code and Cursor register them as subagents. Codex receives them as instructions. Intent lists them as specialists. |
+| `agents/` | Seat and persona prompts. Claude Code and Cursor register them as subagents. Codex receives them as instructions. Intent setup writes specialists that point at the seat files. |
 | `skills/cstack-mode/references/runtime.md` | The runtime contract. Workflows name capabilities such as "delegate" and "ask the user". |
 | `skills/cstack-mode/references/hosts/` | One host note per harness. Each maps those capabilities to native tools. |
 | `.claude-plugin/`, `.codex-plugin/`, `.agents/plugins/`, `.cursor-plugin/` | Generated manifests. Never edit them by hand. |

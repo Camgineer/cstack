@@ -18,6 +18,7 @@ Each workflow uses these capabilities by name. Use the native tool the host note
 | Capability | Meaning in a workflow |
 | --- | --- |
 | **Delegate** | Spawn a subagent with a brief, a seat, and a scope. Check its status, wait for it, and resume it. |
+| **End a subagent** | End a finished subagent through the host's lifecycle mechanism. |
 | **Ask** | Put a structured question with options to the user. For grill and align rounds, follow [grill-with-docs](../../grill-with-docs/SKILL.md). |
 | **Shared document** | Keep a document the people in the conversation can read and comment on. Read authors and replies, reply in a thread, close it, and watch for new comments. |
 | **Plan** | Keep a visible todolist of the workflow's steps. |
@@ -37,6 +38,8 @@ The seat files live in `agents/` at the plugin root. `agents/cstack-agent.md` is
 Make the intended operation explicit in the brief. For a reading task, say whether it answers a question, digests material too large for the parent's context, or watches an event. For a writing task, say whether it produces a candidate within assigned paths or implements a repository change under a plugin playbook. These distinctions select investigator versus scout and worker versus builder without changing their descriptions.
 
 Reuse a child only when the host reports it resumable. Read its status without waking or duplicating it. Each follow-up carries the current objective, constraints, and evidence pointers. The parent reviews results and resolves disagreements.
+
+The agent that starts a subagent ends it once its work is done and its result is read and recorded in the owning shared document or the repository. End your own children before you end yourself. Leave agents you did not start and agents whose results are not yet recorded alone. If the host cannot end a subagent, report each one left by name.
 
 ### Before delegation
 

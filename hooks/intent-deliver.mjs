@@ -227,28 +227,38 @@ function main() {
       if (!desired.has(path) && !previous.has(path) && statAt(path)?.isSymbolicLink() && !existsSync(path)) keep(path);
     }
   }
-  if (firstInstall) {
-    const rule = `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session.`;
+  {
+    const earlierRules = [
+      `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session.`,
+    ];
+    const rule = `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session, unless a plugin seat file in your instructions says "Set the plugin's mode aside for this task". In that case, your brief is the whole task.`;
     const binary = intentCommand();
     modeRule = { location, status: "manual" };
+    const unchanged = `Left the ${name}-mode rule unchanged in ${location}.`;
+    let message = `${unchanged} New rule text is available. To use it, paste this at the top of your personal rule text:\n${rule}`;
     if (binary) {
       try {
         const call = (method, params) => JSON.parse(execFileSync(binary, ["call", method, "--params", JSON.stringify(params)], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 120000, killSignal: "SIGKILL" }));
         const key = { workspaceId: "global", ruleType: "workspace" };
         const current = call("rules.get", key);
-        if (current.content.includes(`${name}-mode`)) modeRule.status = "existing";
-        else if (current.enabled || current.content.trim() === "") {
+        const firstParagraph = current.content.split(/\r?\n[ \t]*\r?\n/, 1)[0];
+        if (earlierRules.includes(firstParagraph)) {
+          call("rules.update", { ...key, content: rule + current.content.slice(firstParagraph.length), enabled: current.enabled });
+          modeRule.status = "existing";
+          message = `added the thin-seat exemption to the ${name}-mode rule in ${location}, at the top of your personal rule text.`;
+        } else if (firstParagraph === rule) {
+          modeRule.status = "existing";
+          message = unchanged;
+        } else if (firstInstall && !current.content.includes(`${name}-mode`) && (current.enabled || current.content.trim() === "")) {
           call("rules.update", { ...key, content: current.content.trim() === "" ? rule : `${rule}\n\n${current.content}`, enabled: true });
           modeRule.status = "added";
-        }
-        if (modeRule.status !== "manual" && execFileSync(binary, ["settings", "git.autoCommit"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 120000, killSignal: "SIGKILL" }).includes("= true")) console.log(`Intent commits agent work with Agent-Id trailers. To stop it, run: ${binary} settings git.autoCommit false`);
+          message = `added the ${name}-mode rule in ${location}, at the top of your personal rule text.`;
+        } else if (current.content.includes(`${name}-mode`)) modeRule.status = "existing";
+        if (firstInstall && modeRule.status !== "manual" && execFileSync(binary, ["settings", "git.autoCommit"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 120000, killSignal: "SIGKILL" }).includes("= true")) console.log(`Intent commits agent work with Agent-Id trailers. To stop it, run: ${binary} settings git.autoCommit false`);
       } catch {}
     }
-    if (modeRule.status === "manual") console.log(`To keep the mode on, paste this into Intent's Settings, under Agent Behavior, at the top of your personal rule text:\n${rule}`);
+    console.log(message);
   }
-  if (!firstInstall) console.log(`Left the ${name}-mode rule unchanged in ${location}.`);
-  else if (modeRule.status === "added") console.log(`added the ${name}-mode rule in ${location}, at the top of your personal rule text.`);
-  else if (modeRule.status === "existing") console.log(`Kept your existing ${name}-mode rule in ${location}.`);
   save();
 }
 try { main(); } catch (error) { process.stderr.write(`${error.message}\n`); process.exitCode = 2; }

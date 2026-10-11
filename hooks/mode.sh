@@ -71,8 +71,12 @@ emit() {
 
 # Hosts load a named skill without a file-read permission prompt, so name it first and keep the path as the fallback.
 reminder() {
-  printf '%s is on for %s. Invoke the %s skill now and apply it to every task in this session. If you cannot invoke a skill by name, read %s in full instead. It stays on until the user turns it off. If the user asks to turn it off, run: sh %s off.%s\n' \
-    "$mode" "$1" "${name:-plugin}:$mode" "$root/skills/$mode/SKILL.md" "'$root/hooks/mode.sh'" "$(env_switch_note)"
+  instruction='. If'
+  if exemption=$(cat "$root/hooks/mode-exemption.txt" 2>/dev/null) && [ -n "$exemption" ]; then
+    instruction=", $exemption If the mode applies and"
+  fi
+  printf '%s is on for %s. Invoke the %s skill now and apply it to every task in this session%s you cannot invoke a skill by name, read %s in full instead. It stays on until the user turns it off. If the user asks to turn it off, run: sh %s off.%s\n' \
+    "$mode" "$1" "${name:-plugin}:$mode" "$instruction" "$root/skills/$mode/SKILL.md" "'$root/hooks/mode.sh'" "$(env_switch_note)"
 }
 
 command=${1:-}

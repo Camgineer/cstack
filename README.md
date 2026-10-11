@@ -48,7 +48,13 @@ The record governs only entries in your host folders. It stores a link's exact t
 
 The record stays outside the copy during replacement. After an interrupted swap, the next run builds a fresh copy when the live path is missing, or replaces the checked live copy as usual. If another install interrupts the swap, the error asks you to rerun and names the temporary folder left for you to inspect. Earlier leftover folders stay untouched. The installer never scans them or reads a record from inside them. Files are written beside their destinations before being renamed into place, so hard-linked backups keep their previous bytes and permissions.
 
-On the first install Intent adds the mode rule at the top of your personal rule text under **Settings**, **Agent Behavior**. If it cannot reach Intent, it prints the rule to paste there. Updates leave that rule alone. The final table says where the rule went. Run `setup` to configure specialists and other settings. Installing does not create specialists.
+On the first install Intent adds this mode rule at the top of your personal rule text under **Settings**, **Agent Behavior**. It exempts a thin seat whether its file arrives as a registered specialist or in the brief. The provider's session-start reminder uses the same exemption. The lead and builder still read the mode.
+
+```markdown
+Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session, unless a plugin seat file in your instructions says "Set the plugin's mode aside for this task". In that case, your brief is the whole task.
+```
+
+Updates replace only a first paragraph that matches a rule an earlier release wrote, ignoring trailing whitespace. They keep that whitespace, the rest of your text, and the rule's enabled state. Any other edit, a moved rule, or a removed rule stays unchanged. The final table reports the replacement, or says that new rule text is available and gives you the text to paste. If the installer cannot reach Intent, it also prints the text. Run `setup` to configure specialists and other settings. Installing does not create specialists.
 
 In Intent, `setup` asks for an explicit provider, model, and effort for each of the eight seats, from the choices your Intent offers. It recommends no model. It shows the current and proposed files and waits for your yes. The lead appears in the picker. The other seven seats are hidden for delegation, with an all-visible fallback if hidden delegation fails. Reviewer and verifier carry your ordered model menu.
 
@@ -66,7 +72,7 @@ A failure in one host does not stop the others. The command exits nonzero for co
 
 ## Get started
 
-Run `setup` once in each repository. It turns off AI attribution where your harness allows, fixes the commit identity, and makes the mode start in every session. Then run `cstack-mode` for an engineering task. Each harness has its own command form.
+Run `setup` once in each repository. It turns off AI attribution where your harness allows, fixes the commit identity, and adds the project instruction to start the mode, with the thin-seat exemption. Rerun it to upgrade an exact old line; edited lines stay unchanged. Then run `cstack-mode` for an engineering task. Each harness has its own command form.
 
 | Harness | Command |
 | --- | --- |

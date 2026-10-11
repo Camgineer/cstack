@@ -375,7 +375,7 @@ async function main() {
           else if (matching.length > 1) summarized.push(`${matching.length} ${description}. For example, ${matching[0]}`);
         }
         const preserved = kept.some((line) => line.startsWith("left your own "));
-        const messages = `${summarized.map((line) => line.replace(/\.$/, "")).join(". ")}${summarized.length ? ". " : ""}${preserved ? "Nothing is needed for your own files. " : ""}`;
+        const messages = `${summarized.map((line) => /[.:]$/.test(line) ? `${line} ` : `${line}. `).join("")}${preserved ? "Nothing is needed for your own files. " : ""}`;
         if (problem) action = `${problem} ${messages}`;
         else if (changed) action = `Updated. New sessions use version ${versions(after)}. Sessions already open keep the old version until you start them again. ${messages}${action}`;
         else if (operation.pending) action = `No installed version changed. ${messages}${operation.pending}`;

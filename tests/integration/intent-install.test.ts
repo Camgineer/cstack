@@ -1060,7 +1060,7 @@ test("a checkout reached through an alias, then moved, keeps working links", () 
   });
 });
 
-test("the first install turns the mode on through Intent's personal rule, and an update leaves the rule alone", () => {
+test("the first install writes the thin-seat exemption and an update never restores a removed rule", () => {
   withHome((home) => {
     const bin = join(home, "bin");
     mkdirSync(bin, { recursive: true });
@@ -1079,11 +1079,215 @@ case "$1" in settings) echo 'git.autoCommit = false' ;; esac
       workspaceId: "global",
       ruleType: "workspace",
       enabled: true,
-      content: "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session.",
+      content: "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session, unless a plugin seat file in your instructions says \"Set the plugin's mode aside for this task\". In that case, your brief is the whole task.",
     });
 
     expect(run().stdout).toContain("Left the cstack-mode rule unchanged in Intent's Settings");
     expect(readFileSync(join(home, "updates"), "utf8").trim().split("\n")).toHaveLength(1);
+  });
+});
+
+function ruleCommand(home: string, rule: { content: string; enabled: boolean }) {
+  const state = join(home, "personal-rule.json");
+  const updates = join(home, "rule-writes.jsonl");
+  writeFileSync(state, JSON.stringify(rule));
+  writeFileSync(join(home, "bin/intentd"), `#!/usr/bin/env node
+const fs = require("node:fs");
+const state = ${JSON.stringify(state)};
+if (process.argv[3] === "rules.get") process.stdout.write(fs.readFileSync(state, "utf8"));
+else if (process.argv[3] === "rules.update") {
+  const update = JSON.parse(process.argv[5]);
+  fs.appendFileSync(${JSON.stringify(updates)}, JSON.stringify(update) + "\\n");
+  fs.writeFileSync(state, JSON.stringify({ content: update.content, enabled: update.enabled }));
+  process.stdout.write("{}");
+} else if (process.argv[2] === "settings") process.stdout.write("git.autoCommit = false");
+`, { mode: 0o755 });
+  return { state, updates };
+}
+
+test.each(["missing", "unreadable"] as const)("the %s exemption file stops Intent installation before any change", (condition) => {
+  for (const installed of [false, true]) {
+    withHome((home) => {
+      const from = fetchedPackage(home);
+      const files = ruleCommand(home, { content: "", enabled: true });
+      if (installed) expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+      writeFileSync(files.state, JSON.stringify({
+        content: "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session.",
+        enabled: false,
+      }));
+      const clause = join(dirname(from), "mode-exemption.txt");
+      const content = readFileSync(clause);
+      const mode = lstatSync(clause).mode & 0o777;
+      const before = homeSnapshot(home);
+      for (const route of ["public", "internal"]) {
+        if (condition === "missing") rmSync(clause);
+        else chmodSync(clause, 0o000);
+        expect(() => readFileSync(clause)).toThrow();
+        const result = route === "public" ? commandRun(home, ["--hosts", "intent"], from) : install(home, join(dirname(from), "intent-deliver.sh"));
+        if (condition === "missing") writeFileSync(clause, content, { mode });
+        else chmodSync(clause, mode);
+        expect(result.status).toBe(route === "public" ? 1 : 2);
+        const message = "Cannot read the mode exemption. Reinstall the complete plugin before updating Intent.";
+        if (route === "internal") {
+          expect(result.stdout).toBe("");
+          expect(result.stderr).toBe(message + "\n");
+        } else {
+          expect(result.stderr).toBe("");
+          expect(result.stdout).toContain(message);
+          expect(result.stdout).not.toMatch(/ENOENT|EACCES|readFileSync/);
+        }
+        expect(homeSnapshot(home)).toEqual(before);
+      }
+    });
+  }
+});
+
+test("the installed mode rule's exemption matches every generated thin seat and excludes lead and builder", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const files = ruleCommand(home, { content: "", enabled: true });
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    const rule = JSON.parse(readFileSync(files.state, "utf8")).content;
+    if (typeof rule !== "string") throw new Error("The installer did not write a rule");
+    const exemption = rule.match(/"([^"]+)"/);
+    if (!exemption) throw new Error("The installed rule does not quote a seat exemption");
+    const plugin = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8")).name;
+    const exemptionText = rule.match(/unless .+$/);
+    if (!exemptionText) throw new Error("The installed rule does not state its exemption");
+    const providerRoot = dirname(dirname(from));
+    const hooks = JSON.parse(readFileSync(join(providerRoot, "hooks/hooks.json"), "utf8"));
+    const reminder = spawnSync("sh", ["-c", hooks.hooks.SessionStart[0].hooks[0].command], {
+      cwd: home, input: JSON.stringify({ cwd: home, source: "startup" }), encoding: "utf8",
+      env: { PATH: process.env.PATH, HOME: home, XDG_STATE_HOME: join(home, "state"), CLAUDE_PLUGIN_ROOT: providerRoot, [plugin.toUpperCase().replaceAll("-", "_") + "_MODE"]: "on" },
+    });
+    expect(reminder.status).toBe(0);
+    expect(reminder.stderr).toBe("");
+    expect(JSON.parse(reminder.stdout).hookSpecificOutput.additionalContext).toContain(exemptionText[0]);
+    const runtime = readFileSync(join(root, "skills/cstack-mode/references/runtime.md"), "utf8");
+    const table = runtime.match(/<!-- seats:start -->([\s\S]*?)<!-- seats:end -->/);
+    if (!table) throw new Error("The generated seat table is missing");
+    const seats = [...table[1].matchAll(/^\| `([^`]+)` \| `([^`]+)` \|/gm)];
+    expect(seats.map((seat) => seat[1])).toEqual(expect.arrayContaining(["lead", "builder"]));
+    expect(seats.length).toBeGreaterThan(2);
+    for (const [, seat, specialist] of seats) {
+      const file = specialist === `${plugin}-agent` ? `${plugin}-agent.md` : `${seat}.md`;
+      const body = readFileSync(join(root, "agents", file), "utf8").replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
+      if (seat === "lead" || seat === "builder") expect(body, file).not.toContain(exemption[1]);
+      else expect(body, file).toContain(exemption[1]);
+    }
+  });
+});
+
+test("the documented mode rules and project mode lines match the installer's exemption", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const files = ruleCommand(home, { content: "", enabled: true });
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    const rule = JSON.parse(readFileSync(files.state, "utf8")).content;
+    const plugin = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8")).name;
+    for (const file of ["README.md", "skills/cstack-mode/references/hosts/intent.md"]) {
+      const doc = readFileSync(join(root, file), "utf8").replaceAll("<plugin>", plugin);
+      const quotes = [...doc.matchAll(/```markdown\n([\s\S]*?)\n```/g)]
+        .map((match) => match[1]).filter((quote) => quote.startsWith("Before any other step,"));
+      expect(quotes, file).toEqual([rule]);
+    }
+    const exemption = rule.match(/unless .+$/);
+    if (!exemption) throw new Error("The installed rule does not state its exemption");
+    const setup = readFileSync(join(root, "skills/setup/SKILL.md"), "utf8").replaceAll("<plugin>", plugin);
+    const modeLines = [...setup.matchAll(/```markdown\n[ \t]*(Invoke [^\n]+)\n[ \t]*```/g)].map((match) => match[1]);
+    expect(modeLines).toHaveLength(1);
+    const [modeLine] = modeLines;
+    if (modeLine === undefined) throw new Error("Setup does not quote a project mode line");
+    expect(modeLine).toContain(`, ${exemption[0]}`);
+    for (const file of ["AGENTS.md", "CLAUDE.md"]) {
+      const lines = readFileSync(join(root, file), "utf8").split(/\r?\n/)
+        .filter((line) => line.startsWith(`Invoke the \`${plugin}-mode\` skill as your first action`));
+      expect(lines, file).toEqual([modeLine]);
+    }
+  });
+});
+
+test.each([true, false])("the command upgrades an exact earlier first paragraph and keeps the enabled state (%s)", (enabled) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const files = ruleCommand(home, { content: "", enabled: true });
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    const rule = "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session, unless a plugin seat file in your instructions says \"Set the plugin's mode aside for this task\". In that case, your brief is the whole task.";
+    const earlier = "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session.";
+    for (const rest of ["", "\n", "\r\n", " \t", " \t\r\n", " \t\n\nMy rule.\n", "\n\nMy rule.\n\nKeep this spacing.\n", "\r\n\r\nMy rule.\r\n", "\n \nMy rule."]) {
+      writeFileSync(files.state, JSON.stringify({ content: earlier + rest, enabled }));
+      writeFileSync(files.updates, "");
+      const result = commandRun(home, ["--hosts", "intent"], from);
+      expect(result.status).toBe(0);
+      const row = result.stdout.split("\n").find((line) => /^Intent\s/.test(line));
+      expect(row).toContain("added the thin-seat exemption to the cstack-mode rule in Intent's Settings, under Agent Behavior, at the top of your personal rule text");
+      expect(row).not.toContain("New rule text is available");
+      expect(JSON.parse(readFileSync(files.state, "utf8"))).toEqual({ content: rule + rest, enabled });
+      expect(JSON.parse(readFileSync(files.updates, "utf8"))).toEqual({ workspaceId: "global", ruleType: "workspace", content: rule + rest, enabled });
+      const again = commandRun(home, ["--hosts", "intent"], from);
+      expect(again.status).toBe(0);
+      expect(again.stdout).toContain("Already current");
+      expect(again.stdout).not.toContain("New rule text is available");
+      expect(readFileSync(files.updates, "utf8").trim().split("\n")).toHaveLength(1);
+    }
+  });
+}, 30000);
+
+test.each(["edited", "edited trailing whitespace", "leading space", "same paragraph", "moved", "removed", "empty"])("the command preserves the %s personal rule and offers the new text", (kind) => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const files = ruleCommand(home, { content: "", enabled: true });
+    const first = commandRun(home, ["--hosts", "intent"], from);
+    expect(first.status).toBe(0);
+    expect(JSON.parse(readFileSync(files.state, "utf8"))).toEqual({
+      enabled: true,
+      content: "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session, unless a plugin seat file in your instructions says \"Set the plugin's mode aside for this task\". In that case, your brief is the whole task.",
+    });
+    const earlier = "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session.";
+    const content = {
+      edited: earlier.replace("Before any other step", "When I ask"),
+      "leading space": " " + earlier,
+      "edited trailing whitespace": earlier.replace("Before any other step", "When I ask") + " \t\r\n",
+      "same paragraph": earlier + "\nMy rule.",
+      moved: "My rule.\n\n" + earlier,
+      removed: "My replacement rule.",
+      empty: "",
+    }[kind];
+    const personal = JSON.stringify({ content, enabled: false });
+    writeFileSync(files.state, personal);
+    const writes = readFileSync(files.updates, "utf8");
+    const result = commandRun(home, ["--hosts", "intent"], from);
+    expect(result.status).toBe(0);
+    const row = result.stdout.split("\n").find((line) => /^Intent\s/.test(line));
+    expect(row).toContain("Left the cstack-mode rule unchanged in Intent's Settings, under Agent Behavior");
+    expect(row).toContain("New rule text is available. To use it, paste this at the top of your personal rule text");
+    expect(row).toContain("paste this at the top of your personal rule text: Before any other step");
+    expect(row).toContain("Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session, unless a plugin seat file in your instructions says \"Set the plugin's mode aside for this task\". In that case, your brief is the whole task.");
+    expect(readFileSync(files.state, "utf8")).toBe(personal);
+    expect(readFileSync(files.updates, "utf8")).toBe(writes);
+  });
+});
+
+test("report-only leaves an earlier rule untouched and an unavailable Intent offers the new text", () => {
+  withHome((home) => {
+    const from = fetchedPackage(home);
+    const files = ruleCommand(home, { content: "", enabled: true });
+    expect(commandRun(home, ["--hosts", "intent"], from).status).toBe(0);
+    const earlier = JSON.stringify({ content: "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session.", enabled: true });
+    writeFileSync(files.state, earlier);
+    const writes = readFileSync(files.updates, "utf8");
+    const preview = commandRun(home, ["--report-only", "--hosts", "intent"], from);
+    expect(preview.status).toBe(0);
+    expect(preview.stdout).toContain("Report only. No install, update, or move was run.");
+    expect(readFileSync(files.state, "utf8")).toBe(earlier);
+    expect(readFileSync(files.updates, "utf8")).toBe(writes);
+    writeFileSync(join(home, "bin/intentd"), "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+    const update = commandRun(home, ["--hosts", "intent"], from);
+    expect(update.status).toBe(0);
+    expect(update.stdout).toContain("New rule text is available");
+    expect(update.stdout).toContain("Set the plugin's mode aside for this task");
+    expect(readFileSync(files.state, "utf8")).toBe(earlier);
+    expect(readFileSync(files.updates, "utf8")).toBe(writes);
   });
 });
 
@@ -1207,7 +1411,7 @@ esac
       workspaceId: "global",
       ruleType: "workspace",
       enabled: true,
-      content: "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session.",
+      content: "Before any other step, read the `cstack-mode` skill's SKILL.md from your skills list and follow it for the rest of the session, unless a plugin seat file in your instructions says \"Set the plugin's mode aside for this task\". In that case, your brief is the whole task.",
     });
   });
 }, 15000);
@@ -1529,7 +1733,7 @@ test("an explicit Intent source preserves personal files and rule actions in the
     expect(intent).toContain("Updated.");
     expect(intent).toContain("left your own cstack-agent.md as it is");
     expect(intent).toContain("Nothing is needed for your own files.");
-    expect(intent).toContain("To keep the mode on, paste this into Intent's Settings");
+    expect(intent).toContain("New rule text is available. To use it, paste this at the top of your personal rule text");
     expect(intent).toContain("Before any other step");
     expect(readFileSync(join(specialists, "cstack-agent.md"), "utf8")).toBe("My specialist.\n");
     expect(readFileSync(join(home, "fetch-calls"), "utf8").trim().split("\n")).toHaveLength(1);

@@ -6,21 +6,18 @@ metadata:
   source: "Merges grill-with-docs and grilling from mattpocock/skills, https://github.com/mattpocock/skills"
 ---
 
-Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
-
-
 # Grill with Docs
 
 Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.
 
 Run two companion skills for the whole session, every round:
 
-- The **show-me** skill puts each question in front of the user as the thing itself. A question about a signature shows the signature. A question about flow shows the call tree. A choice between options shows each option as code, a diff, or a diagram, side by side. Prose frames the question in a line or two; the view carries it. Follow [principle-show-dont-tell](../principle-show-dont-tell/SKILL.md).
+- The **show-me** skill puts each question in front of the user as the thing itself. A question about a signature shows the signature. A question about flow shows the call tree. A choice between options shows each option as code, a diff, or a diagram, side by side. Prose frames the question in a line or two; the view carries it. Follow [show-dont-tell](../principles/show-dont-tell.md).
 - The **domain-modeling** skill keeps the language sharp. Challenge terms against `GLOSSARY.md`, write each term into it the moment it resolves, and offer an ADR when a decision qualifies.
 
 ## Set up the documents
 
-Keep one long-lived spec with a waiting list for open decisions. Use the **Shared document** capability for a separate grill document titled `Grill: <topic>`, linked from the spec. Each grill covers one round or one slice and holds open questions only. When that capability has no route, ask in the reply alone. Use an existing spec or create an untracked working file for settled decisions.
+Keep one long-lived spec with a waiting list for open decisions. Use a shared document when available for a separate grill document titled `Grill: <topic>`, linked from the spec. Each grill covers one round or one slice and holds open questions only. When a shared document is unavailable, ask in the reply alone. Use an existing spec or create an untracked working file for settled decisions.
 
 Tell people how to answer in chat or by commenting on a question's heading or sentence. Put an index of open questions at the top, with each question's number, owner, and title. Give every listed question its own section with its owner. An asked question has a view and its recommendation first. A held question names the question or fact it waits on and gets its view and recommendation when it is asked.
 
@@ -30,9 +27,9 @@ With more than one person, assign each person a distinct marker and tell them th
 
 Work the design tree in rounds. The **frontier** holds decisions whose prerequisites are settled. Ask a frontier question when the work it blocks is next. A **held question** waits on a named question or fact in the same grill. Keep it open with that prerequisite until it can be asked. List questions for a later slice in the spec against that slice, outside the current grill. Give that slice its own small grill when its work is next.
 
-Ask each round in the grill document and in the reply. Leave **Ask** unused for a round. A structured question carries too little context, and in a shared chat one person's submit skips the questions meant for others.
+Ask each round in the grill document and in the reply. Keep each question with its context, and keep questions for different owners distinct.
 
-Lead each question with your recommendation and its reason. List only other options you can back with a real reason. One strong option is enough. Show each option at the highest fidelity you can produce fastest, such as code, a diff, a table, a diagram, or a mockup. When only running something settles the choice, sketch it per the Prototype playbook (`../cstack-mode/playbooks/prototype.md`) and show the result.
+Lead each question with your recommendation and its reason. List only other options you can back with a real reason. One strong option is enough. Show each option at the highest fidelity you can produce fastest, such as code, a diff, a table, a diagram, or a mockup. When only running something settles the choice, build a small local sketch and show the result.
 
 Use this format in both the document and the reply:
 
@@ -85,7 +82,7 @@ An assumption with evidence status none gets its test before its design. Recomme
 
 ## Facts versus decisions
 
-Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (code, files, tools, history), use the [investigator seat](../../agents/investigator.md) to answer it with evidence, or look it up yourself. Carry the question and source scope in the brief. Ask the user only for what you cannot look up. Don't block on it: a running investigation is an unsettled prerequisite, so only the questions downstream of it wait; ask the other questions whose blocked work is next. Put decisions to their owners. Continue work only as **Pending owner** allows.
+Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (code, files, tools, history), look it up yourself and answer with evidence. Ask the user only for what you cannot look up. Don't block on it: a running investigation is an unsettled prerequisite, so only the questions downstream of it wait; ask the other questions whose blocked work is next. Put decisions to their owners. Continue work only as **Pending owner** allows.
 
 ## Outside decider
 

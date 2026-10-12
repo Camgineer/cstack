@@ -8,6 +8,6 @@
   "adaptations": [
     "Model-invocable, per the plugin's rule for bundled skills.",
     "Replaced the host-specific open command with a harness-neutral instruction.",
-    "Added a fidelity rule pointing at principle-show-dont-tell."
+    "Added a fidelity rule pointing to the show-dont-tell principles reference file."
   ]
 }

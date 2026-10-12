@@ -6,9 +6,6 @@ metadata:
   source: "show-me from humanlayer/skills, https://github.com/humanlayer/skills"
 ---
 
-Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
-
-
 Help the user understand the current topic of conversation visually. Skip the preamble and keep prose brief. Pick the smallest view that makes the key point clear.
 
 - Show logic or an algorithm as pseudocode:
@@ -120,14 +117,16 @@ function expandSkill(command: string): string {
 }
 ```
 
-- For a visual UI, layout, state comparison, or concept too dense for Mermaid, write one focused HTML file in `tmp/<task>/` inside the project, per [Scratch files](../cstack-mode/SKILL.md#scratch-files). Choose a diagram, an infographic, or a short slide deck to fit the point. Match the product's colors, type, spacing, and components; use real labels and data; support desktop and mobile. Then open it for the user if the host can, and give them its path either way.
+- For a visual UI, layout, state comparison, or concept too dense for Mermaid, write one focused HTML file in `tmp/<task>/` inside the project. Choose a diagram, an infographic, or a short slide deck to fit the point. Match the product's colors, type, spacing, and components; use real labels and data; support desktop and mobile. Then open it for the user if the host can, and give them its path either way.
 
 ### guidance
 
-Prefer the highest-fidelity view that answers the point: real output or the code itself over a diagram of it, and a diagram over prose about it ([principle-show-dont-tell](../principle-show-dont-tell/SKILL.md)).
+Prefer the highest-fidelity view that answers the point: real output or the code itself over a diagram of it, and a diagram over prose about it ([show-dont-tell](../principles/show-dont-tell.md)).
 
 When a view depicts real code, such as a call tree, a component tree, or a Mermaid flow, build it under the Evidence rules of the [how skill](../how/SKILL.md): each node and edge cites `path:line`, and anything optional or unknown is marked as such.
 
 Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to answer the user's current question or the options to resolve the current discussion point.
 
 You may use one of these, you may use several, it is unlikely you will use all of them. Use your judgement and don't overwhelm the user.
+
+Keep scratch files in a gitignored `tmp/<task>/` at the project root, out of commits, and remove the task folder when work is merged or dropped unless someone still needs its evidence; leave test-owned temporary directories alone.

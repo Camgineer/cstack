@@ -6,8 +6,6 @@ metadata:
   source: "control-cli from Cursor Team Kit by Cursor, https://github.com/cursor/plugins/tree/23e4138daa01c42d4969f7a5465f82704e64f798/cursor-team-kit/skills/control-cli"
 ---
 
-Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
-
 # Control CLI
 
 Exercise an interactive CLI through a repeatable local harness. Reuse the repo's own test or demo harness when it exists, or a project verification skill from **create-verification-skill**. Otherwise assemble a temporary harness from standard local tools.
@@ -103,6 +101,8 @@ For richer terminal control, use `pty.fork()` or an existing PTY library.
 
 - Wait on a screen pattern or prompt. When a fixed sleep is unavoidable, say why.
 - Keep credentials and destructive commands out of a controlled session.
-- Keep a temporary harness in `tmp/<task>/` inside the project, per [Scratch files](../cstack-mode/SKILL.md#scratch-files). Reuse the repo's own testing or demo harness when it exists.
+- Keep a temporary harness in `tmp/<task>/` inside the project. Reuse the repo's own testing or demo harness when it exists.
 - Adapt commands to the current repo's scripts and runtime.
-- Clean up tmux sessions and inspector processes unless the user asks to keep them. Follow [Scratch files](../cstack-mode/SKILL.md#scratch-files) for harness and artifact cleanup.
+- Clean up tmux sessions and inspector processes unless the user asks to keep them. Preserve evidence while someone still needs it.
+
+Keep scratch files in a gitignored `tmp/<task>/` at the project root, out of commits, and remove the task folder when work is merged or dropped unless someone still needs its evidence; leave test-owned temporary directories alone.

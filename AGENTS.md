@@ -28,7 +28,7 @@ Keep the project name in the README title, `tools/metadata.json`, and the entry-
 
 Keep the repository user-agnostic. Leave out the names, accounts, repositories, and preferences of anyone who uses or maintains it. That context belongs in the user's own memory, never in the toolkit. Preserve license notices and source provenance.
 
-Set `disable-model-invocation: true` on every `principle-*` skill and on no other bundled skill. A skill with that key drops out of the agent's skill list, and some hosts give users no way to type its command. `cstack-mode` indexes the principles and reads each one's file when a step needs it, so they stay out of the list and its budget.
+Set `disable-model-invocation: true` on task guides that only a person invokes and on the legacy `principle-*` skills until those are removed. Model-invocable toolkit skills omit the key. A user-invoked skill may invoke only model-invocable skills; reading a reference file is always allowed. The `principles` skill indexes its own reference files.
 
 Keep sources that need one vendor's APIs in `contrib/`, which no manifest loads.
 

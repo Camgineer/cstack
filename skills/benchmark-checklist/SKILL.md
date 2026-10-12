@@ -3,12 +3,9 @@ name: benchmark-checklist
 description: "Vet a perf measurement (limiter, tuning, limits, errors, repeatability, relevance, and whether the work happened) before you report or act on it. Use for benchmark-checklist, running a benchmark, or reporting a speedup or regression you measured."
 ---
 
-Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
-
-
 # Benchmark checklist
 
-Use this when you produce a performance number: a PR's before and after, a regression claim, a hillclimb harness, or a library or config choice. [Explain the Number](../principle-explain-the-number/SKILL.md) says why. Answer each question below with evidence from a run, not from a guess about the code.
+Use this when you produce a performance number: a PR's before and after, a regression claim, a hillclimb harness, or a library or config choice. [Explain the Number](../principles/explain-the-number.md) says why. Answer each question below with evidence from a run, not from a guess about the code.
 
 For a quick ballpark the user asked for, one run is enough. Still check questions 4 and 7, and say that it is one run. Skip the rest unless that run looks wrong. A choice between options is never a ballpark.
 
@@ -33,9 +30,4 @@ For a quick ballpark the user asked for, one run is enough. Still check question
 - Lead with the verdict: faster, slower, no measurable difference, or inconclusive.
 - Give the number with its unit, the run count, the range, and the limiter. For example, "p50 41 ms → 33 ms, median of 7 runs per side, range 32 to 35 ms after, bound by JSON parsing on one core."
 - Call the verdict inconclusive when you claim a difference but cannot name the limiter, when a side ran untuned, or when you could not check questions 4 and 7. Name the gap.
-- Keep a PR body to one primary number, per the **Opening a PR** playbook (`../cstack-mode/playbooks/opening-a-pr.md`). Put the runs, the range, and the limiter evidence in a linked artifact or a notes file.
-
-## How this fits the other perf material
-
-- The **Perf issue** playbook (`../cstack-mode/playbooks/perf-issue.md`) finds and fixes slowness, and the strategy families in its step 2 generate the fixes. This skill vets its baseline before the playbook plans from it, and every number after that.
-- The **Hillclimb** playbook (`../cstack-mode/playbooks/hillclimb.md`) loops on one metric. This skill vets its harness before the harness is frozen. The frozen harness then prints error and work counts, so each keep-or-revert checks questions 4 and 7 for free.
+- Keep a PR body to one primary number. Put the runs, the range, and the limiter evidence in a linked artifact or a notes file.

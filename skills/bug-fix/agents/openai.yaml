@@ -1,0 +1,5 @@
+interface:
+  display_name: "Bug Fix"
+  short_description: "Use when the user asks for bug fix. Follow the task from evidence and scope through verification on the current branch."
+policy:
+  allow_implicit_invocation: false

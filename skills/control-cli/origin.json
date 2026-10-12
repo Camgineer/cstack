@@ -10,6 +10,6 @@
     "Added create-verification-skill as a reusable harness; replaced the hardcoded /tmp harness location with a temporary directory.",
     "Guardrails phrased as positive instructions.",
     "Model-invocable, per the plugin's rule for bundled skills.",
-    "Added the runtime contract opening line and upstream MIT license."
+    "Added upstream MIT license."
   ]
 }

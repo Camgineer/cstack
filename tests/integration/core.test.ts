@@ -199,16 +199,17 @@ test("bundled Markdown links point to shipped resources", () => {
   expect(missing).toEqual([]);
 });
 
-test("the agent's skill list shows every workflow and hides only the principles", () => {
+test("the agent's skill list shows the toolkit and hides user-invoked guides and legacy principles", () => {
   const skills = join(root, "skills");
   const mismatched: string[] = [];
+  const taskGuides = new Set(["investigation", "bug-fix", "perf-issue", "hillclimb", "runtime-forensics", "trace-forensics", "feature", "refactoring", "prototype", "visual-parity", "authoring-a-skill", "eval"]);
   for (const directory of readdirSync(skills)) {
     const source = join(skills, directory, "SKILL.md");
     if (!existsSync(source)) continue;
     const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(readFileSync(source, "utf8"))?.[1];
     expect(frontmatter).toBeDefined();
     const fields = Bun.YAML.parse(frontmatter ?? "") as Record<string, unknown>;
-    if ((fields["disable-model-invocation"] === true) !== directory.startsWith("principle-")) mismatched.push(directory);
+    if ((fields["disable-model-invocation"] === true) !== (directory.startsWith("principle-") || taskGuides.has(directory))) mismatched.push(directory);
   }
   expect(mismatched).toEqual([]);
 });

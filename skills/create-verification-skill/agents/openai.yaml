@@ -1,5 +1,5 @@
 interface:
   display_name: "Create Verification Skill"
-  short_description: "Generate a project-local verification skill that drives your app the way a user does — any language, framework, or..."
+  short_description: "Generate or update a project-local verification skill that drives your app the way a user does. Use for..."
 policy:
   allow_implicit_invocation: true

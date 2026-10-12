@@ -19,7 +19,7 @@ Read this thread and restate the underlying issue
 in plain words. Don't change any code yet.
 ```
 
-For a change you will leave running, the `align` skill asks you for the goal, the done check, and the proof, and records them in a signed spec. 
+For a change you will leave running, the `align` skill asks you for the goal, the done check, and the proof, and records them in a signed spec.
 
 ## Keep yourself the only author
 
@@ -107,7 +107,7 @@ For a Linux x86_64 cloud environment with Node and npm available, use `bash tool
 
 PStack updates arrive through reviewed, agent-assisted imports. An agent compares upstream changes with the recorded baseline, adapts useful changes to the harness-neutral core, and verifies the result in a PR. The plugin can change upstream structure and behavior to suit its own design.
 
-The imported baseline is PStack 0.15.13 at `cursor/plugins@2cbf58508f40de470d7490b55c51d71241928fa2`. The original import of 0.15.5 remains in Git history at `c31f7ace991843f5576398ad025969465251192c`.
+The imported baseline is PStack 0.15.13 at `cursor/plugins@2cbf58508f40de470d7490b55c51d71241928fa2`. The update from 0.15.9 took the guide's advice on writing a prompt. It left out the `poteto-help` skill. It also left out the guide pages, because this README is the repository's only human guide. Of the guide's advice, it left out cloud subagents and `/in-cloud`, Cursor Projects, typing `/typescript-best-practices`, and traits for an agent-friendly control CLI. The update from 0.15.5 took `correct`, `benchmark-checklist`, and the agent-friendly `architect` red flags. It left out the performance mantras, the PR heading rewrite, `/goal` and `/loop` scheduling, fresh subagents by default, the rule against reply tokens, and the removal of source lines from `technical-writing`. A later pass took 0.15.6's `typescript-best-practices` change without making zod the only answer. Its cast example now builds the value from checked fields, and a schema that must match an existing type is annotated with it. The original import of 0.15.5 remains in Git history at `c31f7ace991843f5576398ad025969465251192c`.
 
 ## License
 

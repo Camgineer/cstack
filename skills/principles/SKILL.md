@@ -14,6 +14,7 @@ Read the matching reference in full when its condition holds. These files are re
 | [attack-the-premise](attack-the-premise.md) | Two fixes under one premise failed the same check. |
 | [boundary-discipline](boundary-discipline.md) | Wiring validation, error handling, or adapters. |
 | [build-the-lever](build-the-lever.md) | Non-trivial edits, migrations, analyses, or checks. |
+| [config-over-code](config-over-code.md) | Writing logic with tunable values or reviewing magic numbers. |
 | [encode-lessons-in-structure](encode-lessons-in-structure.md) | Designing a module or seeing a recurring correction. |
 | [exhaust-the-design-space](exhaust-the-design-space.md) | A novel interaction or design has multiple viable shapes. |
 | [experience-first](experience-first.md) | Choosing product scope or user experience tradeoffs. |

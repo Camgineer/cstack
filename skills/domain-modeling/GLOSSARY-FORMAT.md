@@ -25,6 +25,7 @@ _Avoid_: Client, buyer, account
 ## Rules
 
 - **Be opinionated.** When multiple words exist for the same concept, pick the best one and list the others under `_Avoid_`.
+- **Pick the plainest word.** The best term is the one a newcomer to the field would guess first: the everyday word or the field's standard term, not a clever, rare or metaphorical one. It must still mean one thing in this context. When the plainest word is taken or means several things, use a plain two-word name before a rarer synonym. Code names use the same term.
 - **Keep definitions tight.** One or two sentences max. Define what it IS, not what it does.
 - **Only include terms specific to this project's context.** General programming concepts (timeouts, error types, utility patterns) don't belong even if the project uses them extensively. Before adding a term, ask: is this a concept unique to this context, or a general programming concept? Only the former belongs.
 - **Group terms under subheadings** when natural clusters emerge. If all terms belong to a single cohesive area, a flat list is fine.

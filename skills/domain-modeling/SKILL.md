@@ -53,7 +53,7 @@ When the user uses a term that conflicts with the existing language in `GLOSSARY
 
 ### Sharpen fuzzy language
 
-When the user uses vague or overloaded terms, propose a precise canonical term. "You're saying 'account': do you mean the Customer or the User? Those are different things."
+When the user uses vague or overloaded terms, propose a precise canonical term. Propose the plainest word that stays unambiguous, as [GLOSSARY-FORMAT.md](./GLOSSARY-FORMAT.md) defines it, and treat a term you coined yourself with the same suspicion as the user's. "You're saying 'account': do you mean the Customer or the User? Those are different things."
 
 ### Discuss concrete scenarios
 

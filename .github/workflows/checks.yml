@@ -27,6 +27,8 @@ jobs:
           SETUP_TOOL_ROOT: ${{ runner.temp }}/plugin-tools
           SETUP_BUN_CACHE: ${{ runner.temp }}/bun-cache
         run: bash tools/setup.sh
+      - name: Check toolkit descriptions, links, invocation, and neutrality
+        run: '"${{ runner.temp }}/plugin-tools/bin/bun" tools/check-toolkit.ts'
       - name: Check that the PR title names a release level and leaves the version alone
         if: github.event_name == 'pull_request'
         env:

@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: "Use only when the user explicitly asks for TDD, a failing test, or a regression test, OR when the bug has an obvious cheap local test target. Skip when the test path is unclear, expensive, integration-heavy, or not requested."
+description: "Use for requested test-first work or a bug with a cheap local regression test. Prove failure before fixing."
 ---
 
 # TDD Bug Fix

@@ -1,5 +1,5 @@
 interface:
   display_name: "Benchmark Checklist"
-  short_description: "Vet a perf measurement (limiter, tuning, limits, errors, repeatability, relevance, and whether the work happened)..."
+  short_description: "Use before running a benchmark or reporting a measured speedup or regression. Check limits, errors, tuning, and..."
 policy:
   allow_implicit_invocation: true

@@ -1,6 +1,6 @@
 ---
 name: align
-description: Reach full agreement with the operator on a change before autonomous work starts, ending in a signed spec with definition of done, acceptance criteria, design, and verification plan. Use for align, 'plan this with me', or before a feature, migration, or autonomous run the operator wants to trust unattended.
+description: "Use before a substantial change to agree scope, design, acceptance criteria, and verification in a signed spec."
 license: MIT
 metadata:
   source: "Adapts to-spec, to-tickets, and wayfinder from mattpocock/skills, https://github.com/mattpocock/skills"
@@ -8,21 +8,15 @@ metadata:
 
 # Align
 
-Cut through the fog of war before the build. The operator does the critical thinking once, at the start. You do every lookup, draft, and sketch so their time goes only to decisions. The phase ends in a **signed spec**: the contract an autonomous loop then runs to the end without the operator.
-
-Open a todolist with one entry per step: Ground, Tier, Grill, Draft, Sign.
+Cut through the fog of war before the build. The operator does the critical thinking once, at the start. You do every lookup, draft, and sketch so their time goes only to decisions. End with a **signed spec** that an implementer can use without redoing the decisions.
 
 ## 1. Ground
 
 Before any design question, check whether the operator can use what exists today. Inspect the existing command, installation, or output that the request builds on. When a read-only check is available, run it within the operator's authorization. In your first reply after align is invoked, report what you checked and what you found.
 
-When the request builds on nothing existing, report that and continue with design. When what exists works, state that nothing blocks the operator today and continue. When it is broken, missing, or not set up, name that as the block and say why. Keep the requested change for the design round. It is never the block, and building it is never the quick path.
+Report whether existing use works, is blocked, or has no existing system to build on. For a block, name the thinnest existing recovery path and its observable check. Take an authorized recovery path before design questions. A code change needs an agreed scope and verification first, even when it is small. Record the result in the spec, then design the remaining work.
 
-For a block, look for an existing command or workflow that restores use. Name the thinnest path and its observable check. When an existing path or a thin slice restores use within the operator's authorization, take it before the map or the first Grill round. Complete a thin slice on the current branch, with its scope and verification agreed first. Before an unsigned slice starts, write a short spec sized by step 2's tier, with every place that performs the behavior it changes and every path that deletes or overwrites. Check that spec against the source before changing it. Run the restoring check. When it fails, report the failure and find another authorized path, or state that no quick path exists. Once use is restored, design and harden behind it. Record the check result, and the PR only when a slice was delivered, in the spec's Verification plan when drafted, or in the reply for Inline. Treat a delivered thin slice as completed work when planning the remaining stack.
-
-When no quick path exists, name the block and say that no quick path exists before design questions, then continue with design. When the path needs a decision or permission, report what you checked and found, name the block and path, and ask the one question that unlocks it. End that reply there, with no tier or design questions. Leave the restoring check pending. After the operator agrees, take the authorized path and report the check's result. When the operator declines, record that in the reply and continue.
-
-Ground's unblock part is done when the first reply reports what you ran or inspected and what you found before any design question. The finding must state that nothing exists to build on, that nothing blocks the operator today, or what blocks existing use. If you found a block, that reply must also name a concrete command or slice and its check, or state that no quick path exists. When a path is available, this part stays pending until a reply reports a successful restoring check, the operator's refusal, or that no quick path remains.
+When recovery needs a decision or permission, ask only for that decision and keep its check pending. If recovery is unavailable or declined, record the limitation and continue design. The requested feature is not itself an existing-use blocker.
 
 Run the **how** skill over every subsystem the change touches. Read `GLOSSARY.md` and the ADRs in that area. Done when you can name each module the change touches and the tests that already cover it.
 

@@ -1,5 +1,5 @@
 interface:
   display_name: "Blast Radius"
-  short_description: "Find what a change could break somewhere else before it ships, beyond the diff, and prove the one fact it's safe..."
+  short_description: "Use when assessing what a change could break beyond its diff. Run code to prove the safety assumptions."
 policy:
   allow_implicit_invocation: true

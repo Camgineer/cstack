@@ -6,13 +6,11 @@ disable-model-invocation: true
 
 # Investigation
 
-
 Investigation requests are read-only. They produce a cited explanation or a recommendation, not a code change.
 
 1. Invoke `how`. For motivation questions, also invoke `why`.
-2. Throughput checkpoint stays one line: `throughput checkpoint: n/a, read-only investigation`.
-3. Produce the `how`-shaped output (Overview / Key Concepts / How It Works / Where Things Live / Gotchas), or a recommendation with a tradeoffs table if the request is a decision between alternatives.
-4. Invoke `simple-as-prose` and apply it to the reply.
+2. Produce the `how`-shaped output (Overview / Key Concepts / How It Works / Where Things Live / Gotchas), or a recommendation with a tradeoffs table if the request is a decision between alternatives.
+3. Invoke `simple-as-prose` and apply it to the reply.
 
 End with the cited answer. A code change needs its own scope and authorization.
 

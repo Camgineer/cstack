@@ -1,5 +1,5 @@
 interface:
   display_name: "Correct"
-  short_description: "Find the mistakes agents keep repeating in a repo and make each one impossible, with architecture first, then types..."
+  short_description: "Use when agents repeat a mistake. Prevent it through architecture, types, or checks before adding instructions."
 policy:
   allow_implicit_invocation: true

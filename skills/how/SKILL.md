@@ -1,51 +1,21 @@
 ---
 name: how
-description: "Use for \"how does X work\", code walkthroughs before changing something, and placement / ownership / layering questions (\"where should this live\", \"which package owns this\", \"is this the right layer\"). Explains subsystem architecture, runtime flow, onboarding mental models. Use why for motivation."
+description: "Use for code walkthroughs, runtime flow, and module ownership or layering questions. Trace claims to source."
 ---
 
 # How
 
-Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
+Trace the code to explain runtime behavior, module ownership, or layering. Match the depth to the question. If scope is ambiguous, state your interpretation and continue.
 
 ## Evidence
 
-Every claim about the code rests on source you read. Apply these rules on both paths, and pass this section into each explorer and explainer prompt:
+- Pin the commit with `git rev-parse HEAD` and state it with the answer. Note uncommitted changes in cited files.
+- Cite `path:line` for each component and relationship.
+- Follow a read, write, or call to the site that performs it. Names, docs, and config are leads.
+- Mark configured but uncalled capabilities as optional. Put each unknown beside the claim it limits.
 
-- Pin the commit with `git rev-parse HEAD` and state it in the answer. Note any uncommitted changes in the files you cite.
-- Cite `path:line` for each component and each relationship between components.
-- Trace a read, write, or call to the call site that performs it. A doc, a name, or a config value is a lead to follow, never the evidence.
-- Describe a capability that is exported or configured but never called on the traced path as optional, not as part of the runtime flow.
-- Write each unknown next to the claim it affects, such as "`save` calls `writeFile` at `store.ts:88`; durability unknown".
+## Explore and explain
 
-## Step 1. Assess Complexity
+For a narrow question, read the code and explain it directly. For a subsystem, split the question into two to four distinct angles and use [explorer-prompt.md](references/explorer-prompt.md) for each pass. If the environment supports parallel read-only helpers, they may do those passes; otherwise do them yourself.
 
-If the scope is ambiguous, state your interpretation and explore. The user can redirect.
-
-- **Simple** (a single module, a small utility, a narrow question such as "how does function X work"): no subagents. Explore and explain it yourself in a single pass. Go to Step 2b.
-- **Complex** (a subsystem spanning multiple files or services, a cross-cutting feature, a full architectural overview): use parallel read-only helpers if the harness has them, otherwise do the passes yourself. Go to Step 2a.
-
-When in doubt, take the simple path.
-
-## Step 2a. Explore (complex questions only)
-
-Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Use parallel read-only helpers if the harness has them, otherwise investigate each angle yourself. Use read-only source and connector operations.
-
-For each angle, use the prompt in `references/explorer-prompt.md` with its angle filled in. Then go to Step 3.
-
-## Step 2b. Direct Explain (simple questions)
-
-Read the code yourself and write the explanation in the Output Format of `references/explainer-prompt.md`. A question this narrow takes a handful of reads, which costs less than briefing a subagent. Go to Step 4.
-
-## Step 3. Synthesize (complex questions only)
-
-Once all explorers have returned, synthesize the findings into one explanation yourself. Keep citation checks read-only.
-
-Use `references/explainer-prompt.md` with every explorer's findings filled in.
-
-## Step 4. Present
-
-Present the explanation to the user. Light edits to an explainer's output for clarity or context from the conversation are fine. Do not substantially rewrite it.
-
-## Output Format
-
-The explanation uses the sections defined in `references/explainer-prompt.md`, dropping any that do not apply: Overview, Key Concepts, How It Works, Where Things Live, Gotchas.
+Reconcile overlapping findings and check contradictions against source. Use [explainer-prompt.md](references/explainer-prompt.md) to combine them. Include only sections the question needs. Stop when the reader can trace the relevant path and each unresolved boundary is named.

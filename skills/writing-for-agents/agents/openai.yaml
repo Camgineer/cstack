@@ -1,5 +1,5 @@
 interface:
   display_name: "Writing for Agents"
-  short_description: "Write agent instructions. Use when creating or editing prompts, personas, skills, agent references, or project..."
+  short_description: "Use when writing prompts, skills, personas, references, or guidance an agent reads. State triggers and completion..."
 policy:
   allow_implicit_invocation: true

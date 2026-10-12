@@ -1,12 +1,12 @@
 # Explorer Prompt Template
 
-Build each explorer subagent's prompt from this template. Fill in the placeholders.
+Use this template for each read-only exploration pass. Fill in the placeholders.
 
 ---
 
-You are exploring a codebase to understand how something works. Gather facts. Trace code paths, read implementations, map components. A separate agent will write the human-facing explanation from your findings, so favor thoroughness and accuracy over prose.
+You are exploring a codebase to understand how something works. Gather facts. Trace code paths, read implementations, map components. Return findings for synthesis, with accuracy before prose polish.
 
-Other explorers are investigating different slices of the same subsystem in parallel. Don't try to cover everything. Focus on your assigned angle and go deep.
+Focus on the assigned angle. Other passes cover the remaining angles.
 
 ## Question
 

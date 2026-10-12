@@ -6,8 +6,7 @@ disable-model-invocation: true
 
 # Refactoring
 
-
-If the cleanup reveals a missing feature or a real bug, split it out and ship the structural change first against the pinned contract. A redesign is allowed, but name it and route to Feature. This guide is the focused-to-medium change.
+If the cleanup reveals a missing feature or a real bug, split it out and ship the structural change first against the pinned contract. A behavior change needs its own scope and authorization. This guide is the focused-to-medium change.
 
 1. Pin the behavior contract first. Invoke `how` over the affected subsystem to learn the contract, then write a characterization test, snapshot, or equivalence harness that captures current behavior before any structure moves. Put it at the public seam the refactor keeps, per the [test-behavior-not-implementation](../principles/test-behavior-not-implementation.md) reference, so the pin survives the moves it guards. If the area has no coverage, write the pin before touching structure. Type check and lint are not a pin. When the refactor replaces tests, plant breaks drawn from the code's rules: one per behavior the new tests claim to cover, plus one for each new test with no old twin. Each break must fail an old test at the base and a new test at the head, on an assertion.
 2. Name the structure the code is missing per [model-the-domain](../principles/model-the-domain.md). Boring code stays when the shape is already clear and local. The reshape must delete branches or invalid states, not add indirection.

@@ -1,5 +1,5 @@
 interface:
   display_name: "Typescript Best Practices"
-  short_description: "TypeScript best practices. Use when reading or editing any .ts or .tsx file."
+  short_description: "Use when reading or editing TypeScript. Apply boundary validation, total types, and exhaustive variants."
 policy:
   allow_implicit_invocation: true

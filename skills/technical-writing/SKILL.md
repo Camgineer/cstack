@@ -1,30 +1,13 @@
 ---
 name: technical-writing
-description: 'Layered technical-writing standard: Diátaxis structure, Google developer style sentences, STE instruction rules, Global English syntax. Use for technical-writing or when writing or reviewing docs, RFCs, readmes, PR descriptions, or commit messages.'
+description: "Use when drafting or reviewing technical documents, PR descriptions, or commit messages. Match structure and sentences to the reader."
 ---
 
 # Technical writing
 
 The goal is writing a tired engineer understands on the first read. Four layers get you there, one question each: what kind of document is this, how do sentences address the reader, how much does each sentence carry, and can any sentence be read two ways. Apply all four.
 
-Three rules sit above the layers:
-
-- **Cut every word that does no work.** If the sentence survives without a word, the word goes. "In order to" is "to". "It is important to note that" is nothing.
-- **Use the short, everyday word.** "Use", not "utilize". "Help", not "facilitate". "Do", not "perform". A long word has to buy its length with precision.
-- **When a rule makes a sentence worse, fix the sentence another way or leave it alone.** The rules serve the reader. A sentence that follows every rule and sounds like a machine wrote it has failed.
-
-The codebase is the word list. Write the real symbol, file, flag, or command name, not a synonym or a description of it.
-
-Don't invent jargon. Use the words a developer would say out loud: "move", "delete", "a budget that only decreases", not "evacuate", "ratchet", or "endgame". A named pattern is fine when the doc says what it means the first time. Propose a new offender and its replacement as an addition to the abstract-metaphor entry in the **simple-as-prose** skill's `ai-tells.md` in your reply, with the diff. Don't edit that skill.
-
-## Vary the rhythm
-
-The layers decide what a document says and how much each sentence carries. A doc can obey all of them and still read machine-written: every sentence clipped short, no view anywhere, nothing specific.
-
-- Mix sentence lengths on purpose. Short sentences land a point. Longer ones that take their time carry a fact with its condition or consequence.
-- One thought per sentence does not mean one length per sentence. Split the sentence that carries two thoughts. Keep the long sentence that carries one.
-- Have a view where the mode allows it. Explanation weighs trade-offs, so say what you make of them instead of listing pros and cons. Reference stays dry.
-- Be specific over sterile. Not "schema changes can cause issues" but "a column rename fails the build".
+Apply **simple-as-prose** for vocabulary, rhythm, and the edit pass. Use the real symbols, files, flags, and commands the codebase names. The layers below govern document structure, instruction order, and ambiguity.
 
 ## Pick the mode first (Diátaxis)
 
@@ -101,13 +84,3 @@ Source: Kohl, The Global English Style Guide (SAS Press). Guideline text fetched
 - PR descriptions and commit messages are writing too. Every layer except Diátaxis applies to them. A PR body is a briefing that a reviewer can read in under a minute. Do not paste bulk logs, SHA lists, or metric tables. Link them.
 - Product UI strings are not documentation. Use your product's copy guidelines for those.
 - Indent code snippets with tabs. Write real paths and real symbols. Make every count or tree claim true at the commit that lands it, and include the command that regenerates it.
-
-## Worked example
-
-Before:
-
-> Configuration of the proto import ratchet budget script parameters is performed via budget.json. Note that it's important to remember that running with --write, which updates the committed budget to reflect the current count, should only be done when lowering it. If exceeded, CI fails.
-
-After:
-
-> `budget.mjs` reads the committed budget from `budget.json` and counts the files that import protos. If the count exceeds the budget, CI fails. Run `budget.mjs --write` only to lower the budget.

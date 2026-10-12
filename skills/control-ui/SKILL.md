@@ -1,6 +1,6 @@
 ---
 name: control-ui
-description: Build or adapt a local browser or CDP harness to drive and inspect a web, IDE, or Electron UI. Use for UI verification, reproducing UI bugs, screenshots, accessibility snapshots, perf profiles, or visual diffs.
+description: "Use to reproduce, verify, or profile web, IDE, or Electron behavior through a local browser harness."
 license: MIT
 metadata:
   source: "control-ui from Cursor Team Kit by Cursor, https://github.com/cursor/plugins/tree/23e4138daa01c42d4969f7a5465f82704e64f798/cursor-team-kit/skills/control-ui"
@@ -16,7 +16,7 @@ Use local browser automation to verify UI behavior with evidence. Reuse the repo
 - Verifying visual or accessibility changes with screenshots and snapshots.
 - Checking local web, IDE, or Electron behavior before shipping.
 - Capturing console logs, network logs, CPU profiles, traces, or heap snapshots.
-- Producing before and after evidence for the [prove-it-works](../principles/prove-it-works.md) skill.
+- Producing before and after evidence for the [prove-it-works](../principles/prove-it-works.md) reference.
 
 ## Setup
 

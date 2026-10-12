@@ -1,6 +1,6 @@
 ---
 name: bro
-description: Restate the last message in plain human language, with no jargon.
+description: "Use when asked to restate the last reply in plain language."
 ---
 
-Restate your last message. Stop using jargon and speak coherently. State it more simply and concisely, like one human talking to another.
+Restate your last message in concise, plain language. Keep its meaning and uncertainty.

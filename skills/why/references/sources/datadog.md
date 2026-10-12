@@ -16,61 +16,14 @@ Datadog answers "what was the production reality around the time this code was w
 
 ## How to search it
 
-Use the Datadog MCP. Start broad, then narrow.
+Inspect the available telemetry connector's schema and use read-only operations.
 
-1. **Identify the owning service(s).**
-
-   ```
-   search_datadog_services (filter by name or team)
-   search_datadog_service_dependencies (see upstream/downstream)
-   ```
-
-2. **Dashboards and monitors first. They tell you what the team cares about.**
-
-   ```
-   search_datadog_dashboards (query: feature name, service name, symbol)
-   search_datadog_monitors   (same queries)
-   ```
-
-   When a dashboard or monitor covers the target, note its queries and watched thresholds. The threshold is frequently the answer to "why is this clamped at N?"
-
-3. **Metrics around the target.**
-
-   ```
-   search_datadog_metrics (by name pattern, e.g., the feature or symbol)
-   get_datadog_metric_context (metadata: description, units, tags)
-   get_datadog_metric (timeseries; "was there a spike around the PR date?")
-   ```
-
-   Correlating a metric's trajectory with the target's add/change date is strong supporting evidence: "the `payment_timeout` metric spiked 2023-11-03, and the retry logic merged 2023-11-06."
-
-4. **Logs. Narrow, don't dump.**
-
-   ```
-   search_datadog_logs (raw log patterns near the target, set use_log_patterns=true)
-   analyze_datadog_logs (SQL-style aggregations, only when you need counts)
-   ```
-
-   Search with symbols, error strings, or feature names. **Strongly prefer time-bounded queries** (e.g., 30 days before/after the change). Log volume is huge. Unconstrained searches waste time and may time out.
-
-5. **APM spans and traces.**
-
-   ```
-   aggregate_spans    (stats: "how often does this endpoint fail?")
-   search_datadog_spans (inspect individual spans)
-   get_datadog_trace  (a specific trace ID)
-   ```
-
-   Useful for timeouts, retries, slow paths, and cross-service behavior.
-
-6. **Incidents.**
-
-   ```
-   search_datadog_incidents (by title, team, date range)
-   get_datadog_incident     (full detail for a specific incident)
-   ```
-
-   If the target looks defensive, search for incidents around the time it was added. An incident whose timeline includes "added defensive check for X" is near-direct evidence.
+1. Identify the owning service and its upstream and downstream dependencies.
+2. Search dashboards and monitors by service, feature, and symbol. Record their queries and thresholds.
+3. Read matching metrics with their units and tags around the change date. Compare the trajectory with the code's history.
+4. Search logs by service, error, and time window. Prefer pattern counts or aggregates over raw dumps.
+5. Read relevant request spans and traces for failures, latency, and cross-service behavior.
+6. Search incident records near the change date. Follow their timelines and links to postmortems.
 
 ## What good evidence looks like here
 
@@ -85,7 +38,7 @@ Use the Datadog MCP. Start broad, then narrow.
 - **Correlation is not causation.** A spike before a PR and stabilization after is suggestive, not definitive. Other changes may have landed in the same window. Check neighboring PRs.
 - **Overfitting to the chart you found.** Datadog visualizations are *made* by humans and reflect that human's framing. A chart named "retry success rate" is evidence the team cared about retry success, not that it's why a specific line of code exists.
 - **Vanished telemetry.** Metrics can be renamed, deleted, or have short retention. If you can't find data from the relevant window, that's a gap, not a null result.
-- **Noise at scale.** Searching logs for a common string returns thousands of matches. Narrow by service, tag, and time aggressively. Use `analyze_datadog_logs` to aggregate rather than dumping raw logs.
+- **Noise at scale.** Searching logs for a common string returns thousands of matches. Narrow by service, tag, and time aggressively. Use read-only log aggregation rather than dumping raw logs.
 - **Instrumented != caused.** A metric's existence tells you someone cared enough to measure something, not that the code was added *because* of it. Cross-reference with commit/PR dates.
 
 ## What to return

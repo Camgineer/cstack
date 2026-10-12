@@ -1,6 +1,6 @@
 ---
 name: show-me-your-work
-description: 'Keep a reviewable decision trail for long-running or unattended work: a TSV log with one row per decision (what, why, evidence, result). Keep it available while a reviewer needs the trail to trust the result. Use for show-me-your-work, autonomous or multi-phase runs, or work a human reviews after stepping away.'
+description: "Use for long or unattended work that needs a decision trail. Log choices, reasons, evidence, and results."
 ---
 
 # Show me your work
@@ -70,7 +70,7 @@ Before handing back, read the audit trail and the run's transcript and flag what
 - Choices that look risky in hindsight (premature, scope-creeping, papering over a symptom).
 - Gaps the user would otherwise miss on a casual skim.
 
-Every reply for a run that produced a trail ends with an "Attention" section. List each flag pointing to specific rows or moments. "No flags" is a valid value.
+Report material flags with pointers to the rows or moments that show them. When there are no flags, omit the risk section.
 
 ## Reviewing the trail
 

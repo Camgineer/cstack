@@ -11,6 +11,6 @@ Order work as a sequence of small units, each ending in a state you can check, a
 
 **Execution.** In a sweep, migration, or any run of similar edits, verify each change before starting the next. Each unit is a before/after bracket: known-good state, one change, run the check, then proceed. Pin the baseline so every check measures against the same state. When a lever does the edits, the per-unit check is nearly free. Run it anyway.
 
-**Delivery.** Stack commits and PRs in the order that proves the work. Inside a PR, the canonical commit order is the failing test first, then the fix on top. Across PRs, order by purpose, such as a subtraction before the reshape, a baseline capture before the treatment, and the scaffold before the feature. Each PR has one purpose and lands on its own, and the sequence reads as an argument.
+**Delivery.** Order commits and scoped changes so a reviewer can replay the evidence. Inside a PR, the canonical commit order is the failing test first, then the fix on top. Across PRs, order by purpose, such as a subtraction before the reshape, a baseline capture before the treatment, and the scaffold before the feature. Each PR has one purpose and lands on its own, and the sequence reads as an argument.
 
 The sequencing complement to the [prove-it-works](prove-it-works.md) reference, which keeps each check real, and the [build-the-lever](build-the-lever.md) reference, which makes the per-unit check cheap.

@@ -1,6 +1,6 @@
 ---
 name: domain-modeling
-description: Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing a GLOSSARY.md, or recording or editing an ADR.
+description: "Use when defining domain terms, editing a glossary, or recording an architecture decision."
 license: MIT
 metadata:
   source: "domain-modeling from mattpocock/skills, https://github.com/mattpocock/skills"
@@ -8,7 +8,7 @@ metadata:
 
 # Domain Modeling
 
-Actively build and sharpen the project's domain model as you design. This is the *active* discipline: challenging terms, inventing edge-case scenarios, and writing the glossary and decisions down the moment they crystallise. (Merely *reading* `GLOSSARY.md` for vocabulary is not this skill: that's a one-line habit any skill can do. This skill is for when you're changing the model, not just consuming it.)
+Challenge domain terms against concrete scenarios and code. Record resolved terms in the glossary and qualifying decisions in ADRs.
 
 ## File structure
 

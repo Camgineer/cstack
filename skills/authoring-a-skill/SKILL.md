@@ -6,7 +6,6 @@ disable-model-invocation: true
 
 # Authoring or modifying a skill
 
-
 1. Invoke `writing-for-agents` and read its `SKILL-MECHANICS.md`.
 2. Validate the skill and sweep its rules.
    - Frontmatter has `name` and `description`, referenced files exist, and cross-skill links resolve.
@@ -18,7 +17,7 @@ disable-model-invocation: true
    - Rewrite an overridden rule on trunk in this PR when the new rule replaces it everywhere. Otherwise add an explicit exception at that rule, pointing to the new rule. Record any open change whose rule the edit overrides.
    - Rerun the sweep each time the branch takes in trunk commits, by merge or rebase.
    - Done when every hit is rewritten, excepted, or recorded with its contradiction and evidence.
-3. Read [the evaluation guide](../eval/SKILL.md) before any eval run, even a quick old-against-new comparison, and follow its skill section: realistic tasks run with the skill and against a baseline, plus trigger evals when the description is new or changed. Bundle into `scripts/` any helper the run transcripts show every run writing for itself. Prove each bundled check twice: it fails on a planted violation and passes on a few real changes. A check for new violations reads only the lines a change adds.
+3. When an authorized evaluation harness is available, read [the evaluation reference](../eval/SKILL.md) for realistic task and trigger comparisons. Otherwise report workflow and trigger behavior as unverified. Bundle into `scripts/` any helper the run transcripts show every run writing for itself. Prove each bundled check twice: it fails on a planted violation and passes on a few real changes. A check for new violations reads only the lines a change adds.
 
 When in doubt, delete. Keep only prose that changes a decision. Tell it to do the thing and skip the reason. Explain only when the rule is confusing without one. Match tone to scope. Point at structural sources (types, READMEs, config) per the [encode-lessons-in-structure](../principles/encode-lessons-in-structure.md) reference. Point to other skills by path. Don't restate. A workflow you keep hitting but isn't captured → propose a new skill.
 

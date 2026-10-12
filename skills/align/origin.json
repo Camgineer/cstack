@@ -18,6 +18,6 @@
     "Wayfinder becomes map mode, stored in a file the operator picks, without a tracker, labels, or assignee claims.",
     "Added depth tiers and a cold-implementer check, adapted from loop-me's definition of done.",
     "Model-invocable, per the plugin's rule for bundled skills.",
-    "Harness tool names replaced with runtime-contract capabilities."
+    "Harness tool names replaced with plain capability descriptions."
   ]
 }

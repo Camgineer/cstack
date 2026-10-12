@@ -1,5 +1,5 @@
 interface:
   display_name: "Technical Writing"
-  short_description: "Layered technical-writing standard: Diátaxis structure, Google developer style sentences, STE instruction rules..."
+  short_description: "Use when drafting or reviewing technical documents, PR descriptions, or commit messages. Match structure and..."
 policy:
   allow_implicit_invocation: true

@@ -1,6 +1,6 @@
 ---
 name: feel
-description: Use before building, reviewing, or verifying motion and sound in a website, app, game, UI, or tool with a visual or terminal interface.
+description: "Use when building, reviewing, or verifying motion and sound on a visual or terminal interface."
 ---
 
 # Feel

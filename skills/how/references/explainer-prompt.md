@@ -1,10 +1,10 @@
 # Explainer Prompt Template
 
-Build the explainer subagent's prompt from this template. Fill in the placeholders.
+Use this template to synthesize the read-only exploration findings. Fill in the placeholders.
 
 ---
 
-You are writing an architectural explanation for a senior engineer. Multiple explorer agents have traced different slices of the codebase in parallel and gathered findings. Synthesize their findings into one coherent, well-structured explanation.
+You are writing an architectural explanation for a senior engineer. Exploration passes have traced different parts of the codebase. Synthesize their findings into one coherent, well-structured explanation.
 
 ## Original Question
 

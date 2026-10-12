@@ -4,33 +4,25 @@
 
 Databricks is the product-analytics, data-pipeline, and warehouse-telemetry layer. It complements Datadog. Datadog is the *infra/runtime* view, Databricks is the *product/data* view (what users did, which experiments ran, how feature usage evolved, where a threshold constant came from).
 
-- **Product analytics events.** `your_warehouse.events.analytics_track_event` (raw) and typed, deduplicated per-event dbt models in `<your_analytics_db>.<schema>.<table>`. User behavior: feature invocations, clicks, accepts/rejects, submissions, client-reported errors.
-- **Usage & billing events.** `your_warehouse.events.usage_event` / `<your_analytics_db>.<schema>.stg_usage_events`, `your_warehouse.events.raw_model_event` / `<your_analytics_db>.<schema>.stg_raw_model_events`. For cost- or volume-driven decisions.
+- **Product analytics events.** Raw event tables and typed, deduplicated per-event models in `<your_analytics_db>.<schema>.<table>`. User behavior: feature invocations, clicks, accepts/rejects, submissions, client-reported errors.
+- **Usage & billing events.** Discover usage, billing, and model-event tables in the current schema. For cost- or volume-driven decisions.
 - **Experiment / feature-flag data.** Exposure and outcome tables. **Schema is company-specific.** Probe with `SHOW TABLES` before assuming names.
 - **System tables.** `system.query.history`, `system.compute.warehouses`, `system.billing.*`, `system.access.audit`. Answer "was this query expensive?", "how often did anyone run this?", "when did warehouse load spike?"
 - **dbt lineage.** Models in `<your_analytics_db>.<schema>` reveal what pipelines depend on a table/field. Upstream changes frequently motivate consumer-code changes.
-- **Databricks notebooks.** Exploratory analyses engineers wrote before code changes. **Not queryable via the SQL MCP.** If you suspect the rationale lives in a notebook, name it as a gap.
+- **Databricks notebooks.** Exploratory analyses engineers wrote before code changes. **May be unavailable through a SQL-only connector.** If you suspect the rationale lives in a notebook, name it as a gap.
 
 ## How to search it
 
-Use the Databricks SQL MCP. Primary tool: `execute_sql_read_only`. If it returns a `statement_id`, poll with `poll_sql_result` rather than re-running.
+Inspect the available warehouse connector's schema. Use read-only queries and poll an existing query's result rather than rerunning it.
 
-**Orient before querying.** Schemas are company-specific. Probe before trusting a table name:
+Discover tables and columns before assuming names:
 
 ```sql
 SHOW TABLES IN <your_analytics_db>.<schema> LIKE '*<keyword>*';
-DESCRIBE TABLE <your_analytics_db>.<schema>.stg_<event>;
+DESCRIBE TABLE <your_analytics_db>.<schema>.<table>;
 ```
 
-**Time-bound every query.** These tables are huge and unconstrained scans time out. Filter on `_timestamp` (events) or `start_time` (`system.query.history`) with a window bracketing the ship date, typically ~30 days before and after, wider only for strong reason.
-
-**Prefer typed dbt models over the raw table.** `<your_analytics_db>.<schema>.<table>` is deduplicated, typed, and liquid-clustered. `your_warehouse.events.analytics_track_event` has duplicates and untyped `properties_json`. Model-name pattern: `stg_<source>_<event_name_with_underscores>`, where `<source>` is `app`, `backend`, `website`, or `cli`. Confirm the exact model name with `SHOW TABLES` when the pattern alone doesn't resolve it. Drop to the raw table only when there's no dbt model yet, or you need events from inside the dbt refresh lag.
-
-**Column conventions on the typed dbt models** (knowing these avoids a `DESCRIBE` round-trip):
-
-- `_timestamp`, `_id`, `_auth_id`, `_request_id`, `event_name`. Standard on every model
-- `properties_<name>`. Typed, underscore-cased event properties (`properties_entrypoint`, `properties_size_bytes`, …)
-- `context_team_id`, `context_client_version`, `context_country`, `context_client_os`. Pre-extracted client context
+Time-bound every query around the change date. Prefer typed, deduplicated models when available, and confirm their refresh lag and column meanings. Use raw events only when the model omits required data, then deduplicate explicitly. Table names, event properties, and timestamp columns are company-specific.
 
 ### Investigation patterns that tend to pay off
 
@@ -57,7 +49,7 @@ Beyond the pattern shapes above:
 - **dbt refresh lag.** `<your_analytics_db>.<schema>.*` is rebuilt on a schedule (often hourly/daily). For events from the last few hours, fall back to `your_warehouse.events.*` and deduplicate by `_id`.
 - **Company-specific tables.** Experiment, feature-flag, billing, and usage tables vary. Reporting a result from a table whose existence you never confirmed is a classic failure mode. Probe with `SHOW TABLES` / `DESCRIBE TABLE` first.
 - **Retention cliff.** If the relevant window predates the table's retention or the dbt model's creation date, that's a *gap*, not a null result. Name it explicitly so the synthesizer doesn't read "no results" as "no activity."
-- **Notebooks aren't queryable.** The SQL MCP can't see Databricks notebooks. If you suspect the rationale lives in one, return a gap.
+- **Notebooks aren't queryable.** A SQL-only connector may not expose notebooks. If you suspect the rationale lives in one, return a gap.
 
 ## What to return
 

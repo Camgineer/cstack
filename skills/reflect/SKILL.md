@@ -1,6 +1,6 @@
 ---
 name: reflect
-description: Apply three read-only lenses and synthesize their findings over a session to find durable lessons, and route each to an edit on a skill, a principle, or the repo's agent guidance. Use for reflect, retro, or a recap after you mark your own PR ready.
+description: "Use when drawing durable lessons from a session or retrospective. Route proven lessons to guidance or structural checks."
 metadata:
   source: "The tooling reviewer's environment lens adapts the retro categories from mattpocock/skills, https://github.com/mattpocock/skills"
 ---
@@ -19,7 +19,7 @@ Use the active session, or the session and PR record the user asks about. Skip t
 
 Use the host's supported thread/history tools to identify the active conversation and export only the in-scope evidence. Do not scan host databases or guess a transcript schema. If no supported history surface is exposed, prepare a digest from the active context, label it as a digest, and disclose any missing tool-call evidence. Give all three reviewers the same evidence artifact.
 
-For a requested PR recap, read the building session through supported history tools when it is not the active one. Then add the PR's record to the artifact. Read it through the forge: each review thread and how it ended, each red check and the commit that fixed it, and each reverted or abandoned commit. Wait for every review agent still running on the PR and fold in its findings, or list it as pending in the artifact. With no building session, label the artifact as PR record only and name the missing history.
+For a requested PR recap, read the building session through supported history tools when it is not the active one. Then add the PR's record to the artifact. Read it through the forge: each review thread and how it ended, each red check and the commit that fixed it, and each reverted or abandoned commit. Include available findings and list unfinished reviews as pending. With no building session, label the artifact as PR record only and name the missing history.
 
 Check the evidence for a signal: a human correction, a red check, a proven finding, an abandoned approach, or information searched for more than once. With no signal, report no lessons and stop.
 

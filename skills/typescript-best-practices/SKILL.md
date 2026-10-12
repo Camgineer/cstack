@@ -1,6 +1,6 @@
 ---
 name: typescript-best-practices
-description: TypeScript best practices. Use when reading or editing any .ts or .tsx file.
+description: "Use when reading or editing TypeScript. Apply boundary validation, total types, and exhaustive variants."
 metadata:
   upstream-paths: '["**/*.ts", "**/*.tsx"]'
 ---

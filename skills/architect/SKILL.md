@@ -1,21 +1,11 @@
 ---
 name: architect
-description: Sketch types, signatures, and module structure before code, then stay in the loop while implementation fills in. Use for architect, 'architect this', 'design this', or non-trivial work where jumping to code would lock in the wrong shape.
+description: "Use when code needs a new module, public interface, or design choice. Sketch types and callers before implementation."
 ---
 
 # Architect
 
 Design before implementing. Sketch types, function signatures, class shapes, and module boundaries with `not implemented` bodies and pseudocode. Compare viable shapes, then fill in code against the chosen sketch. If implementation proves the sketch wrong, throw it out and redesign.
-
-## Start
-
-Open a todolist with one entry per phase before starting.
-
-1. Ground
-2. Sketch
-3. Agree
-4. Implement
-5. Scrap
 
 ## Phase A: Ground the problem
 
@@ -45,7 +35,7 @@ Default: proceed directly to implementation with the synthesized design. No huma
 
 Opt in to a checkpoint when the invoker explicitly asks: "architect with checkpoint," "stop and show me before implementing," or similar. Then surface the synthesized design and pause for sign-off.
 
-The synthesis can be the first commit of the PR that fills it in, with its callers in later commits of that PR. Planned and scoped breakage during fill-in is fine, per the [outcome-oriented-execution](../principles/outcome-oriented-execution.md) reference.
+For a planned rewrite, name verification boundaries per [outcome-oriented-execution](../principles/outcome-oriented-execution.md).
 
 If the human pushes back on the shape (in a checkpoint or after the fact), treat that as Phase A evidence. Re-ground and re-run Phase B before writing more code.
 

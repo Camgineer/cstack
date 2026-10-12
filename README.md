@@ -133,7 +133,7 @@ Task guides end with verified work on the current branch. Your environment owns 
 
 ## Remove setup from before 1.0.0
 
-Updating the plugin does not remove personal rules, delivered links, or environment settings from an older installation. The cleanup below follows the [deleted installer and its sibling files at the last pre-1.0.0 revision](../../tree/43c6b4785ca586d96f61a9ce9e161c7a59c33486/hooks).
+Updating the plugin does not remove personal rules, delivered links, or environment settings from an older installation. The cleanup below follows the [deleted installer and its sibling files at the last pre-1.0.0 revision](https://github.com/Camgineer/cstack/tree/43c6b4785ca586d96f61a9ce9e161c7a59c33486/hooks).
 
 1. In **Intent Settings**, under **Agent Behavior**, remove the personal-rule paragraph that tells the agent to read or invoke `<plugin>-mode` before any other step. Remove its appended exemption text with that paragraph. Keep your other rules.
 2. Remove `CSTACK_MODE` from your shell profile and cloud environment settings wherever you added it. Run `unset CSTACK_MODE` in an open shell, then start new sessions. The old hook read this variable. It did not write your shell profile.

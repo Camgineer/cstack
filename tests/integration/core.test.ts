@@ -90,6 +90,6 @@ test("native manifests expose skills without automatic session behavior", () => 
     const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(source)?.[1];
     const fields = Bun.YAML.parse(frontmatter ?? "") as Record<string, unknown>;
     const metadata = Bun.YAML.parse(readFileSync(join(root, "skills", directory, "agents/openai.yaml"), "utf8"));
-    expect(metadata.policy.allow_implicit_invocation).toBe(fields["disable-model-invocation"] !== true);
+    expect(metadata).toMatchObject({ policy: { allow_implicit_invocation: fields["disable-model-invocation"] !== true } });
   }
 });

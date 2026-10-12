@@ -163,17 +163,18 @@ const acquisitionPath = `${lockPath}.acquire`;
 const quote = (value) => "'" + value.replaceAll("'", "'\\''") + "'";
 const locked = (path, reason) => new Error(`Installation is locked at ${path}.
 ${reason}
-No host links or installation record were changed by this run.
+${root === data ? "The installed plugin copy was already replaced. Rerun the install after the other installer finishes to complete it." : "No host links or installation record were changed by this run."}
 Wait for any active installer to finish, then run the same installer command again.
 If the lock remains after you confirm no installer is active, keep a copy by moving only this lock aside:
 mv ${quote(path)} ${quote(`${path}.saved-${randomUUID()}`)}
 Then run the same installer command again.`);
-function releaseLock(path, descriptor, identity) {
+function releaseLock(path, descriptor, identity, failure) {
   try {
     closeSync(descriptor);
     const remaining = statAt(path);
-    if (remaining?.dev === identity.dev && remaining.ino === identity.ino) unlinkSync(path);
+    if (identity && remaining?.dev === identity.dev && remaining.ino === identity.ino) unlinkSync(path);
   } catch (error) {
+    if (failure) process.stderr.write(`${failure.message}\n`);
     throw new Error(`Could not release installation lock at ${path}. ${error.message}
 Wait for any active installer to finish. If the lock remains after you confirm no installer is active, keep it by moving only this lock aside:
 mv ${quote(path)} ${quote(`${path}.saved-${randomUUID()}`)}
@@ -184,7 +185,7 @@ function acquireLock() {
   let acquisition;
   try { acquisition = openSync(acquisitionPath, "wx", 0o600); }
   catch (error) {
-    if (error.code === "EEXIST") return { kind: "wait", path: acquisitionPath, reason: "Another install may be taking the installation lock. Waiting up to 30 seconds." };
+    if (error.code === "EEXIST") return { kind: "wait", path: acquisitionPath, reason: "Another install may be taking the installation lock." };
     const message = `Could not create installation acquisition file at ${acquisitionPath}. ${error.message}`;
     if (["EACCES", "EPERM"].includes(error.code)) throw new Error(message, { cause: error });
     throw locked(acquisitionPath, message);
@@ -200,23 +201,25 @@ function acquireLock() {
       try {
         if (!current.isFile()) throw new Error("Not a regular owner file.");
         bytes = readFileSync(lockPath).toString();
-        owner = JSON.parse(bytes.split("\n").slice(0, -1).at(-1));
+        const line = bytes.split("\n").slice(0, -1).at(-1);
+        if (!line) throw new Error("The owner file has no complete owner line.");
+        owner = JSON.parse(line);
         if (owner?.schemaVersion !== 1 || owner.name !== name || owner.home !== home || !Number.isInteger(owner.pid) || owner.pid < 1) throw new Error("Invalid owner.");
       } catch (error) { throw locked(lockPath, `The owner record cannot be read or validated, so the installer cannot prove the earlier run stopped. ${error.message}`); }
-      try {
+      if (owner.pid !== process.pid) try {
         process.kill(owner.pid, 0);
-        return { kind: "wait", path: lockPath, reason: `Another process holds the installation lock at ${lockPath}. Waiting up to 30 seconds.` };
+        return { kind: "wait", path: lockPath, reason: `Another process holds the installation lock at ${lockPath}.` };
       } catch (error) {
         if (error.code !== "ESRCH") throw locked(lockPath, `The installer could not check recorded PID ${owner.pid} and will not clear its lock. ${error.message}`);
       }
       const latest = statAt(lockPath);
-      if (latest?.dev !== current.dev || latest.ino !== current.ino || !latest.isFile() || readFileSync(lockPath).toString() !== bytes) return { kind: "wait", path: lockPath, reason: "The installation lock changed. Nothing was removed. Run the same installer command again." };
+      if (latest?.dev !== current.dev || latest.ino !== current.ino || !latest.isFile() || readFileSync(lockPath).toString() !== bytes) return { kind: "wait", path: lockPath, reason: "The installation lock changed. Nothing was removed." };
       unlinkSync(lockPath);
       console.log(`Cleared stale installation lock ${lockPath} because no process has its recorded PID ${owner.pid}.`);
     }
     try { fd = openSync(lockPath, "wx", 0o600); }
     catch (error) {
-      if (error.code === "EEXIST") return { kind: "wait", path: lockPath, reason: "Another run acquired the installation lock. Waiting up to 30 seconds." };
+      if (error.code === "EEXIST") return { kind: "wait", path: lockPath, reason: "Another run acquired the installation lock." };
       const message = `Could not create installation owner file at ${lockPath}. ${error.message}`;
       if (["EACCES", "EPERM"].includes(error.code)) throw new Error(message, { cause: error });
       throw locked(lockPath, message);
@@ -226,7 +229,7 @@ function acquireLock() {
     for (let offset = 0; offset < bytes.length;) offset += writeSync(fd, bytes, offset, bytes.length - offset);
     return { kind: "owned", fd, identity: created };
   } catch (error) {
-    if (fd !== undefined) releaseLock(lockPath, fd, created);
+    if (fd !== undefined) releaseLock(lockPath, fd, created, error);
     if (fd !== undefined) throw locked(lockPath, `Could not publish the installation owner at ${lockPath}. ${error.message}`);
     throw error;
   } finally { releaseLock(acquisitionPath, acquisition, acquired); }
@@ -239,10 +242,12 @@ function withInstallLock(action) {
   while (true) {
     const lock = acquireLock();
     if (lock.kind === "owned") {
+      let failure;
       try { return action(); }
-      finally { releaseLock(lockPath, lock.fd, lock.identity); }
+      catch (error) { failure = error; throw error; }
+      finally { releaseLock(lockPath, lock.fd, lock.identity, failure); }
     }
-    if (!announced) { console.log(lock.reason); announced = true; }
+    if (!announced) { console.log(`${lock.reason} Waiting up to 30 seconds.`); announced = true; }
     const remaining = deadline - performance.now();
     if (remaining <= 0) throw locked(lock.path, `Stopped waiting after 30 seconds. ${lock.reason}`);
     Atomics.wait(sleeper, 0, 0, Math.min(100, remaining));

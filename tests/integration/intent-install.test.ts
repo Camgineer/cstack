@@ -3881,7 +3881,7 @@ test("a fetched waiter timeout names the replaced copy and a rerun completes it"
       expect((await holder.finish()).status).toBe(0);
       expect(olderKit.runSync([]).status).toBe(0);
       fixture.complete();
-      expect(existsSync(join(home, ".intent/skills/new-skill"))).toBe(false);
+      expect(() => lstatSync(join(home, ".intent/skills/new-skill"))).toThrow(/ENOENT/);
       const before = homeSnapshot(home);
       expect(olderKit.runSync([]).status).toBe(0);
       expect(homeSnapshot(home)).toEqual(before);

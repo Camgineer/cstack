@@ -11,10 +11,6 @@ permissions:
   contents: read
   pull-requests: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   checks:
     name: Typecheck, host manifests, unit and integration tests

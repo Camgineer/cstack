@@ -10,8 +10,6 @@ Read [the runtime contract](../cstack-mode/references/runtime.md) before executi
 
 Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
 
-Use each named role as the assignment label. Resolve model and effort through the runtime contract, inheriting for ordinary work unless the user chose a supported override. Report unavailable model requirements without inventing a replacement.
-
 ## Evidence
 
 Every claim about the code rests on source you read. Apply these rules on both paths, and pass this section into each explorer and explainer prompt:
@@ -33,10 +31,9 @@ When in doubt, take the simple path.
 
 ## Step 2a. Explore (complex questions only)
 
-Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Spawn all explorers in a single message:
+When delegation is unavailable, take Step 2b directly. Otherwise decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Spawn all explorers in a single message:
 
-- Persona: generic native investigator; apply the workflow reference prompt.
-- Model role: `how explorer` through the runtime contract.
+- Seat: [investigator seat](../../agents/investigator.md). Carry the workflow reference prompt in the brief and return findings to the parent.
 - Scope: read-only; use the supported sandbox and no connector writes.
 
 Each explorer gets the prompt in `references/explorer-prompt.md` with its angle filled in. Then go to Step 3.
@@ -49,8 +46,7 @@ Read the code yourself and write the explanation in the Output Format of `refere
 
 Once all explorers have returned, spawn one native subagent to synthesize their findings into one explanation:
 
-- Persona: generic native investigator; apply the workflow reference prompt.
-- Model role: `how explainer` through the runtime contract.
+- Seat: [investigator seat](../../agents/investigator.md). Carry the workflow reference prompt in the brief and return findings to the parent.
 - Scope: read-only; use the supported sandbox and no connector writes.
 
 Build its prompt from `references/explainer-prompt.md` with every explorer's findings filled in.

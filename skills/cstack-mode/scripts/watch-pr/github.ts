@@ -1,11 +1,11 @@
 import { spawn } from "node:child_process";
 import type * as T from "./types.ts";
-import { nonEmpty, parsePrNumber } from "./types.ts";
-export const REVIEW_THREADS_QUERY =
+import { WatcherQueryError, nonEmpty, parsePrNumber } from "./types.ts";
+const REVIEW_THREADS_QUERY =
   "\nquery ReviewThreads($owner: String!, $repo: String!, $pr: Int!) {\n  repository(owner: $owner, name: $repo) {\n    pullRequest(number: $pr) {\n      reviewThreads(first: 100) {\n        nodes {\n          id\n          isResolved\n          comments(first: 10) {\n            nodes {\n              body\n              createdAt\n              path\n              line\n              author { login }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n";
-export const PR_COMMIT_STATUS_QUERY =
+const PR_COMMIT_STATUS_QUERY =
   "\nquery PrCommitStatuses($owner: String!, $repo: String!, $pr: Int!) {\n  repository(owner: $owner, name: $repo) {\n    pullRequest(number: $pr) {\n      commits(last: 50) {\n        nodes {\n          commit {\n            oid\n            statusCheckRollup {\n              state\n            }\n          }\n        }\n      }\n    }\n  }\n}\n";
-export const PR_CHECK_ROLLUP_QUERY =
+const PR_CHECK_ROLLUP_QUERY =
   "\nquery PrCheckRollup($owner: String!, $repo: String!, $pr: Int!, $after: String) {\n  repository(owner: $owner, name: $repo) {\n    pullRequest(number: $pr) {\n      commits(last: 1) {\n        nodes {\n          commit {\n            statusCheckRollup {\n              contexts(first: 100, after: $after) {\n                pageInfo {\n                  hasNextPage\n                  endCursor\n                }\n                nodes {\n                  __typename\n                  ... on CheckRun {\n                    name\n                    status\n                    conclusion\n                    detailsUrl\n                  }\n                  ... on StatusContext {\n                    context\n                    state\n                    targetUrl\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n";
 
 interface CommandResult {
@@ -13,15 +13,7 @@ interface CommandResult {
   readonly stdout: string;
   readonly stderr: string;
 }
-export class WatcherQueryError extends Error {
-  readonly failure: T.QueryFailure;
-  constructor(failure: T.QueryFailure) {
-    super(failure.detail);
-    this.name = "WatcherQueryError";
-    this.failure = failure;
-  }
-}
-export class ChecksUnavailable extends WatcherQueryError {
+class ChecksUnavailable extends WatcherQueryError {
   constructor(detail: string) {
     super({ kind: "checks-unavailable", retryable: true, detail });
     this.name = "ChecksUnavailable";
@@ -243,7 +235,7 @@ function checkDetails(value: Record<string, unknown>, nameKey: string) {
     workflow: typeof value.workflow === "string" ? value.workflow : "",
   };
 }
-export function parseFastCheck(value: unknown): T.Check {
+function parseFastCheck(value: unknown): T.Check {
   const object = record(value, "check");
   const details = checkDetails(object, "name");
   const state = string(object.state, "check.state").toUpperCase();
@@ -281,7 +273,7 @@ function pendingOrGate(
       }
     : { ...details, kind: "pending", reportedState };
 }
-export function mapRollupNode(value: unknown): T.Check | null {
+function mapRollupNode(value: unknown): T.Check | null {
   const object = record(value, "rollup node");
   const typename = object.__typename;
   if (typename !== "CheckRun" && typename !== "StatusContext") return null;
@@ -368,7 +360,7 @@ function passKey(comment: T.ReviewComment | null): string | null {
   }
   return null;
 }
-export function parseReviewThreads(value: unknown): readonly T.ReviewThread[] {
+function parseReviewThreads(value: unknown): readonly T.ReviewThread[] {
   const nodes = list(
     at(value, ["data", "repository", "pullRequest", "reviewThreads", "nodes"]),
     "reviewThreads.nodes"
@@ -410,7 +402,7 @@ export function parseReviewThreads(value: unknown): readonly T.ReviewThread[] {
       bugbotReviewPasses: passes,
     }));
 }
-export function parsePullRequest(
+function parsePullRequest(
   value: unknown,
   context: T.PrContext
 ): T.PullRequestFacts {
@@ -658,7 +650,7 @@ export async function resolveContext(args: {
     number: args.pr ?? inferred.number,
   };
 }
-export function orderStack(
+function orderStack(
   context: T.PrContext,
   open: readonly T.OpenPullRequest[]
 ): T.NonEmpty<T.PrContext> {

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Feel"
+  short_description: "Use before building, reviewing, or verifying motion and sound in a website, app, game, UI, or tool with a visual or..."
+policy:
+  allow_implicit_invocation: true

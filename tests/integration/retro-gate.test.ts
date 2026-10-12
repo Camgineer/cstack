@@ -11,10 +11,10 @@ function gate(pullRequest: { body: string | null; comments: string[] }) {
   return JSON.parse(run.stdout);
 }
 
-test("a PR without a retro record waits", () => {
+test("a PR without a retro record never blocks readiness or merging", () => {
   expect(gate({ body: "## Why\n\nFix a typo.", comments: ["LGTM", "The retro found nothing. Retro: no lessons"] })).toEqual({
-    state: "pending",
-    description: "Waiting for the builder's retro comment (reflect, PR retro scope)",
+    state: "success",
+    description: "Retro recap pending; readiness and merging do not wait",
   });
 });
 
@@ -41,25 +41,37 @@ test("a lessons PR needs no retro of its own", () => {
 
 test("a lessons PR under a host's attribution comment and byline needs no retro", () => {
   const body = '<!-- host: {"login":"someone"} -->\n_Requested by someone_\n\nLessons from https://github.com/o/r/pull/6\n\n## Accepted';
-  expect(gate({ body, comments: [] }).state).toBe("success");
+  expect(gate({ body, comments: [] })).toEqual({
+    state: "success",
+    description: "Lessons PR, which gets no retro",
+  });
 });
 
-test("a lessons line that renders hidden or as code still waits", () => {
+test("a hidden or code lessons line reports a pending recap without gating", () => {
   for (const body of ["<!--\nLessons from https://github.com/o/r/pull/6", "    Lessons from https://github.com/o/r/pull/6"]) {
-    expect(gate({ body, comments: [] }).state).toBe("pending");
+    expect(gate({ body, comments: [] })).toEqual({
+      state: "success",
+      description: "Retro recap pending; readiness and merging do not wait",
+    });
   }
 });
 
-test("a lessons line below the opening lines still waits", () => {
+test("a lessons line below the opening lines reports a pending recap without gating", () => {
   const body = "## Why\n\nOne\n\nTwo\n\nLessons from https://github.com/o/r/pull/6";
-  expect(gate({ body, comments: [] }).state).toBe("pending");
+  expect(gate({ body, comments: [] })).toEqual({
+    state: "success",
+    description: "Retro recap pending; readiness and merging do not wait",
+  });
 });
 
-test("a PR that only mentions a lessons PR still waits", () => {
-  expect(gate({ body: "Follows the Lessons from https://github.com/o/r/pull/6 review.", comments: [] }).state).toBe("pending");
+test("a mention of a lessons PR reports a pending recap without gating", () => {
+  expect(gate({ body: "Follows the Lessons from https://github.com/o/r/pull/6 review.", comments: [] })).toEqual({
+    state: "success",
+    description: "Retro recap pending; readiness and merging do not wait",
+  });
 });
 
-test("this repository runs the gate the plugin ships", () => {
+test("this repository runs the reporter the plugin ships", () => {
   const root = resolve(import.meta.dir, "../..");
   for (const [installed, shipped] of [
     [".github/workflows/retro.yml", "skills/reflect/gate/retro.yml"],

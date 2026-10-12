@@ -12,17 +12,29 @@ Read [the runtime contract](references/runtime.md) before executing this workflo
 
 When the user invokes this skill with the argument `off`, stop applying it and reply that the mode is off. Otherwise the mode stays on for the rest of the session.
 
-On hosts that run the plugin's hooks, the user's typed command for this skill also keeps it on for the project in later sessions, after `/clear`, and after compaction. The argument `off` turns it off there too. If the user asks in plain words to turn the mode off, run `sh <plugin-root>/hooks/mode.sh off` from the project directory.
+On hosts that run the plugin's hooks, the user's typed command for this skill also keeps the mode on for the project in later sessions, and the argument `off` keeps it off. The host note says whether the mode also survives `/clear` and compaction. Wherever the plugin's hooks run, an environment variable set to `on` turns the mode on in every project the user has not turned off. Its name is `<plugin>-mode` in capitals, with `_` for `-`. If the user asks in plain words to turn the mode off, run `sh <plugin-root>/hooks/mode.sh off` from the project directory.
+
+## Scratch files
+
+Keep every scratch file you create for your work in `tmp/<task>/` at the project root, with a folder named for the task. The project root is the top folder of the project you are working in. In a git checkout, `git rev-parse --show-toplevel` prints it. Never use a `tmp/` folder in a subdirectory. Scratch includes a probe file, a temporary file a command needs, a throwaway repository, a log, a download, a screenshot, a resume note, and a local prototype. This keeps the files where you can remove them and the person can open them.
+
+A prototype that a PR or issue will link to is published on a throwaway branch, per [Prototype](playbooks/prototype.md). Local-only prototypes stay in `tmp/<task>/`.
+
+Before the first scratch write, run `git check-ignore -q tmp/<task>/probe` from the project root. If it fails, create `tmp/<task>/.gitignore` containing `*` and repeat the check. Continue only when it succeeds. Keep scratch out of commits.
+
+A test suite's own temporary directories are not scratch. Leave them where the suite puts them.
+
+On the turn you learn the work was merged or dropped, remove your task folder before replying. If someone still needs files from it, keep those files and say in the reply what you kept and for whom.
 
 ## Non-negotiables
 
 The Principles section below grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
 
-Remaining triggers. A trigger that names a skill means invoke that skill with the **Invoke a skill** capability when the condition holds, then follow it. The trigger is met only when the skill is loaded in this session. Knowing what it says is not running it. When you judge a matched skill unneeded, say so in the reply as `skip <skill>: <reason>`.
+Remaining triggers. A trigger that names a skill means invoke that skill with the **Invoke a skill** capability when the condition holds, then follow it. The trigger is met only when the skill is loaded in this session. Knowing what it says is not running it. When you judge a matched skill unneeded, say so in the reply as `skip <skill>: <reason>`. Run cleanup skills such as `deslop` and `no-comments` even after your own or another agent's review, and keep their job out of a reviewer's brief.
 
 - Nontrivial change, with the operator present to agree it before the build → invoke `align` before the matched playbook runs. Its signed spec settles that playbook's design and done steps.
 - Nontrivial change, architecture decision, or "are we sure?" → invoke `how` before you change anything.
-- About to use the **Ask** capability on a "which approach", "how should I", or "what should this do" fork → fetch trunk and list open and recently merged PRs in the same area, and drop any option another PR already owns or shipped. Then classify it before you ask. If the answer is a fact you could observe by running something (behavior, timing, layout, output, perf, even whether an eval separates), it is not the human's to answer. Sketch it via the Prototype playbook (`playbooks/prototype.md`) and let the result decide. If the task is a read-only Investigation whose deliverable is a cited answer, stay in it and answer from the evidence rather than building a sketch. Reserve the question for a genuine product or preference call no experiment can settle. Under a full-autonomy grant, decide a call that the grant covers, act on it, and report it, with no reply word and no offer. Under the grant, apply a default for a call that only the operator can make. Report the default with a full explanation and the one word that reverses it. Gates that the operator named and the Always-pause list in Autonomy still need the operator. While a question is open, build only the parts every option shares, and build the option-specific work after the pick. This narrows **Never Block on the Human** for that question only.
+- About to ask a "which approach", "how should I", or "what should this do" question → fetch trunk and list open and recently merged PRs in the same area, and drop any option another PR already owns or shipped. Then classify it before you ask. If the answer is a fact you could observe by running something (behavior, timing, layout, output, perf, even whether an eval separates), it is not the human's to answer. Sketch it via the Prototype playbook (`playbooks/prototype.md`) and let the result decide. If the task is a read-only Investigation whose deliverable is a cited answer, stay in it and answer from the evidence rather than building a sketch. Reserve the question for a genuine product or preference call no experiment can settle. Under a full-autonomy grant, decide a call that the grant covers, act on it, and report it, with no reply word and no offer. Under the grant, apply a default for a call that only the operator can make. Report the default with a full explanation and the one word that reverses it. Gates that the operator named and the Always-pause list in Autonomy still need the operator. While a question is open, build only the parts every option shares, and build the option-specific work after the pick. This narrows **Never Block on the Human** for that question only. When `grill-with-docs`'s **Pending owner** condition holds, follow that rule within the existing authorization.
 - Any code → name the data shape first, and choose its organizing structure per **principle-model-the-domain**.
 - A new module, a new or reshaped public interface, or a design with more than one viable shape → invoke `architect` for parallel design exploration before implementing.
 - Parallel fan-out → invoke `swarm` for coverage matrices, races, gauntlets, and exploration partitions. Invoke `arena` for design or code bakeoffs with base selection and grafting.
@@ -34,6 +46,7 @@ Remaining triggers. A trigger that names a skill means invoke that skill with th
 - Before commit → invoke `deslop`.
 - Before review → invoke `no-comments`.
 - Building, restyling, or polishing a UI, or critiquing its design → invoke `design-ui`.
+- The task builds, changes, reviews, or verifies a surface a person sees or touches → read **principle-feel** and invoke `feel` for its motion and sound steps.
 - Shipping UI / IDE / CLI → invoke the matching control skill: `control-cli` for CLIs and TUIs, `control-ui` for browser, Electron, and web UIs, or the project's own verification skill. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
 - Running a benchmark, measuring perf yourself, or reporting a speedup or regression you measured → invoke `benchmark-checklist` before you report or act on the number.
 - Any PR-status request → the **Babysit** playbook (`playbooks/babysit.md`), rather than a similarly named host shortcut. That includes "babysit this", "get it green", "address the bugbot comments", and the commonest phrasing, "check on PR X" / "anything outstanding on X". Never triggered by merely opening a PR. Declare its mode before polling. The playbook's step 1 owns the request-to-mode mapping. Reaching for `drive` inside a phase agent stops that agent finishing its turn.
@@ -41,7 +54,9 @@ Remaining triggers. A trigger that names a skill means invoke that skill with th
 - Bugbot or the agentic security review commented → skeptical posture. They catch real bugs and also file non-issues and nitpicks, so assess each on its merits and dismiss noise with a concrete reason instead of churning code. Triage fix / dismiss / ask per `references/bugbot-triage.md`.
 - The operator corrects the same agent mistake a second time → invoke `correct`, which fixes the repo instead of adding another instruction.
 - Broken skill mid-task → fix it in its own PR. Don't block. Don't silently work around it.
-- Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "keep going until X") → invoke `show-me-your-work` for a decision trail. Commit it when stakes need an auditable record. Keep it local otherwise.
+- Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "keep going until X") → invoke `show-me-your-work` for a decision trail. Follow **Scratch files** for the trail's location and cleanup.
+
+**Write it down.** In the same turn you learn something that changes the work, write it into the owning **Shared document** or the repository, because chat may be unavailable to another agent or workspace: a decision and who made it, an answer, a constraint, a finding, and what is in flight. In the same turn a fact changes, correct every document that states the old one. Keep enough current context for a new agent with only the documents and the repository to continue the work without asking anyone.
 
 ## Principles
 
@@ -49,13 +64,14 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Core**
 
-- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, sizing a diff, or tempted to add wrappers, layers, or signal threading. Bias to deletion and the smallest change that solves the problem.
+- **Laziness Protocol** (**principle-laziness-protocol**). Refactoring, deciding how much code a change needs, or tempted to add wrappers, layers, or signal threading. Bias to deletion and the smallest change that solves the problem. For a bug, the problem is its whole class.
 - **Foundational Thinking** (**principle-foundational-thinking**). Before writing logic: core types and data structures, scaffold-vs-feature sequencing, what concurrent actors share.
 - **Redesign from First Principles** (**principle-redesign-from-first-principles**). Integrating a new requirement into an existing design. Redesign as if it had been foundational from day one.
 - **Attack the Premise** (**principle-attack-the-premise**). Two or more fixes that share one premise have failed the same gate. Take a census of which actors hold the imbalance before the next fix, then question the premise instead of writing another fix that assumes it.
 - **Subtract Before You Add** (**principle-subtract-before-you-add**). Sequencing an addition, refactor, or rewrite. Remove dead weight first, then build on the simpler base.
 - **Minimize Reader Load** (**principle-minimize-reader-load**). Reviewing or shaping code that's hard to trace. Count layers and hidden state, collapse one-caller wrappers, shrink mutable scope.
 - **Outcome-Oriented Execution** (**principle-outcome-oriented-execution**). Planned rewrites and migrations with explicit phase boundaries. Converge on the target architecture, don't preserve throwaway compatibility states.
+- **Feel** (**principle-feel**). Work with a website, app, game, UI, or tool with a visual or terminal interface. Read its rule before choosing motion or sound.
 - **Experience First** (**principle-experience-first**). Product, UX, or feature-scope tradeoffs. Choose user delight over implementation convenience.
 - **Show, Don't Tell** (**principle-show-dont-tell**). Explaining, proposing, reporting, or asking the user to decide. Show the output, code, diff, or diagram at the highest fidelity available, with prose only for the why.
 - **Exhaust the Design Space** (**principle-exhaust-the-design-space**). A novel interaction or architectural decision with no precedent. Build 2-3 competing prototypes and compare before committing.
@@ -73,14 +89,14 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 **Verification**
 
 - **Prove It Works** (**principle-prove-it-works**). After a task, before declaring done. Verify against the real artifact, not a proxy or "it compiles".
-- **Fix Root Causes** (**principle-fix-root-causes**). Debugging. Trace each symptom to its root cause, reproduce first, ask why until you reach it.
-- **Sequence Work into Verifiable Units** (**principle-sequence-verifiable-units**). Multi-step work (sweeps, migrations, runs of similar edits) and how you stack commits and PRs. Break work into small units that each end in a check, verify each before the next, and order delivery so the sequence proves itself.
-- **Test Behavior, Not Implementation** (**principle-test-behavior-not-implementation**). Writing, changing, or keeping a test. Call the code the way its users do and assert the result against a literal expected value. If the test would still pass when every imported function returns `undefined`, rewrite the assertion or delete the test.
+- **Fix Root Causes** (**principle-fix-root-causes**). Fixing any defect, whether reported, found mid-task, or flagged by a check or reviewer. Reproduce, ask why until you reach the root cause, then name the class of bug and fix the class once at the most upstream chokepoint every instance passes through, inside the scope the workflow allows.
+- **Sequence Work into Verifiable Units** (**principle-sequence-verifiable-units**). Multi-step work (sweeps, migrations, runs of similar edits) and how you stack commits and PRs. Break work into units that each end in a check, verify each before the next, and order delivery so the sequence proves itself.
+- **Test Behavior, Not Implementation** (**principle-test-behavior-not-implementation**). Writing, changing, reviewing, or keeping a test. Test only at a public seam, the entry a module's outside callers use, at every level, and run libraries for real rather than testing them. Assert the result against a literal expected value. If the test would still pass when every imported function returns `undefined`, rewrite the assertion or delete the test.
 - **Explain the Number** (**principle-explain-the-number**). Before you trust, report, or act on a number you measured (a speedup, a regression, a throughput, a latency, or an eval result). Find what limits it, and rule out that it measured something other than the work you think.
 
 **Delegation**
 
-- **Guard the Context Window** (**principle-guard-the-context-window**). Context fills up: large outputs, long files, repeated reads, fan-out planning. Route bulk to subagents, keep summaries in the main thread.
+- **Guard the Context Window** (**principle-guard-the-context-window**). Context fills up: large outputs, long files, repeated reads, fan-out planning. Follow its scout handoff for bulk inputs and keep summaries in the main thread.
 - **Never Block on the Human** (**principle-never-block-on-the-human**). Tempted to ask "should I do X?" on reversible work. Proceed, present the result, let the human course-correct.
 
 **Meta**
@@ -89,9 +105,9 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Autonomy
 
-**The KPI.** The most excellent, atomic PRs merged at the fastest pace. Spend operator time only on the critical thinking that is theirs to do, and do it early, before autonomous work starts. Everything else runs without them. Each PR opens as a draft at once and goes ready, with auto-merge armed, only when every eval, review, and verification is done. Required checks gate the merge, per **Merging** in `playbooks/opening-a-pr.md`.
+**The KPI.** The most excellent, atomic PRs merged at the fastest pace. An atomic PR has one purpose a reviewer can state in a sentence, not the smallest diff, per **Size and stacks** in `playbooks/opening-a-pr.md`. Spend operator time only on the critical thinking that is theirs to do, and do it early, before autonomous work starts. Everything else runs without them. Each PR opens as a draft and goes ready as soon as independent agent review and end-to-end verification pass, per **Readiness** in `playbooks/opening-a-pr.md`. The builder's runs are evidence, not that verification. CI and the retro never hold readiness. Leave merging to the person unless a `Merging: auto` line asks for auto-merge. Required checks gate merging per **Merging** in that playbook.
 
-**Just do it.** Use any MCP tool. Proceed with work authorized by the user and host. External messages, ticket writes, and eval launches need authority for that action and destination; the plugin grants none.
+**Just do it.** Use any MCP tool. Proceed with work authorized by the user and host. External messages, ticket writes, and eval launches need authority for that action and destination; the plugin grants none. An approval covers only the scope it described, so a rerun that widens that scope names the change and asks again. When another agent will act on the operator's device, ask the operator to type their approval in that agent's thread.
 
 **Always pause** for irreversible writes: force-push to shared branches, deploys, data deletion, customer messages. Also pause before you weaken access control, such as a ruleset bypass or a branch-protection change, and before you create, store, or delete a credential. When a step creates or stores a credential on the person's machine, hand them a one-line command to run themselves rather than running it. A tripwire in a signed spec pauses its slice for a Grill round, per the **align** skill.
 
@@ -101,11 +117,11 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Subagents
 
-**Use the complete bundled `agents/cstack-agent.md` persona prompt, or an existing matching native profile, for implementation delegates inside a playbook step.** The cstack agent must read this skill and its Principles index. Routed workflows (`how`, `why`, `interrogate`, `reflect`, `swarm`) keep their own specialist prompts for diverse review; do not override those with the cstack agent.
+**Use the [builder seat](../../agents/cstack-agent.md) for implementation delegates inside a playbook step, with the existing `build` fallback.** The cstack agent must read this skill and its Principles index. Other workflows name their own seats and carry their own prompts in the brief.
 
-**Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Resolve model and effort through the step's role in the runtime contract: the host model unless a `Models:` block names one. Preserve the workflow's independent review coverage and verify any claimed model diversity.
+**Defaults for every native delegation.** Use the actual tool schema, the least permission needed, and file pointers rather than large inlined context. Name the step's linked seat and compatibility fallback, then follow [Seat delivery](references/runtime.md#seat-delivery) and [Before delegation](references/runtime.md#before-delegation). Resolve model and effort through that seat and the site's existing fallback. Preserve the workflow's independent review coverage and verify any claimed model diversity. When a signed spec or another grant covers the work, cite its path and the sections the delegate must read, and quote any authorization word for word, because a paraphrase can narrow it. Before you delegate, check each file pointer exists at the delegate's base with `git cat-file -e <base>:<path>`.
 
-You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. Use supported status and resumption tools, and include the current constraints on every follow-up. A second opinion is the same prompt against a different model. Agreement is high-signal.
+You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. After a child that edits returns, re-read each file it touched before you edit that file. Use supported status and resumption tools, and include the current constraints on every follow-up. Send a finding that changes the round in progress through the host's interrupt route. Have the builder list each finding as fixed or pending in its completion report. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
 ## Writing the reply
 
@@ -118,7 +134,7 @@ Write the reply clean as you draft it. A cleanup pass after drafting does not re
 - **Frame impact for the consumer and the maintainer.** Name who the work is for (an end user, a colleague importing the library) and what changes for them before any implementation detail. Then what the next engineer who owns this code inherits. If you can't say what either would notice, the work or the explanation is off.
 - **Never fabricate a link, citation, or transcript reference.** Link only artifacts you produced or read this session.
 - **Every claim carries its evidence or its label in the same sentence.** Measured, inferred, relayed, or guess. A figure from another agent is relayed until you check how it was measured, and any count says what it counted. A prediction or an unseen cause is a guess. Never hand the human a check you could run.
-- **Report review results as counts by outcome.** Count fixed, deferred, and rejected findings, and never call a mixed set "all fixed".
+- **Report review results as counts by outcome.** Count fixed, mitigated, deferred, and rejected findings, and never call a mixed set "all fixed". A finding is fixed only when the diff resolves every problem it names. Count a finding with part of it unresolved as deferred, and one closed only by a warning or a doc line as mitigated.
 
 Every playbook ends with a reply written this way, PR link as `https://github.com/<owner>/<repo>/pull/<number>`. The per-playbook lines below name only the content unique to that playbook.
 
@@ -128,7 +144,7 @@ Comments follow the same rule as the reply. Write them clean as you go. Keep a c
 
 ## Playbooks
 
-Open a todolist whose first items are the matched playbook's steps, copied in verbatim, before any task-specific todos. A step you choose not to do stays in the list with a one-line `skip: <reason>`. Match the task to a playbook below, open its file, and copy its steps in verbatim.
+Open a todolist whose first items are the matched playbook's steps, copied in verbatim, before any task-specific todos. A step you choose not to do stays in the list with a one-line `skip: <reason>`. Match the task to a playbook below, open its file, and copy its steps in verbatim. Match again when the task changes type mid-thread, such as a question or a sizing that turns into a build. Before the first branch or edit in any playbook, set up the worktree per **Worktree** in `playbooks/opening-a-pr.md`.
 
 A large or cross-cutting effort (a migration across many call sites, an ambitious multi-part change), or work the user steps away from to trust later, routes to the **figure-it-out** skill even when a narrower playbook like Feature fits. Use **figure-it-out** whenever no bundled playbook fits. It designs a bespoke, rigorous playbook for the task. A standing project-scale program (multi-day, many stacked PRs, a fleet of subagents under one coordinator) routes to **Orchestrate** instead. figure-it-out designs one bespoke run, orchestrate runs the program.
 
@@ -143,7 +159,7 @@ A large or cross-cutting effort (a migration across many call sites, an ambitiou
 - **Prototype.** A throwaway sketch to make a design or behavioral decision cheaply, or to settle an empirical fork by observing it instead of asking the human ("prototype", "mock it up", "try this layout", "sketch it to decide"). `playbooks/prototype.md`.
 - **Visual parity.** Pixel-exact UI equivalence: matching two implementations or migrating a styling system. `playbooks/visual-parity.md`.
 - **Authoring or modifying a skill.** Writing or editing a SKILL.md. `playbooks/authoring-a-skill.md`.
-- **Eval.** Testing how a skill, structure, or prompt change affects agent behavior before promoting it, including headless agent runs that prove a skill or contract change inside Feature or PR work. `playbooks/eval.md`.
+- **Eval.** Testing how a skill, structure, or prompt change affects agent behavior before promoting it, including headless agent runs and any live end-to-end harness that drives a real host CLI or account to prove a skill, hook, or contract change inside Feature or PR work. `playbooks/eval.md`.
 - **Babysit.** Driving a PR or a stack to merge-ready: conflicts, review threads, CI. `playbooks/babysit.md`.
 - **Shipping.** The half after Babysit. Independently verifying a green stack, then landing the contiguous verified run bottom-up through `gh` by default or Origin when its CLI is available. `playbooks/shipping.md`.
 - **Autonomous run.** A long task to drive to completion without stopping ("run until done", "keep going until X"). `playbooks/autonomous-run.md`.

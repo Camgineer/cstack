@@ -75,7 +75,7 @@ await page.screenshot({ path: "<tmp-dir>/ui-harness-cdp.png", fullPage: true });
 await browser.close();
 ```
 
-Replace `<app-root-selector>` with a stable marker from the current repo, such as a root app node, a landmark, or a product-specific `data-*` attribute. Replace `<tmp-dir>` with a temporary directory outside the repo.
+Replace `<app-root-selector>` with a stable marker from the current repo, such as a root app node, a landmark, or a product-specific `data-*` attribute. Replace `<tmp-dir>` with `tmp/<task>/` inside the project, per [Scratch files](../cstack-mode/SKILL.md#scratch-files).
 
 ## Interaction loop
 

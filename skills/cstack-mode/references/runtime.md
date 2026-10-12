@@ -5,6 +5,7 @@ Read this contract before running a workflow from this plugin. Then read the hos
 - Claude Code: [hosts/claude-code.md](hosts/claude-code.md)
 - Codex: [hosts/codex.md](hosts/codex.md)
 - Cursor: [hosts/cursor.md](hosts/cursor.md)
+- Intent: [hosts/intent.md](hosts/intent.md)
 
 Identify the harness from your own tool list and system prompt. In the host notes, `<plugin>` stands for the `name` field of the plugin manifest you were loaded from. When none of the notes fits, apply this contract alone and inspect the tools you have.
 
@@ -16,23 +17,56 @@ Each workflow uses these capabilities by name. Use the native tool the host note
 
 | Capability | Meaning in a workflow |
 | --- | --- |
-| **Delegate** | Spawn a subagent with a brief, a role, and a scope. Check its status, wait for it, and resume it. |
-| **Ask** | Put a structured question with options to the user. |
+| **Delegate** | Spawn a subagent with a brief, a seat, and a scope. Check its status, wait for it, and resume it. |
+| **End a subagent** | End a finished subagent through the host's lifecycle mechanism. |
+| **Ask** | Put a structured question with options to the user. For grill and align rounds, follow [grill-with-docs](../../grill-with-docs/SKILL.md). |
+| **Shared document** | Keep a document the people in the conversation can read and comment on. Read authors and replies, reply in a thread, close it, and watch for new comments. |
 | **Plan** | Keep a visible todolist of the workflow's steps. |
+| **Track work** | Create, read, and update work items that remain available across sessions. Each item has an identifier, a status, and its source. A session todolist alone does not supply this capability. |
 | **Invoke a skill** | Load a bundled skill by name with the host's skill mechanism, then follow it. A workflow step that names a skill ("invoke `how`", "the **how** skill") is a call to make at that step, not background reading. The step is done only when the skill is loaded, or when the reply records `skip <skill>: <reason>`. A `principle-*` skill is the exception: read its `SKILL.md` file. |
 | **History** | Read authorized past conversations for the current project. |
 | **Continue later** | Wake the work again after the current task ends. |
 | **Generate an image** | Make an image file from a prompt with the host's built-in image tool. |
 
-When a capability is missing, say which workflow step it blocks. Keep going with the steps that do not need it. Never claim a check ran when its capability was missing.
+When a capability is missing, use the workflow's stated fallback. Without a fallback, say which step it blocks. Keep going with the steps that do not need it. Never claim a check ran when its capability was missing.
+
+## Project task file
+
+Use this route only when the host note maps **Track work** to a project task file. When the host note selects a lasting native task list, use that list and write no task file.
+
+Read the project instructions file the host loads for a `Retro task file: <project-relative path>` line. Before proposing a write, inspect that file and resolve any symlink so the question names the actual destination. When the pointer is absent, ask the person once for a lasting path in the project, outside scratch. In that question, propose the task-file path and disclose both writes. Name the instructions file and show the exact `Retro task file: <proposed path>` line to append there. If the instructions file says it is generated, ask where the pointer should go in that same question. Record the agreed path in the agreed instructions source before appending items, and preserve its other content. Reuse the path in later sessions. Open no forge issue for these items.
+
+Append each item as an unchecked Markdown task with a stable identifier, the lesson, the target file, and the retro link or identifier. Preserve existing content. Read the file to find existing items and to confirm each write. Update an item's checkbox and base-commit evidence at that same path when it is complete. The task file and pointer line travel in the lessons PR when the retro opens one; otherwise the retro makes no commit and tells the person both paths are uncommitted and must reach the base branch for a later session to find them.
 
 ## Delegation
 
-Give each child the least permission it needs. Investigators get read-only scope for both files and connected apps. A filesystem sandbox does not grant connector write authority. Assign exclusive writable paths or isolated worktrees before parallel edits. If the spawn tool has no working-directory field, name the prepared worktree in the brief and have the child verify its directory before writing. Schedule lanes within actual capacity and report any missing coverage.
+Give each child the least permission it needs. Investigators get read-only scope for repository files and connected apps. Read-only scope protects repository files and connected apps. An agent with read-only scope still runs local checks, and runs probes in `tmp/<task>/` inside the project, within the brief's allowed paths, per [Scratch files](../SKILL.md#scratch-files). A filesystem sandbox does not grant connector write authority. Assign exclusive writable paths or isolated worktrees before parallel edits. If the spawn tool has no working-directory field, name the prepared worktree in the brief and have the child verify its directory before writing. Schedule lanes within actual capacity and report any missing coverage.
 
-The bundled personas live in `agents/` at the plugin root. `agents/cstack-agent.md` is the implementation delegate. It must read CStack Mode and its Principles index. `agents/comment-sicko.md` is the comment reviewer. When the host registers plugin agents, spawn them by name. Otherwise pass the complete persona file as the child's instructions. Routed workflows such as How, Why, Interrogate, and Reflect use their own specialist reference prompts.
+The seat files live in `agents/` at the plugin root. `agents/cstack-agent.md` is the builder and reads the mode. The lead runs the mode, and each thin seat sets it aside for the brief. `agents/comment-sicko.md` stays a prompt to carry in a worker's brief. Each delegation site links its seat to that file and carries its workflow prompt in the brief. Use Markdown labels of the form `[worker seat]` so the host reference check can validate the target. A caller-selected site names its default. Before each handoff, apply [Before delegation](#before-delegation) and [Seat delivery](#seat-delivery). A blinded test subject takes no seat and receives only its organic task prompt. The image command is outside seat delegation.
+
+Make the intended operation explicit in the brief. For a reading task, say whether it answers a question, digests material too large for the parent's context, or watches an event. For a writing task, say whether it produces a candidate within assigned paths or implements a repository change under a plugin playbook. These distinctions select investigator versus scout and worker versus builder without changing their descriptions.
 
 Reuse a child only when the host reports it resumable. Read its status without waking or duplicating it. Each follow-up carries the current objective, constraints, and evidence pointers. The parent reviews results and resolves disagreements.
+
+The agent that starts a subagent ends it once its work is done and its result is read and recorded in the owning shared document or the repository. End your own children before you end yourself. Leave agents you did not start and agents whose results are not yet recorded alone. If the host cannot end a subagent, report each one left by name.
+
+### Before delegation
+
+Resolve the step's runner first. Check that you can start it within your capabilities, depth, and permissions, and that it has the capabilities the step needs. A command runner and a native runner may have different capabilities. Follow the host note for the check, and make no call that the host will refuse.
+
+When delegation is unavailable, use the workflow's own fallback. Do the step yourself only when that fallback permits it. A builder never replaces its independent review or verification with a review of its own work. It keeps the PR a draft and returns the missing gate as not run. A verifier never replaces a fresh test subject by doing the subject's task itself. When it cannot start subjects, it writes its blinded cases as not run and returns the cases and the missing lane to its parent. The parent starts fresh subjects from those cases and returns their runs to the verifier to judge. A verdict whose main behavior was not run does not pass. With no permitted fallback, return the missing lane and its evidence to your parent, or name them in your reply when you have no parent. Continue the steps that do not need that lane, and record its check as not run.
+
+A delegated agent that reaches a decision only a person can make raises the decision to its parent or through the host's escalation route, then ends its turn. It asks the person no structured question itself.
+
+### Seat delivery
+
+Start a registered seat by name through its host note. When the host does not register the plugin's seats, or the requested seat is not available, pass the seat's whole file, frontmatter included, in the brief. Builder's file is `agents/cstack-agent.md`, and each other seat's file is `agents/<seat>.md`. Carry the workflow's own prompt in the brief on every host.
+
+On a host that registers the plugin's seats, when a seat the person must set up is unavailable, say this sentence verbatim in the reply:
+
+> The `<seat>` seat is not set up here, so I passed its instructions directly, and you need to run the plugin's setup to configure it.
+
+Replace `<seat>` with the seat name. Name all affected seats in one sentence, using plural wording when several are not set up. An agent with no person to reply to uses the same sentence in its report. Whole-file delivery on a host that does not register the plugin's seats is its normal route and does not imply missing setup.
 
 ## Model roles
 
@@ -46,29 +80,52 @@ Models:
 
 A command runner runs on the person's machine, so only the person's own file may name one. A project's block may hold only `native` lines. For each role, a project's `native` line wins, then the person's line, then the host's model. Ignore a project line that names a command, and report it.
 
-| Role | Steps that use it |
-| --- | --- |
-| `build` | Implementation delegates, such as the cstack agent a playbook hands a fix or a slice, and arena runners |
-| `review` | The fresh-context reviewer in Readiness, each interrogate seat, arena's cross-judge, the verifiers in Shipping, Autopilot-full, and Orchestrate, and show-me-your-work's hand-back check |
-| `advisor` | The second opinion in align's Advise step, a tripwire's re-sign, and a one-way door in the Autonomous run |
-| `image` | The Image generation playbook, on hosts whose note maps no **Generate an image** capability. It has no host-model fallback. |
+Legacy roles remain compatibility keys for seated calls. `build` covers implementation and Arena candidates. `review` covers finished-change review and verification. `advisor` covers work assigned to the [advisor seat](../../../agents/advisor.md). `image` covers an image command on hosts with no image capability and has no host-model fallback.
+
+The seat table is generated from agent frontmatter by `sync:hosts`. Its `seat` keys mean:
+
+- `tier` selects the **Setup asks** group. `main` uses the person's main model, while `none` requires an explicit ungrouped choice. The other values name model groups.
+- `fallback` selects **Fallback on other hosts**. `none` uses the host's model, and `site` keeps the caller's existing role, including no role. The other values name legacy roles. Lead is not delegated to.
+- `menu` adds **with a menu** to **Setup asks**. It is true only for reviewer and verifier. The delegating agent selects entries as the panel rule below says.
+- `writes` selects **May write**, with the boundary stated in the seat's body.
+
+These keys generate the table. They do not configure specialists or enforce filesystem permissions. Setup supplies an explicit provider, model, and effort for every seat.
+
+<!-- seats:start -->
+| Seat | Specialist id in Intent | Setup asks | Fallback on other hosts | May write | Use when |
+| --- | --- | --- | --- | --- | --- |
+| `lead` | `cstack-lead` | The person's main model | Not delegated to | Yes | A person starts a workspace and wants the mode to run the work. It is the agent they talk to, and it hands steps to the other seats. |
+| `builder` | `cstack-agent` | build | `build` | Its own branch and the paths the brief names | The child implements a change to the repository's code or branches, or runs one of the plugin's playbooks, so it must work under the plugin's mode. |
+| `worker` | `cstack-worker` | build | The role each site resolves to today | Only the directory or paths the brief names | The child needs only your brief and not the plugin's mode. It writes a candidate or a report to a path you name, or strips comments from a diff with the persona your brief carries. Not for a blinded test subject, which takes no specialist. |
+| `investigator` | `cstack-investigator` | Explicit choice | The host's model | No | The child reads and reports back, and changes nothing. It answers a question from source, history, or connected apps, merges what other children found, or returns lessons or open questions about a session or a draft. |
+| `reviewer` | `cstack-reviewer` | review, with a menu | The role each site resolves to today | No | The child reads a finished diff, candidate, screenshot, or run that it did not make, and returns its defects or a verdict. |
+| `verifier` | `cstack-verifier` | review, with a menu | `review` | Commands, and one verdict or ledger row. No source edits | The child proves behavior by running the gates, the app, or a recipe, and records the result. |
+| `advisor` | `cstack-advisor` | advisor | `advisor` | No | You want a second opinion on a spec or before a step you cannot undo. Use when the lead reverses a limit in its own brief, gives code a power to delete or overwrite, or a fix adds a mechanism. Run beside the builder. |
+| `scout` | `cstack-scout` | fast | The host's model | No | A step has a pass or fail result that needs no judgment, a lookup has one right answer, an input is too large for your context, or you are waiting on an event. You need back a result, a digest, or a wake-up. The child changes nothing. |
+<!-- seats:end -->
+
+On Intent, delegate by seat specialist as the host note says. Seat specialists replace role-based model routing there. On other hosts a `Models:` line may name a seat or a legacy role. Resolve a seat line first, with the project's `native` line before the person's line. Without a seat line, resolve the caller's existing role exactly as before. A site names its compatibility role only when it has one. With none named, it keeps no legacy role. Preserve any explicit model constraint the site carries separately from that role. That site fallback wins over the seat's setup tier and table fallback, including a site with no legacy role. A caller with no role stays on the host's model. Swarm keeps each caller's fallback, or no legacy role when none is named. A seat changes no model by itself.
+
+Keep the command-runner boundary for seat lines too. A project line can name only `native`. Ignore and report a project command line, then consider the person's line. Intent uses the configured specialist instead of a `Models:` block for a seated call.
 
 Each line is `<role>: <runner>, <option>, ...`. The runner is `native`, the host's own Delegate capability, or a command that runs another agent CLI, such as `codex exec`, `claude -p`, or `cursor-agent -p`. Options are `model <id>`, `effort <level>`, `fast`, and any other setting the runner documents. An option left out takes the runner's default. A role can list several runners separated by `;`. A single step uses the first. A panel or a set of lanes gives one runner to each seat in order, and the seats left over run on the host's model, so a `review` line with one runner fills one interrogate seat and the host fills the other two.
 
-Resolve a role before each delegated step:
+On hosts that resolve `Models:` lines, resolve a role or a seat before each delegated step:
 
 1. With no line for the role, delegate on the host's model, as the workflow did before roles existed.
 2. With `native`, delegate and pass the model and effort through the fields the host note names. Report any option the host cannot apply.
-3. With a command, run it non-interactively in the step's working directory or assigned worktree. Write the brief a native delegate would get to a file, with the full text of the persona file when the step names one, and pass it by path or on stdin, never inline on the command line. Close stdin when the brief does not use it. The brief states the step's scope, such as review only for a `review` step, and tells the runner to do the work itself without resolving roles again. Read the runner's `--help` for its print mode and its model, effort, and speed flags, and put a value it has no flag for in the brief. Pass the sandbox and approval flags the line names, plus the write access the step needs, such as file edits for a `build` step. Its final message is the delegate's result.
-4. The runner failed when it is missing, signed out, rejects the model, is denied by host permissions or an approval prompt, waits for input, ends without a final message, or lacks a tool the step needs. A failed runner is a missing lane, never a pass. Discard any edits it left, run the step on the host's model, and name the missing lane in your report and in the PR's evidence.
+3. With a command, run it non-interactively in the step's working directory or assigned worktree. Write the brief a native delegate would get to a file, with the whole seat file and workflow prompt per [Seat delivery](#seat-delivery), and pass it by path or on stdin, never inline on the command line. Close stdin when the brief does not use it. The brief states the step's scope, such as review only for a `review` step, and tells the runner to carry out the assigned step under [Before delegation](#before-delegation), including its required independent handoffs, without resolving roles again. Read the runner's `--help` for its print mode and its model, effort, and speed flags, and put a value it has no flag for in the brief. Pass the sandbox and approval flags the line names, plus the write access the step needs, such as file edits for a `build` step. Its final message is the delegate's result.
+4. The runner failed when it is missing, signed out, rejects the model, is denied by host permissions or an approval prompt, waits for input, ends without a final message, or lacks a tool the step needs. A failed runner is a missing lane, never a pass. Discard any edits it left, retry the same handoff on the host's model under [Before delegation](#before-delegation), and name the missing lane in your report and in the PR's evidence.
 
 Model ID and reasoning effort are separate choices. A requested model is not proof of served identity. Report identity only when host metadata or the runner's output establishes it. Never guess a provider slug.
 
-A panel keeps its default three seats unless the user selected another size. A panel with no role, such as swarm workers or architect runners, uses the host's model unless the user names models for that run. Call a panel model-diverse only when its seats resolve to different model families, and report a panel whose seats share one family. Independent prompts alone do not make a panel diverse. When the user asks for diversity the host and roles cannot provide, report that and get their choice between a reduced panel and waiting. Treat a rejected model ID as a missing lane.
+A review panel starts the reviewer seat once per panel entry. Each workflow supplies the prompt and any assigned angles. The delegating agent selects a different entry from its model menu on each call, as the host note says. A reviewer never delegates. Keep the existing menu overflow rule, which uses the host's model for lanes past the menu. For more thoroughness, request more passes from different angles, never more effort.
+
+A panel keeps its default three seats unless the user selected another size. A panel with no legacy role uses the host's model unless the user names models for that run. Call a panel model-diverse only when its seats resolve to different model families, and report a panel whose seats share one family. Independent prompts alone do not make a panel diverse. When the user asks for diversity the host and roles cannot provide, report that and get their choice between a reduced panel and waiting. Treat a rejected model ID as a missing lane.
 
 ## Skills, resources, and writing
 
-Resolve bundled paths from the loaded skill directory or plugin root, independent of the consumer project's working directory. When the host note names no other way to find the plugin root, take it from a loaded skill: its `SKILL.md` sits at `<root>/skills/<name>/SKILL.md`, so the root is two levels above that file. In CStack Mode playbooks, `playbooks/`, `references/`, and `scripts/` are relative to `skills/cstack-mode/`. Material written into another project must use resolved absolute paths or Markdown links back to the installed resources. Keep consumer source-control paths separate from plugin paths. Keep installed plugin files immutable.
+Resolve bundled paths from the loaded skill directory or plugin root, independent of the consumer project's working directory. When the host note names no other way to find the plugin root, take it from a loaded skill: its `SKILL.md` sits at `<root>/skills/<name>/SKILL.md`, so the root is three levels above that file, or two levels above the skill's directory. In CStack Mode playbooks, `playbooks/`, `references/`, and `scripts/` are relative to `skills/cstack-mode/`. Material written into another project must use resolved absolute paths or Markdown links back to the installed resources. Keep consumer source-control paths separate from plugin paths. Keep installed plugin files immutable.
 
 The host note names two skill directories. In workflows, `<project-skills>` stands for the project skill directory and `<user-skills>` for the personal one. Write project-authored skills, such as a verification skill, under `<project-skills>`. Use `<user-skills>` only when the user chooses personal scope.
 
@@ -94,4 +151,4 @@ Qualify each environment (local CLI, desktop app, cloud task) with its own evide
 
 ## Helpers
 
-The Bun helpers provide bookkeeping and PR watching. They need an existing Bun runtime and their declared dependencies in an owned working copy. Discovery and startup never install them. `watch-pr` also needs authorized `gh` access. The Orchestrate stack frontier needs Graphite and its local stack metadata. Without those, report that capability as unavailable. A plain GitHub base-ref list does not establish the same frontier.
+The Bun helpers provide bookkeeping and PR watching. `check-receipt.ts` needs only Bun and Git and runs directly from the installed copy. The other helpers need an existing Bun runtime and their declared dependencies in an owned working copy. Discovery and startup never install them. `watch-pr` also needs authorized `gh` access. The Orchestrate stack frontier needs Graphite and its local stack metadata. Without those, report that capability as unavailable. A plain GitHub base-ref list does not establish the same frontier.

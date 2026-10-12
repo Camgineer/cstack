@@ -7,7 +7,6 @@ import {
 } from "commander";
 import {
   GhGitHubReader,
-  WatcherQueryError,
   discoverStack,
   resolveContext,
 } from "./github.ts";
@@ -20,8 +19,8 @@ import {
 } from "./policy.ts";
 import { renderJson, renderPretty } from "./render.ts";
 import type * as T from "./types.ts";
-import { nonEmpty, parsePrNumber } from "./types.ts";
-export interface CliOptions {
+import { WatcherQueryError, nonEmpty, parsePrNumber } from "./types.ts";
+interface CliOptions {
   readonly owner: string | null;
   readonly repo: string | null;
   readonly pr: T.PrNumber | null;
@@ -79,7 +78,7 @@ interface RawOptions {
   readonly allowDraft: boolean;
   readonly pretty: boolean;
 }
-export function parseArgs(
+function parseArgs(
   argv: readonly string[],
   io: Pick<CliRuntime, "stdout" | "stderr">
 ): CliOptions {

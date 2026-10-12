@@ -1,4 +1,11 @@
 {
   "version": 1,
-  "hooks": {}
+  "hooks": {
+    "sessionStart": [
+      { "command": "sh \"${CURSOR_PLUGIN_ROOT}/hooks/mode.sh\" session-start cursor", "timeout": 10 }
+    ],
+    "beforeSubmitPrompt": [
+      { "command": "sh \"${CURSOR_PLUGIN_ROOT}/hooks/mode.sh\" prompt cursor", "timeout": 10 }
+    ]
+  }
 }

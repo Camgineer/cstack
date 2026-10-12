@@ -103,6 +103,6 @@ For richer terminal control, use `pty.fork()` or an existing PTY library.
 
 - Wait on a screen pattern or prompt. When a fixed sleep is unavoidable, say why.
 - Keep credentials and destructive commands out of a controlled session.
-- Keep the harness in a temporary directory outside the repo unless the repo already has a testing or demo harness.
+- Keep a temporary harness in `tmp/<task>/` inside the project, per [Scratch files](../cstack-mode/SKILL.md#scratch-files). Reuse the repo's own testing or demo harness when it exists.
 - Adapt commands to the current repo's scripts and runtime.
-- Clean up tmux sessions, temporary directories, inspector processes, and demo artifacts unless the user asks to keep them.
+- Clean up tmux sessions and inspector processes unless the user asks to keep them. Follow [Scratch files](../cstack-mode/SKILL.md#scratch-files) for harness and artifact cleanup.

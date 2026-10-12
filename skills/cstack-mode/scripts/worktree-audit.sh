@@ -4,7 +4,8 @@
 # with a suggested bucket. Never deletes anything; deletion stays a
 # human-gated step in the playbook.
 #
-# Usage: worktree-audit.sh [repo-path]   (defaults to the current repo)
+# Usage: worktree-audit.sh [repo-path] [scratch-directory]
+# Defaults to the current repo and its tmp/worktree-audit folder.
 set -u
 
 repo="${1:-$(git rev-parse --show-toplevel 2>/dev/null)}"
@@ -19,7 +20,9 @@ base=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || 
 echo "note: using local $base; merged column may be stale" >&2
 
 # PR state by branch, fetched once. Empty if gh is unavailable.
-prs=$(mktemp)
+scratch_dir="${2:-tmp/worktree-audit}"
+mkdir -p "$scratch_dir" || exit 1
+prs=$(mktemp "$scratch_dir/prs.XXXXXX") || exit 1
 gh pr list --author "@me" --state all --limit 1000 \
 	--json number,state,headRefName 2>/dev/null > "$prs" || echo "[]" > "$prs"
 command -v jq >/dev/null 2>&1 || echo "warning: jq not found; PR column shows '-' for every worktree" >&2

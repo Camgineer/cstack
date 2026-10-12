@@ -148,32 +148,47 @@ function parseUser(input: unknown): User {
 
 Use `safeParse` when failure is an expected branch. Use the equivalent inference helper when the repository uses another schema library. Do not add a new schema dependency for one guard. This rule prefers the schema system the codebase already trusts.
 
+When the type comes first, such as a shared contract type, annotate the schema with the type it proves. The compiler then rejects a schema that proves less than the type, unless a field is `z.any()`. Remove `role` from the schema below and the assignment fails to compile.
+
+```ts
+type User = { id: string; role: "admin" | "member" };
+
+const UserSchema: z.ZodType<User> = z.object({
+  id: z.string().uuid(),
+  role: z.enum(["admin", "member"]),
+});
+```
+
 ## No `as` casts
 
 Every `as` is a potential runtime crash. Cast only after the type system has verified the claim.
 
 ```ts
 // Don't
-const user = data as User;
+const account = data as Account;
 
-// Do. Earn the cast at the boundary.
-function parseUser(data: unknown): User {
-  if (typeof data !== "object" || data === null) {
-    throw new Error("expected object");
+// Do. With no schema library, build the value from checked fields, so no cast remains.
+type Account = { id: string; name: string };
+
+function parseAccount(data: unknown): Account {
+  if (typeof data !== "object" || data === null || !("id" in data) || !("name" in data)) {
+    throw new Error("expected a user object");
   }
-  if (!("id" in data) || typeof (data as Record<string, unknown>).id !== "string") {
-    throw new Error("expected id");
+  const { id, name } = data;
+  if (typeof id !== "string" || typeof name !== "string") {
+    throw new Error("expected string id and name");
   }
-  // ... validate all fields
-  return data as User; // OK, earned cast after full validation
+  return { id, name };
 }
 ```
+
+The compiler checks every field of the returned value. Drop either `name` check and the return no longer compiles. A cast after a partial check compiles either way. This narrowing needs TypeScript 4.9 or later.
 
 When refactoring an `as` out of existing code, identify why TypeScript can't infer:
 
 - Missing discriminant: add one, switch to a discriminated union.
 - Overly wide source type (e.g. `Record<string, unknown>`): narrow it.
-- Untyped boundary: add a parse function or schema.
+- Untyped boundary: parse with the schema that owns the shape. Add a schema or parse function only where none exists.
 - Genuinely inexpressible: use a branded type or `satisfies`.
 
 ## Narrowing hierarchy

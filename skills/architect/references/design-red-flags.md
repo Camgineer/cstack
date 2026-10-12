@@ -34,7 +34,7 @@ Remove it or move responsibility to the module that can complete the operation. 
 
 ## Hypothetical seam
 
-A seam with one adapter is indirection, not a seam. Two adapters, typically production and test, make it real. Remove a port or interface that nothing varies across. Keep a module's internal seams private, even when its own tests use them.
+A seam with one adapter is indirection, not a seam. Two adapters, typically production and test, make it real. Remove a port or interface that nothing varies across. Keep a module's internal seams private, and test the module through its public interface per [Test Behavior, Not Implementation](../../principle-test-behavior-not-implementation/SKILL.md).
 
 Run the deletion test on each module. Imagine it deleted. If its complexity vanishes, it was a pass-through. If the complexity reappears across its callers, it earns its place.
 

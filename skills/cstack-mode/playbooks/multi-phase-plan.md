@@ -4,13 +4,13 @@
 
 1. When the change is one or two files with an obvious approach, skip the plan. Say so and stop.
 2. Settle open questions by prototype before you write. Run `playbooks/prototype.md` for each. Keep the branch, the SHA, and the screenshots for Appendix A. Ask the operator only about a product or preference call that no run can settle. Give options (the **never-block-on-the-human** principle skill).
-3. Explore in subagents with the complete bundled CStack persona per the runtime contract and a supported model choice per the Subagents section (the **guard-the-context-window** principle skill). Each returns file pointers, conventions, test commands, and entry points. No inlined dumps.
-4. Copy the skeleton below into the plan file and fill every placeholder. Unless the operator names a path, use an owned workspace path outside tracked source and report it. Keep every heading and every sub-block in the order shown. One section per PR. One PR is one change with its own evidence (the **sequence-verifiable-units** principle skill). Name the execution playbook in **How to read this**. Pick between `playbooks/autopilot-full.md` and `playbooks/autopilot-stack.md` per the rule at the end of `playbooks/autopilot-stack.md`. A standing program takes `playbooks/orchestrate.md`.
+3. Explore with the [investigator seat](../../../agents/investigator.md) carrying the source scope and requested return shape in its brief (the **guard-the-context-window** principle skill). Each returns file pointers, conventions, test commands, and entry points. No inlined dumps.
+4. Copy the skeleton below into the plan file and fill every placeholder. Resolve every bundled Markdown link against this playbook before copying it, then write its absolute installed path in the plan. Keep links to consumer files relative to the plan. Unless the operator names a path, use an owned workspace path outside tracked source and report it. Keep every heading and every sub-block in the order shown. One section per PR. One PR is one purpose with its own evidence, per **Size and stacks** in `playbooks/opening-a-pr.md`. Name the execution playbook in **How to read this**. Pick between `playbooks/autopilot-full.md` and `playbooks/autopilot-stack.md` per the rule at the end of `playbooks/autopilot-stack.md`. A standing program takes `playbooks/orchestrate.md`.
 5. Write under `technical-writing` in full, then `simple-as-prose`. The body is one Diátaxis mode, how-to. Appendices hold explanation and reference. Each heading states the task or the finding. No long dashes. No mid-sentence colons.
 6. Resolve the installed plugin root, then run `bun "<resolved-plugin-root>/skills/cstack-mode/scripts/check-plan.ts" "<plan.md>"` and fix every line it prints (the **encode-lessons-in-structure** principle skill).
 7. Hand back. Post the plan path and the script's output, then stop. Execution starts on the operator's explicit go, under the execution playbook the plan names.
 
-**Verification.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked (the **prove-it-works** principle skill). That sentence is the verification rule. Every verification block opens with it. The live block is mandatory. Ten lanes at the PR head drive the real surface through its control skill, per the **swarm** skill, on the `swarm workers` model. Each lane is one box with a concrete scenario, the screenshot it saves, and its pass predicate. One lane is the **Regression lane against trunk.** It runs the same load-bearing scenario on trunk and head. If trunk does not have the feature, the lane records that fact and gates the behavior the diff adds plus the end state the user waits for instead of inventing a trunk result. The perf gate is dual-sided. Trunk and head must both produce the named metric. If trunk lacks the feature, also isolate the work the diff adds and set an absolute budget for that work plus the end-to-end state the user waits for. Do not claim a ratio between unlike scenarios. The perf block names the metric, the interleaved probe, the trunk baseline measured first, and the rule with the number that fails. A PR that changes an interaction is review-gated. The operator reviews it in chat with screenshots and a video before merge. A PR that changes no interaction writes `**Review gate.** None. <PR id> is not review-gated.` and no boxes under it.
+**Verification.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked (the **prove-it-works** principle skill). That sentence is the verification rule. Every verification block opens with it. The live block is mandatory. Ten lanes at the PR head drive the real surface through its control skill, per the **swarm** skill, each using the [verifier seat](../../../agents/verifier.md). Carry the scenario, evidence path, and pass predicate in its brief. Each lane is one box with a concrete scenario, the screenshot it saves, and its pass predicate. One lane is the **Regression lane against trunk.** It runs the same load-bearing scenario on trunk and head. If trunk does not have the feature, the lane records that fact and gates the behavior the diff adds plus the end state the user waits for instead of inventing a trunk result. The perf lane uses the [verifier seat](../../../agents/verifier.md) carrying the metric, probe, and result boundary in its brief. The perf gate is dual-sided. Trunk and head must both produce the named metric. If trunk lacks the feature, also isolate the work the diff adds and set an absolute budget for that work plus the end-to-end state the user waits for. Do not claim a ratio between unlike scenarios. The perf block names the metric, the interleaved probe, the trunk baseline measured first, and the rule with the number that fails. A PR that changes an interaction has an operator review gate for merging. Mark it ready when its two agent gates pass. The operator reviews it in chat with screenshots and a video before merge. A PR that changes no interaction writes `**Review gate.** None. <PR id> is not review-gated.` and no boxes under it.
 
 **Control skill.** Pick it by surface. Browser, Electron, and web UIs use `control-ui`. CLIs and TUIs use `control-cli`. A project verification skill from **create-verification-skill** can stand in for either. Native mobile uses whatever simulator-driving skill the repo has. A PR that touches two surfaces gets lanes on both. A surface with no control skill is a risk in Appendix C, and its live block still names how each lane drives it.
 
@@ -23,7 +23,7 @@
 
 One box is one unit of work. Every box names the evidence that checks it. A nested box is a sub-step of the box above it. Check a box only when its evidence exists, a file, a log line, a screenshot, a test run, or a SHA. The body is a how-to. The appendices explain and record.
 
-The program runs the installed `playbooks/<execution playbook>.md`. Record its resolved path below. <Who merges, and which PR ids are the operator's items that stop at merge-ready.>
+The program runs the installed `playbooks/<execution playbook>.md`. Record its resolved path below. <Who merges, and which PR ids wait for the operator's click after agent-approved readiness. Their owners continue the loop until CI passes.>
 
 Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
@@ -41,18 +41,18 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 
 ### Spawn owners
 
-- [ ] Spawn one owner per PR with the full lifecycle the execution playbook names.
+- [ ] Spawn one owner per PR through the [builder seat](../../../agents/cstack-agent.md), with the `build` fallback and full lifecycle the execution playbook names.
 - [ ] Follow this dependency graph. Start dependent work only after its parent merges, or base it on the parent branch when the execution playbook stacks.
   - [ ] <PR id> and <PR id> are independent and first. Both branch from `main`.
   - [ ] <PR id> after <PR id>.
 - [ ] Hold the file boundaries. <PR id or class> touches only `<glob>`.
-- [ ] Land each registry that several PRs extend, such as a table, an enum, or an index, in its full shape in the lowest PR, so each child fills only its own rows.
-- [ ] Hold the review gate. <PR ids> change an interaction. They wait for the operator's review in chat with screenshots and a video before merge.
+- [ ] Land each registry that several PRs extend, such as a table, an enum, or an index, in the lowest PR with its first row and that row's caller, so each child adds only its own rows.
+- [ ] Hold the merge review gate. <PR ids> change an interaction. They wait for the operator's review in chat with screenshots and a video before merge, while agent-approved PRs are ready.
 
 ### PR mechanics, for every PR
 
 - [ ] Resolve the forge once per **Forge** in `playbooks/opening-a-pr.md`. Record the backend and any unavailable operations. CLI-only helpers still require their declared dependencies.
-- [ ] Open the PR as a draft with `gh pr create --draft --base <base-branch>`, or the Origin equivalent, according to the resolved forge. Mark it ready only when it is merge-ready per **Readiness** in `playbooks/opening-a-pr.md`. A stack child targets its parent branch.
+- [ ] Open the PR as a draft with `gh pr create --draft --base <base-branch>`, or the Origin equivalent, according to the resolved forge. Mark it ready as soon as independent agent review and end-to-end verification pass per **Readiness** in `playbooks/opening-a-pr.md`. CI, the retro, and the operator's merge decision do not hold readiness. Auto-merge needs a `Merging: auto` line. A stack child targets its parent branch.
 - [ ] Run the repo's lint and typecheck once before the PR-facing push. Push with hooks on.
 - [ ] Run an available prose/code cleanup equivalent before each commit and `no-comments` before review.
 - [ ] When review bots (Bugbot or equivalent) or the security reviewer comment, triage each comment per `../references/bugbot-triage.md`.
@@ -60,7 +60,7 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 
 ### Verdict and merge, for every PR
 
-- [ ] At the code-ready head SHA and at each later push that changes the patch, run the swarm per the resolved installed Swarm skill. One gates lane. The ten live lanes from the PR's **Verify, live** block. The perf lane from its **Verify, perf** block. Two or more audit lanes, each with its own focus, that read the diff and the receipts and distrust the PR body. The root audits the receipts in the loop-green report before the verdict.
+- [ ] At the code-ready head SHA and at each later push that changes the patch, run the swarm per the resolved installed Swarm skill. One [scout seat](../../../agents/scout.md) for the mechanical gates. The ten [verifier seat](../../../agents/verifier.md) live lanes from the PR's **Verify, live** block. The [verifier seat](../../../agents/verifier.md) perf lane from its **Verify, perf** block. Two or more [reviewer seat](../../../agents/reviewer.md) audit lanes, each with its own focus, that read the diff and the receipts and distrust the PR body. Only the audit lanes use the `review` fallback. The root audits the receipts in the loop-green report before the verdict.
 - [ ] Clean only when every lane is `PASS`. Findings go back to the owner, including a defect that a lane filed as a note. A new head gets a fresh swarm and a fresh verdict, except for results that stay valid under the patch-id rule in `playbooks/shipping.md`.
 - [ ] After a fix to a lower PR, list each upper PR whose live evidence used the input the fix changed, and rerun that evidence before you report it.
 - [ ] <The merge or append rule from the execution playbook, with the patch-id rule from `playbooks/shipping.md`.>
@@ -73,7 +73,7 @@ Each live lane owns an isolated worktree at the PR head. Worktrees isolate files
 - [ ] `git fetch origin <head-branch> && git checkout <head SHA>`.
 - [ ] <Start the backend and the surface. Wait for ready.>
 - [ ] <Deliver input only through the control skill's commands. Name the read-only diagnostics.>
-- [ ] Save every screenshot to `/tmp/swarm-<pr-id>/worker-<n>/<slug>.png` and return the paths with the report.
+- [ ] Save every screenshot to `tmp/<task>/swarm-<pr-id>/worker-<n>/<slug>.png` inside the project and return the paths with the report, per [Scratch files](../SKILL.md#scratch-files).
 
 ## <Task as a verb phrase> (<PR id>)
 
@@ -97,7 +97,7 @@ Each live lane owns an isolated worktree at the PR head. Worktrees isolate files
 
 - [ ] <Test file and the case it gains.> Run `<command>`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `<swarm workers model>` at the PR head, per the boot recipe.
+**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten verification lanes at the PR head, per the boot recipe.
 
 - [ ] Lane 1. Regression lane against trunk. Run <the same load-bearing scenario> at trunk and head. If trunk lacks the feature, record that and gate <the behavior the diff adds plus the end state the user waits for>. Save `<slug>.png`. Pass when <predicate>.
 - [ ] Lane 2. <Scenario.> Save `<slug>.png`. Pass when <predicate>.
@@ -119,8 +119,8 @@ Each live lane owns an isolated worktree at the PR head. Worktrees isolate files
 
 **Review gate.** The operator reviews before merge.
 
-- [ ] Copy lane <n> screenshots into `<media path>/<pr-id>-review-<slug>.png`.
-- [ ] Record a 30 to 60 second video of the change on its isolated runtime instance or during its exclusive serialized run. Save it as `<media path>/<pr-id>-review.mp4`.
+- [ ] Copy lane <n> screenshots into `tmp/<task>/<pr-id>-review-<slug>.png`.
+- [ ] Record a 30 to 60 second video of the change on its isolated runtime instance or during its exclusive serialized run. Save it as `tmp/<task>/<pr-id>-review.mp4`.
 - [ ] Post the screenshots and the video in chat. Mark the PR ready per **Readiness** in `playbooks/opening-a-pr.md` and stop. Wait for the operator's click.
 
 **Merge.**

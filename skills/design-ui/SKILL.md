@@ -21,17 +21,19 @@ Find what the project already decided:
 - The design system package, if the project uses one. Use its components rather than re-creating them.
 - Two or three existing components closest to the one you are building.
 
-Write a short system note with `path:line` citations: colours (including greys), type scale, spacing scale, radii, shadows, motion durations, and the components you will reuse.
+Write a short system note with `path:line` citations: colours (including greys), type scale, spacing scale, radii, shadows, and the components you will reuse.
 
 When the project has no system, define a compact one in a single tokens file before any UI code, and say in the reply that you chose it.
 
-Done when every colour, font, size, space, radius, and duration the change needs maps to a named token. Add a missing token to the tokens file first, then use it.
+Done when every colour, font, size, space, and radius the change needs maps to a named token. Add a missing token to the tokens file first, then use it.
 
 ## 2. Inventory the states
 
 Breadboard the screen. List each place, each affordance in it, and where that affordance leads. An affordance with no destination is an unmade decision.
 
 For each component, decide every state that applies: default, hover, focus-visible, active, disabled, loading, empty, error, and success. Then decide the failure paths: validation errors, a server error, offline, a timeout, very long content, and one item versus many.
+
+Invoke [feel](../feel/SKILL.md) for motion tokens, transitions between these states, and sound.
 
 Done when every affordance names a destination and every state has a decision. A missing state that changes what the user sees is a product call. Pick a default, build it, and name it in the reply.
 
@@ -58,7 +60,7 @@ Build a preview that shows every state from step 2 at once: the project's Storyb
 Invoke `control-ui` and drive the preview with it:
 
 - Screenshot at 375, 768, and 1280 pixels wide, and in dark mode when the project supports it.
-- Check the DOM at each width: no horizontal scroll, no clipped or overflowing text, every touch target at least 44 by 44 CSS pixels, and text contrast at least 4.5:1. When the project has Playwright, or it is installed globally, run `node scripts/ui-check.mjs <url> <out-dir>` from the project root, with the path resolved from this skill's directory. It screenshots each width, prints every failure, and exits non-zero when it finds one.
+- Check the DOM at each width: no horizontal scroll, no clipped or overflowing text, every touch target at least 44 by 44 CSS pixels, and text contrast at least 4.5:1. When the project has Playwright, or it is installed globally, run `node scripts/ui-check.mjs <url> <out-dir>` from the project root, with the script path resolved from this skill's directory. Set `<out-dir>` to `tmp/<task>/` inside the project, per [Scratch files](../cstack-mode/SKILL.md#scratch-files). It screenshots each width, prints every failure, and exits non-zero when it finds one.
 - Run the project's accessibility tool too when it has one.
 - Open and look at every screenshot yourself. Caption each one with what it proves ("375px browser viewport", not "mobile").
 
@@ -68,15 +70,15 @@ Done when every state renders at every width with zero DOM or accessibility fail
 
 ## 6. Critique blind
 
-When you have no **Delegate** capability, as inside a subagent, stop here. Return the screenshots, the system note, and the inventory to your parent for this step, and say you handed it off.
+When [Before delegation](../cstack-mode/references/runtime.md#before-delegation) finds no available runner for this handoff, stop here. Return the screenshots, the system note, and the inventory to your parent for this step, and say you handed it off.
 
-Use the **Delegate** capability to start a reviewer that never saw your reasoning. Give it the screenshots, the system note, the inventory, the user's request, and [gates.md](references/gates.md). It returns findings that each cite a screenshot and an element, ranked:
+Start the [reviewer seat](../../agents/reviewer.md) under [Seat delivery](../cstack-mode/references/runtime.md#seat-delivery). It never saw your reasoning. Give it the screenshots, the system note, the inventory, the user's request, and [gates.md](references/gates.md). It returns findings that each cite a screenshot and an element, ranked:
 
 - **P0.** Broken: clipped text, failed contrast, a missing state, an unreachable control.
 - **P1.** Off-system or confusing: a raw value, the wrong hierarchy, two primary actions.
 - **P2.** Polish.
 
-It runs the Removal Test on every decorative element: name it, state its job, and remove it if the screen stays as clear without it.
+It runs the Removal Test on every decorative element: name it, state its job, and recommend removal if the screen stays as clear without it. The parent makes the edits.
 
 Fix every P0 and P1, re-render, and send the new screenshots to the same reviewer. Repeat until a pass returns no P0 or P1.
 

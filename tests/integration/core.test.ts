@@ -133,6 +133,17 @@ describe("plan validation", () => {
     expect(result.status).toBe(0);
   });
 
+  test("accepts readable live lanes and rejects a different count", () => {
+    const readable = plan.replace("Ten lanes on `GPT-6` at the PR head", "Ten verification lanes at the PR head");
+    const accepted = runPlan(readable);
+    expect(accepted.status).toBe(0);
+    expect(accepted.stderr).toBe("");
+    expect(accepted.stdout).toContain("1 PR sections, 0 problems");
+    const rejected = runPlan(readable.replace("Ten verification lanes", "Nine verification lanes"));
+    expect(rejected.status).toBe(1);
+    expect(rejected.stderr).toContain("Verify, live must name ten verification lanes");
+  });
+
   test.each([
     {
       name: "live verification is missing",
@@ -230,7 +241,7 @@ test("discovery refuses an unauthorized install before launching Codex or creati
 
 test("host sync check catches frontmatter drift, stray metadata, and a skill without SKILL.md", () => {
   inTemporaryDirectory((directory) => {
-    for (const entry of ["tools", "skills", ".claude-plugin", ".codex-plugin", ".cursor-plugin", ".agents"]) {
+    for (const entry of ["tools", "skills", "agents", ".claude-plugin", ".codex-plugin", ".cursor-plugin", ".agents"]) {
       cpSync(join(root, entry), join(directory, entry), { recursive: true, filter: (source) => basename(source) !== "node_modules" });
     }
     const sync = (...args: string[]) =>
@@ -257,5 +268,105 @@ test("host sync check catches frontmatter drift, stray metadata, and a skill wit
     const missing = sync("--check");
     expect(missing.status).not.toBe(0);
     expect(missing.stderr).toContain("skills/retired has no SKILL.md");
+  });
+});
+
+test("host sync generates seat rows and rejects drift or invalid definitions", () => {
+  inTemporaryDirectory((directory) => {
+    for (const entry of ["tools", "skills", "agents", ".claude-plugin", ".codex-plugin", ".cursor-plugin", ".agents"]) {
+      cpSync(join(root, entry), join(directory, entry), { recursive: true, filter: (source) => basename(source) !== "node_modules" });
+    }
+    const sync = (...args: string[]) =>
+      spawnSync(process.execPath, [join(directory, "tools/sync-hosts.ts"), ...args], { encoding: "utf8", timeout: 20_000 });
+    const worker = join(directory, "agents/worker.md");
+    const original = readFileSync(worker, "utf8");
+    writeFileSync(worker, original.replace(/^description: .*$/m, "description: Write a report | preserve its columns."));
+    const drift = sync("--check");
+    expect(drift.status).toBe(1);
+    expect(drift.stderr).toContain(`out of date: skills/${pluginName}-mode/references/runtime.md`);
+    expect(sync().status).toBe(0);
+    const runtime = join(directory, `skills/${pluginName}-mode/references/runtime.md`);
+    expect(readFileSync(runtime, "utf8")).toContain(`| \`worker\` | \`${pluginName}-worker\` | build | The role each site resolves to today | Only the directory or paths the brief names | Write a report \\| preserve its columns. |`);
+    expect(sync("--check").status).toBe(0);
+
+    const scout = join(directory, "agents/scout.md");
+    writeFileSync(scout, readFileSync(scout, "utf8").replace(/^description: .*$/m, "description: Run a check. Return its result without judgment."));
+    const scoutDrift = sync("--check");
+    expect(scoutDrift.status).toBe(1);
+    expect(scoutDrift.stderr).toContain(`out of date: skills/${pluginName}-mode/references/runtime.md`);
+    expect(sync().status).toBe(0);
+    expect(readFileSync(runtime, "utf8")).toContain(`| \`scout\` | \`${pluginName}-scout\` | fast | The host's model | No | Run a check. Return its result without judgment. |`);
+    expect(sync("--check").status).toBe(0);
+
+    writeFileSync(runtime, readFileSync(runtime, "utf8").replace("Write a report", "Stale report"));
+    const tableDrift = sync("--check");
+    expect(tableDrift.status).toBe(1);
+    expect(tableDrift.stderr).toContain(`out of date: skills/${pluginName}-mode/references/runtime.md`);
+    expect(sync().status).toBe(0);
+
+    for (const { field, diagnostic } of [
+      { field: "  fallback: made-up", diagnostic: "invalid seat fallback" },
+      { field: "  tier: made-up", diagnostic: "invalid seat tier" },
+      { field: "  menu: true", diagnostic: "invalid seat menu" },
+      { field: "  writes: everywhere", diagnostic: "invalid seat writes rule" },
+    ]) {
+      const key = field.trim().split(":")[0];
+      writeFileSync(worker, original.replace(new RegExp(`^  ${key}: .*$`, "m"), field));
+      const invalid = sync("--check");
+      expect(invalid.status).toBe(1);
+      expect(invalid.stderr).toContain(diagnostic);
+    }
+    writeFileSync(worker, original.replace("seat:\n", "model: personal-choice\nseat:\n"));
+    const model = sync("--check");
+    expect(model.status).toBe(1);
+    expect(model.stderr).toContain("agents/worker.md must not carry model");
+
+    writeFileSync(worker, original.replace("  writes: assigned-paths", "  writes: assigned-paths\n  provider: hidden-choice"));
+    const nested = sync("--check");
+    expect(nested.status).toBe(1);
+    expect(nested.stderr).toContain("agents/worker.md has an unknown seat key");
+
+    writeFileSync(worker, original);
+    expect(sync().status).toBe(0);
+    const workflow = join(directory, "skills/arena/SKILL.md");
+    const workflowText = readFileSync(workflow, "utf8");
+    for (const reference of [
+      "[worker seat](../../agents/missing.md)",
+      "[worker seat](../../agents/comment-sicko.md)",
+      "[worker seat](../../agents/reviewer.md)",
+      "[unknown seat](../../agents/worker.md)",
+      "[lead seat](../../agents/lead.md)",
+      "[Reviewer seat](../../agents/missing.md)",
+      "[reviewer seats](../../agents/missing.md)",
+    ]) {
+      writeFileSync(workflow, `${workflowText}\nDelegate to the ${reference}.\n`);
+      const invalid = sync("--check");
+      expect(invalid.status).toBe(1);
+      expect(invalid.stderr).toContain("skills/arena/SKILL.md has an invalid seat reference");
+    }
+    writeFileSync(workflow, `${workflowText}\nDelegate to the [builder seat](../../agents/${pluginName}-agent.md).\n`);
+    expect(sync("--check").status).toBe(0);
+    writeFileSync(workflow, `${workflowText}\n\`\`\`markdown\nDelegate to the [reviewer seat](../../agents/missing.md).\n\`\`\`\n`);
+    const invalidTemplate = sync("--check");
+    expect(invalidTemplate.status).toBe(1);
+    expect(invalidTemplate.stderr).toContain("skills/arena/SKILL.md has an invalid seat reference");
+    writeFileSync(workflow, workflowText);
+    const investigator = join(directory, "agents/investigator.md");
+    const investigatorText = readFileSync(investigator, "utf8");
+    writeFileSync(investigator, `${investigatorText}\nDelegate to the [scout seat](missing.md).\n`);
+    const invalidAgent = sync("--check");
+    expect(invalidAgent.status).toBe(1);
+    expect(invalidAgent.stderr).toContain("agents/investigator.md has an invalid seat reference");
+    writeFileSync(investigator, investigatorText);
+    expect(sync("--check").status).toBe(0);
+    writeFileSync(runtime, readFileSync(runtime, "utf8") + "\n<!-- seats:start --><!-- seats:end -->\n");
+    const duplicate = sync("--check");
+    expect(duplicate.status).toBe(1);
+    expect(duplicate.stderr).toContain("needs one generated seat table region");
+
+    rmSync(join(directory, "agents/scout.md"));
+    const missing = sync("--check");
+    expect(missing.status).toBe(1);
+    expect(missing.stderr).toContain("agents/ is missing the scout seat");
   });
 });

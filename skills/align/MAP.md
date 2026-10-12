@@ -1,6 +1,6 @@
 # Map mode
 
-Use a map when the way to the destination is foggy and the effort is too big for one session. The map settles decisions; it builds nothing. The pull to just do the work is the sign you have reached the edge of the map. It ends when no ticket is left, and the Full spec is drafted from it.
+Before charting, complete align's [Ground](SKILL.md#1-ground) step. Use a map when the remaining way to the destination is foggy and the effort is too big for one session. The map settles the remaining decisions; it builds nothing. The pull to just do the work is the sign you have reached the edge of the map. It ends when no ticket is left, and the Full spec is drafted from it.
 
 ## The map
 
@@ -36,7 +36,7 @@ A ticket is one sharp question, sized for one session, with the tickets that blo
 
 | Type | Who | Resolves by |
 | --- | --- | --- |
-| Research | Agent alone | A delegated investigator finds the fact with the **how** or **why** skill. |
+| Research | Agent alone | An [investigator seat](../../agents/investigator.md) answers the question. Carry the applicable **how** or **why** evidence criteria in its brief; it returns the cited answer. |
 | Prototype | With the operator | A cheap sketch to react to, per `../cstack-mode/playbooks/prototype.md`. |
 | Grilling | With the operator | A **grill-with-docs** round. The default type. |
 | Task | Either | Work that unblocks a decision, such as provisioning access. The answer records what was done. |

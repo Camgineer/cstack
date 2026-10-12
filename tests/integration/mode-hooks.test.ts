@@ -1,13 +1,28 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { chmodSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "../..");
 const pluginName: string = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8")).name;
 const mode = `${pluginName}-mode`;
+const variable = mode.toUpperCase().replaceAll("-", "_");
 const hooks: { hooks: Record<string, { hooks: { command: string }[] }[]> } = JSON.parse(readFileSync(join(root, "hooks/hooks.json"), "utf8"));
+const cursorHooks: { hooks: Record<string, { command: string }[]> } = JSON.parse(readFileSync(join(root, "hooks/cursor.json"), "utf8"));
+
+// macOS ships a POSIX sed without GNU extensions such as `\|` in basic regexes. Where GNU sed is installed,
+// run the hooks against its --posix mode so a GNU-only pattern fails here instead of on a user's Mac.
+const posixBin = mkdtempSync(join(tmpdir(), "posix sed "));
+const gnuSed = spawnSync("sh", ["-c", "command -v sed"], { encoding: "utf8" }).stdout.trim();
+const isGnuSed = spawnSync(gnuSed, ["--version"], { encoding: "utf8" }).stdout?.includes("GNU") ?? false;
+if (isGnuSed) {
+  if (spawnSync(gnuSed, ["--posix", "-n", "p"], { input: "" }).status !== 0) throw new Error(`${gnuSed} --posix failed, so the hooks would run on GNU-only behavior`);
+  writeFileSync(join(posixBin, "sed"), `#!/bin/sh\nexec '${gnuSed}' --posix "$@"\n`);
+  chmodSync(join(posixBin, "sed"), 0o755);
+}
+const PATH = `${posixBin}:${process.env.PATH}`;
+afterAll(() => rmSync(posixBin, { recursive: true, force: true }));
 
 function withProject(run: (project: string, state: string) => void): void {
   const scratch = mkdtempSync(join(tmpdir(), "mode hooks "));
@@ -21,64 +36,228 @@ function withProject(run: (project: string, state: string) => void): void {
   }
 }
 
-// Runs the command hooks.json registers for an event, the way a host does.
-function fire(event: string, payload: Record<string, unknown>, state: string): string {
-  const command = hooks.hooks[event]?.[0]?.hooks[0]?.command;
-  if (command === undefined) throw new Error(`hooks.json registers no ${event} hook`);
-  const result = spawnSync("sh", ["-c", command], {
-    input: JSON.stringify(payload),
-    env: { PATH: process.env.PATH, HOME: state, XDG_STATE_HOME: state, CLAUDE_PLUGIN_ROOT: root },
-    encoding: "utf8",
-  });
+function run(command: string, payload: Record<string, unknown>, env: Record<string, string>): string {
+  const result = spawnSync("sh", ["-c", command], { input: JSON.stringify(payload), env: { PATH, ...env }, encoding: "utf8" });
   expect(result.status).toBe(0);
   expect(result.stderr).toBe("");
   return result.stdout;
+}
+
+function fireHooksJson(event: string, payload: Record<string, unknown>, state: string, env: Record<string, string> = {}): string {
+  const command = hooks.hooks[event]?.[0]?.hooks[0]?.command;
+  if (command === undefined) throw new Error(`hooks.json registers no ${event} hook`);
+  const output = run(command, { hook_event_name: event, ...payload }, { HOME: state, XDG_STATE_HOME: state, CLAUDE_PLUGIN_ROOT: root, ...env });
+  if (output !== "") expect(JSON.parse(output).hookSpecificOutput.hookEventName).toBe(event);
+  return output;
+}
+
+// Cursor's sessionStart input has no cwd. Cursor names the project in CURSOR_PROJECT_DIR and its alias CLAUDE_PROJECT_DIR.
+function fireCursorStart(project: string, state: string, env: Record<string, string> = {}): string {
+  const command = cursorHooks.hooks.sessionStart?.[0]?.command;
+  if (command === undefined) throw new Error("cursor.json registers no sessionStart hook");
+  const output = run(command, { hook_event_name: "sessionStart", session_id: "s", workspace_roots: [project] }, { HOME: state, XDG_STATE_HOME: state, CURSOR_PLUGIN_ROOT: root, CURSOR_PROJECT_DIR: project, ...env });
+  return output === "" ? "" : JSON.parse(output).additional_context;
+}
+
+// Cursor's beforeSubmitPrompt can only let the prompt through, so the hook's whole job there is to record the choice.
+function fireCursorPrompt(project: string, prompt: string, state: string, env: Record<string, string> = {}): void {
+  const command = cursorHooks.hooks.beforeSubmitPrompt?.[0]?.command;
+  if (command === undefined) throw new Error("cursor.json registers no beforeSubmitPrompt hook");
+  const output = run(command, { hook_event_name: "beforeSubmitPrompt", prompt, attachments: [] }, { HOME: state, XDG_STATE_HOME: state, CURSOR_PLUGIN_ROOT: root, CURSOR_PROJECT_DIR: project, ...env });
+  expect(JSON.parse(output)).toEqual({ continue: true });
 }
 
 function context(output: string): string {
   return output === "" ? "" : JSON.parse(output).hookSpecificOutput.additionalContext;
 }
 
-function cli(args: string[], cwd: string, state: string): string {
-  const result = spawnSync("sh", [join(root, "hooks/mode.sh"), ...args], { cwd, env: { PATH: process.env.PATH, HOME: state, XDG_STATE_HOME: state }, encoding: "utf8" });
+function cli(args: string[], cwd: string, state: string, env: Record<string, string> = {}): string {
+  const result = spawnSync("sh", [join(root, "hooks/mode.sh"), ...args], { cwd, env: { PATH, HOME: state, XDG_STATE_HOME: state, ...env }, encoding: "utf8" });
   expect(result.status).toBe(0);
   return result.stdout;
 }
 
+function brokenPlugin(project: string, condition: "missing" | "unreadable"): string {
+  const plugin = join(project, "provider plugin");
+  cpSync(join(root, "hooks"), join(plugin, "hooks"), { recursive: true });
+  mkdirSync(join(plugin, "tools"));
+  cpSync(join(root, "tools/metadata.json"), join(plugin, "tools/metadata.json"));
+  const clause = join(plugin, "hooks/mode-exemption.txt");
+  if (condition === "missing") rmSync(clause);
+  else chmodSync(clause, 0o000);
+  expect(() => readFileSync(clause)).toThrow();
+  return realpathSync(plugin);
+}
+
 describe("persistent mode hooks", () => {
+  test.each(["missing", "unreadable"] as const)("registered hooks keep working with the %s exemption file", (condition) => {
+    withProject((project, state) => {
+      const plugin = brokenPlugin(project, condition);
+      const env = { CLAUDE_PLUGIN_ROOT: plugin, CURSOR_PLUGIN_ROOT: plugin };
+      const plain = `${mode} is on for ${realpathSync(project)}. Invoke the ${pluginName}:${mode} skill now and apply it to every task in this session. If you cannot invoke a skill by name, read ${join(plugin, "skills", mode, "SKILL.md")} in full instead. It stays on until the user turns it off. If the user asks to turn it off, run: sh '${join(plugin, "hooks/mode.sh")}' off.`;
+      const on = { ...env, [variable]: "on" };
+      for (const source of ["startup", "resume", "clear", "compact", "fork"]) {
+        expect(context(fireHooksJson("SessionStart", { cwd: project, source }, state, on))).toBe(`${plain} ${variable}=on in the environment turns it on in every project the user has not turned off. Unsetting it turns that off.`);
+      }
+      expect(fireCursorStart(project, state, on)).toBe(`${plain} ${variable}=on in the environment turns it on in every project the user has not turned off. Unsetting it turns that off.`);
+
+      expect(context(fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `/${mode}` }, state, env))).toContain("now on");
+      for (const source of ["startup", "resume", "clear", "compact", "fork"]) {
+        expect(context(fireHooksJson("SessionStart", { cwd: project, source }, state, env))).toBe(plain);
+      }
+      expect(fireCursorStart(project, state, env)).toBe(plain);
+      expect(context(fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `/${mode} off` }, state, env))).toContain("now off");
+      expect(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state, on)).toBe("");
+      fireCursorPrompt(project, `/${mode}`, state, env);
+      expect(fireCursorStart(project, state, env)).toBe(plain);
+      fireCursorPrompt(project, `/${mode} off`, state, env);
+      expect(fireCursorStart(project, state, on)).toBe("");
+    });
+  });
+
+  test.each(["missing", "unreadable"] as const)("off and status work with the %s exemption file", (condition) => {
+    withProject((project, state) => {
+      const plugin = brokenPlugin(project, condition);
+      for (const [command, choice] of [["status", "on"], ["off", "off"], ["status", "off"]]) {
+        const result = spawnSync("sh", [join(plugin, "hooks/mode.sh"), command], {
+          cwd: project, env: { PATH, HOME: state, XDG_STATE_HOME: state, [variable]: "on" }, encoding: "utf8",
+        });
+        expect(result.status).toBe(0);
+        expect(result.stderr).toBe("");
+        expect(result.stdout).toContain(`${mode} is ${choice}`);
+      }
+    });
+  });
+
+  test.each(["", "."])("an empty or relative state directory (%s) uses the home default", (value) => {
+    withProject((project, home) => {
+      cli(["on"], project, home, { XDG_STATE_HOME: value });
+      const flags = readdirSync(join(home, ".local/state", pluginName, mode));
+      expect(flags).toHaveLength(1);
+      expect(cli(["status"], project, home, { XDG_STATE_HOME: join(home, ".local/state") })).toContain("is on");
+      expect(readdirSync(project)).not.toContain(pluginName);
+    });
+  });
+
+  test.each(["", "."])("the mode hook refuses an empty or relative HOME (%s)", (value) => {
+    withProject((project, state) => {
+      const result = spawnSync("sh", [join(root, "hooks/mode.sh"), "on"], { cwd: project, env: { PATH, HOME: value, XDG_STATE_HOME: state }, encoding: "utf8" });
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain("HOME must be an absolute path");
+      expect(readdirSync(project)).not.toContain(pluginName);
+    });
+  });
+
+  test.each(["", "."])("an empty or relative project environment (%s) falls back to the supplied project", (value) => {
+    withProject((project, state) => {
+      const env = { CLAUDE_PROJECT_DIR: value, CURSOR_PROJECT_DIR: value };
+      expect(context(fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `/${mode}` }, state, env))).toContain("now on");
+      expect(cli(["status"], project, state)).toContain("is on");
+    });
+  });
+
   test("a typed command keeps the mode on across new sessions and compaction until the user turns it off", () => {
     withProject((project, state) => {
-      expect(context(fire("SessionStart", { cwd: project, source: "startup" }, state))).toBe("");
+      expect(context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state))).toBe("");
 
-      const on = context(fire("UserPromptSubmit", { cwd: project, prompt: `/${pluginName}:${mode} fix the "export" bug\nthen ship it` }, state));
+      const on = context(fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `/${pluginName}:${mode} fix the "export" bug\nthen ship it` }, state));
       expect(on).toContain("now on");
 
       for (const source of ["startup", "resume", "clear", "compact"]) {
-        const restored = context(fire("SessionStart", { cwd: join(project, "src"), source }, state));
+        const restored = context(fireHooksJson("SessionStart", { cwd: join(project, "src"), source }, state));
         expect(restored).toContain(`Invoke the ${pluginName}:${mode} skill now`);
+        expect(restored).toContain("unless a plugin seat file in your instructions says \"Set the plugin's mode aside for this task\". In that case, your brief is the whole task.");
+        expect(restored).toContain("If the mode applies and you cannot invoke a skill by name");
         expect(restored).toContain(join(root, "skills", mode, "SKILL.md"));
       }
 
-      expect(context(fire("UserPromptSubmit", { cwd: project, prompt: `$${pluginName}:${mode} off` }, state))).toContain("now off");
-      expect(context(fire("SessionStart", { cwd: project, source: "compact" }, state))).toBe("");
+      expect(context(fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `$${pluginName}:${mode} off` }, state))).toContain("now off");
+      expect(context(fireHooksJson("SessionStart", { cwd: project, source: "compact" }, state))).toBe("");
     });
   });
 
   test("prompts that only mention the mode leave it alone", () => {
     withProject((project, state) => {
       for (const prompt of [`please use ${mode}`, `/${pluginName}:${mode}s`, `see /${pluginName}:${mode}`]) {
-        expect(fire("UserPromptSubmit", { cwd: project, prompt }, state)).toBe("");
+        expect(fireHooksJson("UserPromptSubmit", { cwd: project, prompt }, state)).toBe("");
       }
-      expect(context(fire("SessionStart", { cwd: project, source: "startup" }, state))).toBe("");
+      expect(context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state))).toBe("");
     });
   });
 
   test("the agent can turn the mode off from a subdirectory when the user asks in plain words", () => {
     withProject((project, state) => {
-      fire("UserPromptSubmit", { cwd: project, prompt: `/${mode}` }, state);
+      fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `/${mode}` }, state);
       expect(cli(["status"], join(project, "src"), state)).toContain("is on");
       cli(["off"], join(project, "src"), state);
-      expect(context(fire("SessionStart", { cwd: project, source: "resume" }, state))).toBe("");
+      expect(context(fireHooksJson("SessionStart", { cwd: project, source: "resume" }, state))).toBe("");
+    });
+  });
+
+  test(`${variable}=on turns the mode on at session start in every host, with no typed command`, () => {
+    withProject((project, state) => {
+      const on = { [variable]: "on" };
+      const claude = context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state, on));
+      expect(claude).toContain(`Invoke the ${pluginName}:${mode} skill now`);
+      expect(claude).toContain("unless a plugin seat file in your instructions says \"Set the plugin's mode aside for this task\". In that case, your brief is the whole task.");
+      expect(claude).toContain("If the mode applies and you cannot invoke a skill by name");
+      expect(claude).toContain(`${variable}=on in the environment turns it on in every project the user has not turned off`);
+      expect(fireCursorStart(project, state, on)).toBe(claude);
+
+      for (const value of ["", "off", "1", "ON"]) {
+        expect(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state, { [variable]: value })).toBe("");
+        expect(fireCursorStart(project, state, { [variable]: value })).toBe("");
+      }
+    });
+  });
+
+  test(`the user's choice for a project beats ${variable} in both directions, across compaction`, () => {
+    withProject((project, state) => {
+      const on = { [variable]: "on" };
+      expect(context(fireHooksJson("UserPromptSubmit", { cwd: project, prompt: `/${mode} off` }, state, on))).toContain("stays off in later sessions");
+      for (const source of ["compact", "resume", "startup"]) {
+        expect(fireHooksJson("SessionStart", { cwd: project, source }, state, on)).toBe("");
+      }
+      expect(fireCursorStart(project, state, on)).toBe("");
+      expect(cli(["status"], project, state, on)).toContain("is off");
+
+      cli(["on"], project, state);
+      expect(context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state))).toContain(`${mode} is on`);
+      expect(cli(["status"], project, state)).toContain("is on");
+    });
+  });
+
+  test("a command typed in Cursor keeps its choice in later chats", () => {
+    withProject((project, state) => {
+      const on = { [variable]: "on" };
+      fireCursorPrompt(project, `please use ${mode}`, state);
+      expect(fireCursorStart(project, state)).toBe("");
+
+      fireCursorPrompt(project, `/${mode} off`, state, on);
+      expect(fireCursorStart(project, state, on)).toBe("");
+
+      fireCursorPrompt(project, `/${mode}`, state);
+      expect(fireCursorStart(project, state)).toContain(`${mode} is on`);
+    });
+  });
+
+  test("Cursor restores a mode the user turned on for the project", () => {
+    withProject((project, state) => {
+      expect(fireCursorStart(project, state)).toBe("");
+      cli(["on"], join(project, "src"), state);
+      expect(fireCursorStart(project, state)).toContain(`run: sh '${join(root, "hooks/mode.sh")}' off`);
+      expect(fireCursorStart(project, state)).toBe(context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state)));
+    });
+  });
+
+  test("a project turned on before off choices were recorded stays on", () => {
+    withProject((project, state) => {
+      cli(["on"], project, state);
+      const flagDir = join(state, pluginName, mode);
+      const [flag] = readdirSync(flagDir);
+      if (flag === undefined) throw new Error("mode.sh on wrote no flag");
+      writeFileSync(join(flagDir, flag), `${project}\n`);
+      expect(context(fireHooksJson("SessionStart", { cwd: project, source: "startup" }, state))).toContain(`${mode} is on`);
     });
   });
 });

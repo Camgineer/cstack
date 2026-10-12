@@ -31,6 +31,7 @@ Answering this often requires looking beyond the changed files. Read the surroun
 - Type casts that silence a modeling error
 - If you see a workaround, ask: why is the workaround needed? What would a proper fix look like?
 - A fix in module A that should really be a fix in module B's contract
+- A fix at the site where the bug surfaced while sibling sites share its cause. Name the class and the upstream chokepoint that would close it once
 - Instructions where structure would be better: if the fix is a comment saying "don't do X" or a convention someone has to remember, ask whether it could instead be a type constraint, a lint rule, or a runtime check that makes the wrong thing impossible
 
 ## Structural Integrity
@@ -50,7 +51,7 @@ Don't penalize simple code for lacking abstraction. Premature abstraction is wor
 
 Can you tell that this code works from reading it?
 
-- Are there tests? Do they test behavior or implementation details?
+- Are there tests? Does each one call only a public seam, run libraries for real, and assert behavior rather than implementation details, per [Test Behavior, Not Implementation](../../principle-test-behavior-not-implementation/SKILL.md)?
 - Are there assertions/invariants that would catch regressions?
 - If this is a bug fix: is there a test for the bug?
 - If this touches an integration boundary: is the full path tested?

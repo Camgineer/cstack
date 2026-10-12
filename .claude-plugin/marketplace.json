@@ -11,7 +11,7 @@
       "name": "cstack",
       "source": "./",
       "description": "Engineering toolkit and task guides for coding agents: investigate, design, build, and verify. Adapted from PStack by Lauren Tan (poteto).",
-      "version": "0.64.0"
+      "version": "1.0.0"
     }
   ]
 }

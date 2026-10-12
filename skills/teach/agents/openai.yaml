@@ -1,5 +1,5 @@
 interface:
   display_name: "Teach"
-  short_description: "Explain a body of work plainly so a person actually understands it. Runs the `how` and `why` skills and weaves what..."
+  short_description: "Use when asked to understand a change or subsystem. Combine how it works with why it exists."
 policy:
   allow_implicit_invocation: true

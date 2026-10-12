@@ -1,5 +1,5 @@
 interface:
   display_name: "Reflect"
-  short_description: "Apply three read-only lenses and synthesize their findings over a session to find durable lessons, and route each to..."
+  short_description: "Use when drawing durable lessons from a session or retrospective. Route proven lessons to guidance or structural checks."
 policy:
   allow_implicit_invocation: true

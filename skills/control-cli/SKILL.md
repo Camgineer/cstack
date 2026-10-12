@@ -1,6 +1,6 @@
 ---
 name: control-cli
-description: Build or adapt a local harness to drive, inspect, and profile an interactive CLI or TUI without external services. Use for CLI UX checks, reproducing CLI bugs, startup regressions, memory leaks, hangs, prompt flows, or terminal demos.
+description: "Use to reproduce, verify, or profile interactive CLI behavior through a repeatable terminal harness."
 license: MIT
 metadata:
   source: "control-cli from Cursor Team Kit by Cursor, https://github.com/cursor/plugins/tree/23e4138daa01c42d4969f7a5465f82704e64f798/cursor-team-kit/skills/control-cli"
@@ -101,7 +101,6 @@ For richer terminal control, use `pty.fork()` or an existing PTY library.
 
 - Wait on a screen pattern or prompt. When a fixed sleep is unavoidable, say why.
 - Keep credentials and destructive commands out of a controlled session.
-- Keep a temporary harness in `tmp/<task>/` inside the project. Reuse the repo's own testing or demo harness when it exists.
 - Adapt commands to the current repo's scripts and runtime.
 - Clean up tmux sessions and inspector processes unless the user asks to keep them. Preserve evidence while someone still needs it.
 

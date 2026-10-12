@@ -1,5 +1,5 @@
 interface:
   display_name: "Architect"
-  short_description: "Sketch types, signatures, and module structure before code, then stay in the loop while implementation fills in. Use..."
+  short_description: "Use when code needs a new module, public interface, or design choice. Sketch types and callers before implementation."
 policy:
   allow_implicit_invocation: true

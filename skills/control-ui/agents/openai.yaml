@@ -1,5 +1,5 @@
 interface:
   display_name: "Control Ui"
-  short_description: "Build or adapt a local browser or CDP harness to drive and inspect a web, IDE, or Electron UI. Use for UI..."
+  short_description: "Use to reproduce, verify, or profile web, IDE, or Electron behavior through a local browser harness."
 policy:
   allow_implicit_invocation: true

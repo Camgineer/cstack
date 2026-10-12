@@ -1,6 +1,6 @@
 ---
 name: correct
-description: Find the mistakes agents keep repeating in a repo and make each one impossible, with architecture first, then types, a lint, or a test, and agent rules last. Use for correct, or when the operator corrects the same agent mistake twice.
+description: "Use when agents repeat a mistake. Prevent it through architecture, types, or checks before adding instructions."
 ---
 
 # Correct

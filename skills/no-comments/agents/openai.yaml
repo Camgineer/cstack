@@ -1,5 +1,5 @@
 interface:
   display_name: "No Comments"
-  short_description: "Strip unneeded code comments from a diff or files before review, then fix accepted findings and offer encodings for..."
+  short_description: "Use when asked to remove unnecessary code comments and fix the design problems they conceal."
 policy:
   allow_implicit_invocation: true

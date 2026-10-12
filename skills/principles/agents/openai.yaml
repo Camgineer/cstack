@@ -1,5 +1,5 @@
 interface:
   display_name: "Principles"
-  short_description: "Use when choosing a design, implementing a change, debugging, verifying behavior, or deciding how much work a task..."
+  short_description: "Use when designing, implementing, debugging, or verifying a change. Read the reference for the current decision."
 policy:
   allow_implicit_invocation: true

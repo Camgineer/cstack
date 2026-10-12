@@ -1,6 +1,6 @@
 ---
 name: grill-with-docs
-description: Grill the user relentlessly about a plan, design, or decision, showing each question and writing the glossary and ADRs as answers settle. Use for grill, 'grill me', stress-testing a plan, or sharpening a design before building it.
+description: "Use when stress-testing a plan or design with the person. Settle decisions and terms before building."
 license: MIT
 metadata:
   source: "Merges grill-with-docs and grilling from mattpocock/skills, https://github.com/mattpocock/skills"
@@ -8,7 +8,7 @@ metadata:
 
 # Grill with Docs
 
-Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.
+Settle the decisions that determine scope, behavior, design, and verification. Map this as a **design tree**: every decision branches into the decisions that hang off it.
 
 Run two companion skills for the whole session, every round:
 

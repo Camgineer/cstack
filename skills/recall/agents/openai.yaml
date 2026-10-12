@@ -1,5 +1,5 @@
 interface:
   display_name: "Recall"
-  short_description: "Reconstruct your recent working context from your own chat history, live state, and the shared record (user reports..."
+  short_description: "Use when resuming work or reconstructing recent context. Check history and live state within the requested scope."
 policy:
   allow_implicit_invocation: true

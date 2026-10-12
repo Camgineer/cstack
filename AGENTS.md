@@ -48,4 +48,6 @@ When importing an upstream update, compare the recorded PStack baseline, the tar
 
 ## Test scope
 
+After changing skills or toolkit checks, run `bun run --cwd tools check:toolkit`. It checks description budgets and triggers, frontmatter, Markdown links, invocation policy, and forbidden process or harness patterns.
+
 Keep tests that protect a concrete failure in supported behavior. Write each one at a public seam per [Test Behavior, Not Implementation](skills/principles/test-behavior-not-implementation.md). Prefer real CLI, filesystem, and Git fixtures where practical. Verify agent workflow quality through realistic task execution. Reconsider a test when it only repeats implementation details or checks document wording. To prove a change to a shipped script, extend its existing test under `tests/` rather than building a one-off probe. Write each check's full output to a file and search that file. Preserve the first run unfiltered instead of piping it through `tail` or `grep`. A fresh checkout needs `bun install --cwd tools --frozen-lockfile --ignore-scripts` before any check runs. To run one test, run `bun test ../tests/<dir>/<file> -t <pattern>` from `tools/`.

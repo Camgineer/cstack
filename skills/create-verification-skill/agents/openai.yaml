@@ -1,5 +1,5 @@
 interface:
   display_name: "Create Verification Skill"
-  short_description: "Generate or update a project-local verification skill that drives your app the way a user does. Use for..."
+  short_description: "Use when an app lacks repeatable user-path verification, or its verification skill or feature map needs updating."
 policy:
   allow_implicit_invocation: true

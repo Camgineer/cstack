@@ -1,5 +1,5 @@
 interface:
   display_name: "Bro"
-  short_description: "Restate the last message in plain human language, with no jargon."
+  short_description: "Use when asked to restate the last reply in plain language."
 policy:
   allow_implicit_invocation: true

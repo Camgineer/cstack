@@ -1,9 +1,11 @@
 ---
 name: principles
-description: Use when choosing a design, implementing a change, debugging, verifying behavior, or deciding how much work a task needs. Read the reference for the decision in front of you.
+description: "Use when designing, implementing, debugging, or verifying a change. Read the reference for the current decision."
 ---
 
 # Principles
+
+Shorten the time to a mergeable PR now, and keep the code from slowing future PRs. Work within the environment's review and safety gates.
 
 Read the matching reference in full when its condition holds. These files are references, not separate skill invocations.
 

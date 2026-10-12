@@ -1,6 +1,6 @@
 ---
 name: simple-as-prose
-description: Write or revise prose for a person or an agent so it is plain, specific, and easy to act on. Use for replies, docs, PRs, commits, code comments, UI copy, and rewrites that should drop AI tone.
+description: "Use when writing or revising replies, documents, UI copy, comments, or other prose. Make the next action clear."
 license: MIT
 metadata:
   authors: "Alex Hormozi, @Anthony-Lionetti, @Camgineer"

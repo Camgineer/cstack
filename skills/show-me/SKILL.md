@@ -1,6 +1,6 @@
 ---
 name: show-me
-description: Show the current topic as the smallest high-fidelity view (pseudocode, call tree, file tree, diff, Mermaid, or a focused HTML page) instead of prose. Use for 'show me', explaining a design or change, or putting options to the user.
+description: "Use when explaining a change, showing a design, or presenting options. Show the smallest useful code, diff, diagram, or view."
 license: MIT
 metadata:
   source: "show-me from humanlayer/skills, https://github.com/humanlayer/skills"
@@ -126,7 +126,5 @@ Prefer the highest-fidelity view that answers the point: real output or the code
 When a view depicts real code, such as a call tree, a component tree, or a Mermaid flow, build it under the Evidence rules of the [how skill](../how/SKILL.md): each node and edge cites `path:line`, and anything optional or unknown is marked as such.
 
 Place each visual next to the short text it supports. Keep only the calls, files, props, states, and boundaries needed to answer the user's current question or the options to resolve the current discussion point.
-
-You may use one of these, you may use several, it is unlikely you will use all of them. Use your judgement and don't overwhelm the user.
 
 Keep scratch files in a gitignored `tmp/<task>/` at the project root, out of commits, and remove the task folder when work is merged or dropped unless someone still needs its evidence; leave test-owned temporary directories alone.

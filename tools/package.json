@@ -9,7 +9,8 @@
     "test:integration": "bun test ../tests/integration",
     "typecheck": "tsc --project tsconfig.json",
     "sync:hosts": "bun sync-hosts.ts",
-    "check:hosts": "bun sync-hosts.ts --check"
+    "check:hosts": "bun sync-hosts.ts --check",
+    "check:toolkit": "bun check-toolkit.ts"
   },
   "devDependencies": {
     "bun-types": "1.4.2",

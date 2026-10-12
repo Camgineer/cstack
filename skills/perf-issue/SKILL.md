@@ -6,7 +6,6 @@ disable-model-invocation: true
 
 # Perf issue
 
-
 1. Capture a baseline trace via the matching control skill. Invoke `benchmark-checklist` and vet the baseline, and each later number, with it.
 2. Invoke `how` to ground hypotheses. Don't claim a perf ceiling without running it first.
    Most fixes come from eight strategy families. Use them as hypothesis generators, not a checklist. A family earns an attempt only when the trace shows the signal it names.
@@ -23,7 +22,7 @@ disable-model-invocation: true
 4. Parse and compare the artifacts (JSON to sqlite, diff). "Inconclusive" or wrong-surface is not a pass. Flag it.
 5. Cite the measurement in the PR.
 
-For sustained improvement against a metric rather than a one-off fix, read [the hillclimb guide](../hillclimb/SKILL.md).
+For sustained improvement, agree a metric and stop condition with the person. This guide covers one measured fix.
 
 **Reply:** baseline number, post-fix number, delta, artifact path.
 

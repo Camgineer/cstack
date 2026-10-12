@@ -1,19 +1,17 @@
 ---
 name: blast-radius
-description: "Find what a change could break somewhere else before it ships, beyond the diff, and prove the one fact it's safe because of by running real code instead of writing it up. Use for 'blast radius of X', 'what could this break', or reviewing a small diff you don't trust."
+description: "Use when assessing what a change could break beyond its diff. Run code to prove the safety assumptions."
 ---
 
 # Blast radius
 
 Find what a change breaks somewhere else, before it ships. Use for "blast radius of X", "what could this break", or reviewing a small diff you don't trust yet.
 
-Companion to `how` and `why`. `how` tells you what the code does. `why` tells you why it's shaped that way. Blast radius tells you what it breaks somewhere else.
-
-Listing the callers is not the job. The agent can grep those in a second. The job is the breakage grep won't show you.
+Follow effects that a caller search misses, including storage, wire formats, lifecycle timing, and downstream consumers.
 
 ## Don't trust your own writeup
 
-A blast-radius writeup that sounds right is worthless. It reads as convincing whether or not it's true. So don't hand back the writeup. Find the one or two facts the whole thing depends on and prove them by running code.
+A blast-radius writeup that sounds right is worthless. It reads as convincing whether or not it's true. Find the one or two facts the safety judgment depends on and prove them by running code.
 
 ### How sure are you
 
@@ -41,7 +39,7 @@ Step 4 is usually one small script that imports the same library the app ships a
 - **The one fact it's safe because of.** State it, say which step you got it to, and show the proof. If you couldn't prove it, write unproven.
 - **Risks.** Each names how it breaks, the `file:line`, how likely and how bad, and how to check. Paste the proof for the ones that matter.
 - **Cleared.** What you checked and why it's fine.
-- **Before you merge.** The cheapest test or repro that catches the real bug, including the script you wrote.
+- **Verification needed.** The cheapest test or repro that catches the real bug, including the script you wrote.
 
 Write it through `simple-as-prose`, cite real code, and strip anything private before it goes anywhere public.
 

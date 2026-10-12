@@ -1,5 +1,5 @@
 interface:
   display_name: "Control Cli"
-  short_description: "Build or adapt a local harness to drive, inspect, and profile an interactive CLI or TUI without external services..."
+  short_description: "Use to reproduce, verify, or profile interactive CLI behavior through a repeatable terminal harness."
 policy:
   allow_implicit_invocation: true

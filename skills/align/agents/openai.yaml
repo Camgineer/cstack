@@ -1,5 +1,5 @@
 interface:
   display_name: "Align"
-  short_description: "Reach full agreement with the operator on a change before autonomous work starts, ending in a signed spec with..."
+  short_description: "Use before a substantial change to agree scope, design, acceptance criteria, and verification in a signed spec."
 policy:
   allow_implicit_invocation: true

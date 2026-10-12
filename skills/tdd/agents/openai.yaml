@@ -1,5 +1,5 @@
 interface:
   display_name: "Tdd"
-  short_description: "Use only when the user explicitly asks for TDD, a failing test, or a regression test, OR when the bug has an obvious..."
+  short_description: "Use for requested test-first work or a bug with a cheap local regression test. Prove failure before fixing."
 policy:
   allow_implicit_invocation: true

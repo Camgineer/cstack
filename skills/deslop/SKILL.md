@@ -1,6 +1,6 @@
 ---
 name: deslop
-description: Remove AI-generated code slop from the branch diff before commit. Use for deslop, a slop-strip step, or cleaning code style a model introduced.
+description: "Use when cleaning AI-generated code from a branch diff before commit."
 license: MIT
 metadata:
   source: "deslop from Cursor Team Kit by Cursor, https://github.com/cursor/plugins/tree/23e4138daa01c42d4969f7a5465f82704e64f798/cursor-team-kit/skills/deslop"

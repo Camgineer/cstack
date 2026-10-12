@@ -1,15 +1,15 @@
 {
   "name": "cstack",
   "version": "0.64.0",
-  "description": "Engineering workflows for coding agents: investigate, design, build, verify, and review. Adapted from PStack by Lauren Tan (poteto).",
+  "description": "Engineering toolkit and task guides for coding agents: investigate, design, build, and verify. Adapted from PStack by Lauren Tan (poteto).",
   "author": {
     "name": "CStack contributors"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "CStack",
-    "shortDescription": "PStack engineering workflows for any coding agent.",
-    "longDescription": "Engineering workflows for coding agents: investigate, design, build, verify, and review. Adapted from PStack by Lauren Tan (poteto).",
+    "shortDescription": "PStack engineering toolkit for any coding agent.",
+    "longDescription": "Engineering toolkit and task guides for coding agents: investigate, design, build, and verify. Adapted from PStack by Lauren Tan (poteto).",
     "developerName": "CStack contributors",
     "category": "Productivity",
     "capabilities": [],

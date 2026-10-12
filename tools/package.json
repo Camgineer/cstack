@@ -1,0 +1,18 @@
+{
+  "name": "plugin-tools",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "scripts": {
+    "test": "bun run test:unit && bun run test:integration",
+    "test:unit": "bun test ../tests/unit",
+    "test:integration": "bun test ../tests/integration",
+    "typecheck": "tsc --project tsconfig.json",
+    "sync:hosts": "bun sync-hosts.ts",
+    "check:hosts": "bun sync-hosts.ts --check"
+  },
+  "devDependencies": {
+    "bun-types": "1.4.2",
+    "typescript": "7.0.2"
+  }
+}

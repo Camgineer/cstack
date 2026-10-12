@@ -3541,6 +3541,10 @@ function installLockKit(home: string, processProbe?: "denied") {
   return fileChangeKit(home, { command: ["node", join(root, "hooks/intent-deliver.mjs")], env: { PATH: join(home, "bin") }, timeout: 45000, processProbe });
 }
 
+function installLockTimeoutKit(home: string, plugin = root) {
+  return fileChangeKit(home, { command: ["node", "--require", join(root, "tests/fixtures/advance-clock.cjs"), join(plugin, "hooks/intent-deliver.mjs")], env: { PATH: join(home, "bin") }, timeout: 5000 });
+}
+
 function lockOwner(home: string, pid = 99999999) {
   return JSON.stringify({ schemaVersion: 1, name: "cstack", home, pid }) + "\n";
 }
@@ -3568,7 +3572,7 @@ for (const edge of ["before", "after"] satisfies Cut["edge"][]) {
       const operation = point.endsWith("open") ? "open" : point.endsWith("write") ? "write" : "delete";
       const killed = kit.runSync([], [{ name: "boundary", operation, edge, target: { path }, action: { kind: "kill" } }]);
       expect(killed.signal).toBe("SIGKILL");
-      const result = kit.runSync([]);
+      const result = installLockTimeoutKit(home).runSync([]);
       if (existsSync(`${lock}.acquire`)) {
         expect(result.status).toBe(2);
         expect(result.stderr).toContain("Stopped waiting after 30 seconds");
@@ -3591,7 +3595,7 @@ for (const edge of ["before", "after"] satisfies Cut["edge"][]) {
       const killed = kit.runSync([], [{ name: "stale", operation: "delete", edge, target: { path: lock }, action: { kind: "kill" } }]);
       expect(killed.signal).toBe("SIGKILL");
       expect(existsSync(`${lock}.acquire`)).toBe(true);
-      await followInstallLock(home, kit.runSync([]), fixture);
+      await followInstallLock(home, installLockTimeoutKit(home).runSync([]), fixture);
     });
   }, 60000);
 }
@@ -3659,7 +3663,7 @@ test("install lock waits for a live owner then follows timeout advice to complet
     try {
       await first.at("owned");
       const owner = readFileSync(`${fixture.record}.lock`, "utf8");
-      const second = kit.runSync([]);
+      const second = installLockTimeoutKit(home).runSync([]);
       expect(second.status).toBe(2);
       expect(second.stdout.split("Waiting up to 30 seconds")).toHaveLength(2);
       expect(second.stderr).toContain("Stopped waiting after 30 seconds");
@@ -3674,12 +3678,11 @@ test("install lock waits for a live owner then follows timeout advice to complet
 test("install lock preserves a live unrelated PID until manual recovery", async () => {
   await withHome(async home => {
     const fixture = deliveryRecoveryFixture(home);
-    const kit = installLockKit(home);
     mkdirSync(dirname(fixture.record), { recursive: true });
     const lock = `${fixture.record}.lock`;
     const owner = lockOwner(home, process.pid);
     writeFileSync(lock, owner);
-    const refused = kit.runSync([]);
+    const refused = installLockTimeoutKit(home).runSync([]);
     expect(refused.status).toBe(2);
     expect(readFileSync(lock, "utf8")).toBe(owner);
     expect(refused.stderr).toContain("no installer is active");
@@ -3872,7 +3875,7 @@ test("a fetched waiter timeout names the replaced copy and a rerun completes it"
     const holder = newerKit.start([], [{ name: "final", operation: "rename", edge: "before", target: { path: fixture.record }, action: { kind: "pause" } }]);
     try {
       await holder.at("final");
-      const refused = olderKit.runSync([]);
+      const refused = installLockTimeoutKit(home, older).runSync([]);
       expect(refused.status).toBe(2);
       expect(refused.stderr).toContain("The installed plugin copy was already replaced. Rerun the install after the other installer finishes to complete it.");
       expect(refused.stderr).not.toContain("Waiting up to 30 seconds");

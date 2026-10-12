@@ -1161,11 +1161,12 @@ test.each(["before link", "after link", "before record commit"])("overlapping de
     const first = fixture.kit.start([], [cut]);
     try {
       await first.at("paused");
+      const firstOwner = JSON.parse(readFileSync(`${fixture.record}.lock`, "utf8")).pid;
       const secondRun = fixture.kit.start([], [{ name: "acquiring", operation: "open", edge: "after", target: { path: `${fixture.record}.lock.acquire` }, action: { kind: "pause" } }]);
       let second: CommandResult;
       try {
         await secondRun.at("acquiring");
-        expect(JSON.parse(readFileSync(`${fixture.record}.lock`, "utf8")).pid).not.toBe(process.pid);
+        expect(JSON.parse(readFileSync(`${fixture.record}.lock`, "utf8")).pid).toBe(firstOwner);
         await secondRun.release("acquiring");
         await first.release("paused");
         expect((await first.finish()).status).toBe(0);
@@ -3613,6 +3614,7 @@ test.each(["empty", "malformed", "wrong home", "wrong name", "wrong schema", "in
     const before = kit.snapshot([lock, join(home, "personal.txt")]);
     const result = kit.runSync([], kind === "unreadable" ? [{ name: "read", operation: "open", edge: "before", target: { path: lock }, flags: "r", action: { kind: "throw", message: "Owner read refused." } }] : []);
     expect(result.status).toBe(2);
+    if (kind === "empty" || kind === "partial line") expect(result.stderr).toContain("The owner file has no complete owner line.");
     expect(kit.snapshot([lock, join(home, "personal.txt")])).toEqual(before);
     expect(existsSync(fixture.record)).toBe(false);
     expect(existsSync(join(home, ".intent/skills"))).toBe(false);
@@ -3661,6 +3663,7 @@ test("install lock waits for a live owner then follows timeout advice to complet
       expect(second.status).toBe(2);
       expect(second.stdout.split("Waiting up to 30 seconds")).toHaveLength(2);
       expect(second.stderr).toContain("Stopped waiting after 30 seconds");
+      expect(second.stderr).not.toContain("Waiting up to 30 seconds");
       expect(readFileSync(`${fixture.record}.lock`, "utf8")).toBe(owner);
       await assertFollowsInstructions({ initial: { args: [], result: second }, run: kit.runSync, instructions: installLockInstructions(() => first.running), snapshot: () => kit.snapshot(fixture.paths), expected: () => fixture.expected.map(entry => JSON.stringify([entry.path, "link", entry.target])), move: kit.move, active: () => first.running, wait: async () => { first.release("owned"); expect((await first.finish()).status).toBe(0); } });
       fixture.complete();
@@ -3852,3 +3855,101 @@ for (const edge of ["before", "after"] satisfies Cut["edge"][]) {
     });
   }, 60000);
 }
+
+
+test("a fetched waiter timeout names the replaced copy and a rerun completes it", async () => {
+  await withHome(async home => {
+    const older = join(home, "older-package");
+    copyPlugin(older);
+    const fixture = deliveryRecoveryFixture(home, older);
+    const newer = join(home, "newer-package");
+    copyPlugin(newer);
+    mkdirSync(join(newer, "skills/new-skill"));
+    writeFileSync(join(newer, "skills/new-skill/SKILL.md"), "---\nname: new-skill\n---\nNew skill.\n");
+    const newerKit = fileChangeKit(home, { command: ["node", join(newer, "hooks/intent-deliver.mjs")], env: { PATH: join(home, "bin") }, timeout: 45000 });
+    const olderKit = fileChangeKit(home, { command: ["node", join(older, "hooks/intent-deliver.mjs")], env: { PATH: join(home, "bin") }, timeout: 45000 });
+    expect(newerKit.runSync([]).status).toBe(0);
+    const holder = newerKit.start([], [{ name: "final", operation: "rename", edge: "before", target: { path: fixture.record }, action: { kind: "pause" } }]);
+    try {
+      await holder.at("final");
+      const refused = olderKit.runSync([]);
+      expect(refused.status).toBe(2);
+      expect(refused.stderr).toContain("The installed plugin copy was already replaced. Rerun the install after the other installer finishes to complete it.");
+      expect(refused.stderr).not.toContain("Waiting up to 30 seconds");
+      expect(existsSync(join(home, ".local/share/cstack/skills/new-skill"))).toBe(false);
+      holder.release("final");
+      expect((await holder.finish()).status).toBe(0);
+      expect(olderKit.runSync([]).status).toBe(0);
+      fixture.complete();
+      expect(existsSync(join(home, ".intent/skills/new-skill"))).toBe(false);
+      const before = homeSnapshot(home);
+      expect(olderKit.runSync([]).status).toBe(0);
+      expect(homeSnapshot(home)).toEqual(before);
+    } finally { await holder.stop(); }
+  });
+}, 60000);
+
+test("install lock clears an owner naming this process PID", () => {
+  withHome(home => {
+    const fixture = deliveryRecoveryFixture(home);
+    const lock = `${fixture.record}.lock`;
+    const wrapper = join(home, "reused-pid.mjs");
+    writeFileSync(wrapper, `import { mkdirSync, writeFileSync } from 'node:fs';
+mkdirSync(${JSON.stringify(dirname(lock))}, { recursive: true });
+writeFileSync(${JSON.stringify(lock)}, JSON.stringify({ schemaVersion: 1, name: 'cstack', home: ${JSON.stringify(home)}, pid: process.pid }) + '\\n');
+await import(${JSON.stringify(join(root, "hooks/intent-deliver.mjs"))});
+`);
+    const kit = fileChangeKit(home, { command: ["node", wrapper], env: { PATH: join(home, "bin") }, timeout: 45000 });
+    const result = kit.runSync([]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(`Cleared stale installation lock ${lock} because no process has its recorded PID `);
+    expect(result.stdout).not.toContain("Waiting up to 30 seconds");
+    expect(existsSync(lock)).toBe(false);
+    fixture.complete();
+  });
+}, 60000);
+
+test("install lock reports the host failure as well as its release failure", () => {
+  withHome(home => {
+    const fixture = deliveryRecoveryFixture(home);
+    const result = fixture.kit.runSync([], [
+      { name: "host", operation: "rename", edge: "before", target: { path: fixture.record }, action: { kind: "throw", message: "Host record save refused." } },
+      { name: "release", operation: "delete", edge: "before", target: { path: `${fixture.record}.lock` }, action: { kind: "throw", message: "Owner release refused." } },
+    ]);
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("Host record save refused.");
+    expect(result.stderr).toContain("Owner release refused.");
+  });
+});
+
+test.each(["record", "pending evidence", "mode link"])("installation reads %s after acquisition", async kind => {
+  await withHome(async home => {
+    const fixture = deliveryRecoveryFixture(home);
+    const run = fixture.kit.start([], [{ name: "acquiring", operation: "open", edge: "before", target: { path: `${fixture.record}.lock.acquire` }, action: { kind: "pause" } }]);
+    try {
+      await run.at("acquiring");
+      const mode = join(home, ".intent/skills/cstack-mode");
+      if (kind === "record") {
+        const entry = fixture.expected[0];
+        if (!entry) throw new Error("The fixture needs its first skill.");
+        mkdirSync(dirname(entry.path), { recursive: true });
+        symlinkSync(entry.target, entry.path);
+        writeFileSync(fixture.record, JSON.stringify({ schemaVersion: 1, entries: [entry], modeRule: { location: "Intent's Settings, under Agent Behavior", status: "unchanged" }, ruleLifecycle: "settled" }));
+      } else if (kind === "pending evidence") {
+        writeFileSync(join(dirname(fixture.record), ".cstack-install-pending-11111111-1111-1111-1111-111111111111.json"), JSON.stringify({ schemaVersion: 1, pid: 99999999, entries: [], operation: null, ruleLifecycle: "attempted" }));
+      } else {
+        mkdirSync(dirname(mode), { recursive: true });
+        symlinkSync(join(root, "skills/cstack-mode"), mode);
+      }
+      run.release("acquiring");
+      const result = await run.finish();
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe("");
+      expect(readFileSync(fixture.state, "utf8")).toBe('{"content":"","enabled":true}');
+      expect(existsSync(fixture.updates)).toBe(false);
+      expect(installRecord(home)).toEqual({ schemaVersion: 1, entries: [...fixture.expected].sort((a, b) => a.path.localeCompare(b.path)), modeRule: { location: "Intent's Settings, under Agent Behavior", status: kind === "record" ? "unchanged" : "manual" }, ruleLifecycle: "settled" });
+      expect(fixture.kit.snapshot(fixture.paths)).toEqual(fixture.expected.map(entry => JSON.stringify([entry.path, "link", entry.target])).sort());
+      expect(result.stdout).toContain(kind === "pending evidence" ? "earlier install may not have finished" : "Left the cstack-mode rule unchanged");
+    } finally { await run.stop(); }
+  });
+});

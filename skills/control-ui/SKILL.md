@@ -6,8 +6,6 @@ metadata:
   source: "control-ui from Cursor Team Kit by Cursor, https://github.com/cursor/plugins/tree/23e4138daa01c42d4969f7a5465f82704e64f798/cursor-team-kit/skills/control-ui"
 ---
 
-Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
-
 # Control UI
 
 Use local browser automation to verify UI behavior with evidence. Reuse the repo's own Playwright, browser, or Electron harness when it exists, or a project verification skill from **create-verification-skill**. Otherwise assemble a temporary local harness around the app's dev server or Chromium debug port.
@@ -18,7 +16,7 @@ Use local browser automation to verify UI behavior with evidence. Reuse the repo
 - Verifying visual or accessibility changes with screenshots and snapshots.
 - Checking local web, IDE, or Electron behavior before shipping.
 - Capturing console logs, network logs, CPU profiles, traces, or heap snapshots.
-- Producing before and after evidence for the **principle-prove-it-works** skill.
+- Producing before and after evidence for the [prove-it-works](../principles/prove-it-works.md) skill.
 
 ## Setup
 
@@ -75,7 +73,7 @@ await page.screenshot({ path: "<tmp-dir>/ui-harness-cdp.png", fullPage: true });
 await browser.close();
 ```
 
-Replace `<app-root-selector>` with a stable marker from the current repo, such as a root app node, a landmark, or a product-specific `data-*` attribute. Replace `<tmp-dir>` with `tmp/<task>/` inside the project, per [Scratch files](../cstack-mode/SKILL.md#scratch-files).
+Replace `<app-root-selector>` with a stable marker from the current repo, such as a root app node, a landmark, or a product-specific `data-*` attribute. Replace `<tmp-dir>` with `tmp/<task>/` inside the project.
 
 ## Interaction loop
 
@@ -112,3 +110,5 @@ When several app windows or tabs share a debug port:
 - Ask before saving screenshots or heap snapshots from privacy-sensitive workspaces.
 - Discover selectors, ports, and script paths from the current repo.
 - Stop dev servers, debug sessions, and temporary profiles when done.
+
+Keep scratch files in a gitignored `tmp/<task>/` at the project root, out of commits, and remove the task folder when work is merged or dropped unless someone still needs its evidence; leave test-owned temporary directories alone.

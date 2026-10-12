@@ -1,0 +1,5 @@
+interface:
+  display_name: "Investigation"
+  short_description: "Use when the user asks for investigation. Follow the task from evidence and scope through verification on the..."
+policy:
+  allow_implicit_invocation: false

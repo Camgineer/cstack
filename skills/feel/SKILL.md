@@ -3,11 +3,9 @@ name: feel
 description: Use before building, reviewing, or verifying motion and sound in a website, app, game, UI, or tool with a visual or terminal interface.
 ---
 
-Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
-
 # Feel
 
-Read [the feel principle](../principle-feel/SKILL.md). Run only the branches the changed surface needs. The plugin builds no motion graphics.
+Read [the feel principle](../principles/feel.md). Run only the branches the changed surface needs. The plugin builds no motion graphics.
 
 ## 1. Use named tokens
 

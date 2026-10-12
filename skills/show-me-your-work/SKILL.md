@@ -3,9 +3,6 @@ name: show-me-your-work
 description: 'Keep a reviewable decision trail for long-running or unattended work: a TSV log with one row per decision (what, why, evidence, result). Keep it available while a reviewer needs the trail to trust the result. Use for show-me-your-work, autonomous or multi-phase runs, or work a human reviews after stepping away.'
 ---
 
-Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
-
-
 # Show me your work
 
 Keep one canonical log.
@@ -45,14 +42,14 @@ A run is one agent conversation, including its later turns and any summary of it
 
 ## Where it lives
 
-By default the log is a working artifact, not committed. Keep it at `tmp/<task>/decisions.tsv` inside the project, per [Scratch files](../cstack-mode/SKILL.md#scratch-files).
+By default the log is a working artifact, not committed. Keep it at `tmp/<task>/decisions.tsv` inside the project.
 
 Keep it available while a reviewer needs the trail to trust the result.
 
 ## Rules
 
 - Append-only. A wrong call gets a new row that supersedes it. Never edit or delete history.
-- Prefer evidence produced by committed scripts over hand-made one-offs (the **encode-lessons-in-structure** principle skill).
+- Prefer evidence produced by committed scripts over hand-made one-offs (the [encode-lessons-in-structure](../principles/encode-lessons-in-structure.md) reference).
 
 ## Audit the log against the transcript
 
@@ -64,16 +61,16 @@ At the end of the run, before handing back, check the log told the truth. Read t
 
 Correct the log, not the story. The audit never edits or removes a row, even an invented one. When a row records neither a real decision nor a real action, or its claim or evidence is wrong, add a row that supersedes it with what actually happened and a pointer that resolves. This audit does not check rows outside this run's stretches. If this run's own work shows one of them is wrong, supersede it like any wrong call.
 
-## Cross-model review of the trail
+## Check the trail for risks
 
-Before handing back, use the [reviewer seat](../../agents/reviewer.md), with its existing `review` fallback. Carry the trail and transcript pointers and the flags below in its brief; it returns findings to the parent. Self-review is not a substitute. The subagent reads the audit trail and the run's transcript, then flags what the user should pay attention to. Not a redo of the work, a scan for what's suboptimal or risky.
+Before handing back, read the audit trail and the run's transcript and flag what the user should pay attention to. Scan for what is suboptimal or risky.
 
 - Decisions logged with weak or absent evidence.
 - Verification steps skipped or claimed without proof in the transcript.
 - Choices that look risky in hindsight (premature, scope-creeping, papering over a symptom).
 - Gaps the user would otherwise miss on a casual skim.
 
-Every reply for a run that produced a trail ends with an "Attention" section. Lead with the reviewer's model on its own line (`reviewed by <model>`), then list each flag pointing to specific rows or moments. "No flags" is a valid value. The model name is not.
+Every reply for a run that produced a trail ends with an "Attention" section. List each flag pointing to specific rows or moments. "No flags" is a valid value.
 
 ## Reviewing the trail
 
@@ -82,3 +79,5 @@ Read top to bottom, follow the evidence pointers, spot-check. GitHub renders a c
 ## Composing this skill
 
 Other skills route their audit trail here instead of inventing one. Reference it by name and let it own the format. Don't restate the columns.
+
+Keep scratch files in a gitignored `tmp/<task>/` at the project root, out of commits, and remove the task folder when work is merged or dropped unless someone still needs its evidence; leave test-owned temporary directories alone.

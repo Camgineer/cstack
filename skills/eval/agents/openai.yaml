@@ -1,0 +1,5 @@
+interface:
+  display_name: "Eval"
+  short_description: "Use when the user asks for eval. Follow the task from evidence and scope through verification on the current branch."
+policy:
+  allow_implicit_invocation: false

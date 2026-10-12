@@ -34,7 +34,7 @@ Remove it or move responsibility to the module that can complete the operation. 
 
 ## Hypothetical seam
 
-A seam with one adapter is indirection, not a seam. Two adapters, typically production and test, make it real. Remove a port or interface that nothing varies across. Keep a module's internal seams private, and test the module through its public interface per [Test Behavior, Not Implementation](../../principle-test-behavior-not-implementation/SKILL.md).
+A seam with one adapter is indirection, not a seam. Two adapters, typically production and test, make it real. Remove a port or interface that nothing varies across. Keep a module's internal seams private, and test the module through its public interface per [Test Behavior, Not Implementation](../../principles/test-behavior-not-implementation.md).
 
 Run the deletion test on each module. Imagine it deleted. If its complexity vanishes, it was a pass-through. If the complexity reappears across its callers, it earns its place.
 
@@ -59,7 +59,7 @@ Give each piece of state one owner. Other modules read it or ask the owner to ch
 
 The design supports more than one way to do the same task. An agent copies whichever way it finds first, so every way keeps gaining callers.
 
-Keep one way. Move callers off the others and delete them in the same change, per the **migrate-callers-then-delete-legacy-apis** principle skill.
+Keep one way. Move callers off the others and delete them in the same change, per the [migrate-callers-then-delete-legacy-apis](../../principles/migrate-callers-then-delete-legacy-apis.md) reference.
 
 ## Importable internals
 

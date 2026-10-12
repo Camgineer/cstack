@@ -1,0 +1,5 @@
+interface:
+  display_name: "Authoring a Skill"
+  short_description: "Use when the user asks for authoring a skill. Follow the task from evidence and scope through verification on the..."
+policy:
+  allow_implicit_invocation: false

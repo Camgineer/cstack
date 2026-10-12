@@ -1,5 +1,5 @@
 interface:
   display_name: "Reflect"
-  short_description: "Run three parallel reviewers and a synthesizer over a session to find durable lessons, and route each to an edit on..."
+  short_description: "Apply three read-only lenses and synthesize their findings over a session to find durable lessons, and route each to..."
 policy:
   allow_implicit_invocation: true

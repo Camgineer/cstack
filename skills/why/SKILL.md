@@ -3,9 +3,6 @@ name: why
 description: "Use for 'why does X work this way', 'why we picked Y', design rationale, regressions, postmortems, or data-backed thresholds. Discovers available MCPs and queries each evidence category (source control, issue tracker, long-form docs, real-time chat, infrastructure observability, error tracking, product analytics warehouse) in parallel, then returns a cited read on decisions and tradeoffs. Use how for runtime behavior."
 ---
 
-Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
-
-
 # Why
 
 Investigate the motivation and intent behind code.
@@ -24,7 +21,7 @@ If the target is vague ("why do we do it this way?" with no clear referent), mak
 
 ## Step 2. Establish the Code Anchor
 
-Before spawning investigators, anchor the investigation in concrete code. You need:
+Before investigating, anchor the investigation in concrete code. You need:
 
 - The relevant file path(s) and line range(s)
 - The key symbols (function names, class names, constants)
@@ -55,13 +52,13 @@ gh pr view <number> --json title,body,author,createdAt,mergedAt,labels,closingIs
 
 Capture this as seed context (file paths, symbols, commits, PR numbers, linked ticket IDs). Pass it to the investigators.
 
-## Step 3. Spawn Parallel Investigators (default posture)
+## Step 3. Investigate the evidence categories
 
-**Default to the full parallel investigation.**
+Use parallel read-only helpers if the harness has them, otherwise do the passes yourself. Cover every available evidence category.
 
 ### Discovery
 
-Before spawning investigators, inspect the live available-tool map and supported connector discovery. Do not assume a host-private MCP directory exists.
+Before investigating, inspect the live available-tool map and supported connector discovery. Do not assume a host-private MCP directory exists.
 
 Map each available MCP to one evidence category:
 
@@ -77,13 +74,12 @@ Check source-control access through available git, `gh`, or authorized connector
 
 Aim for a complete **coverage map**, not a minimal one. Document the null, don't skip the search.
 
-Launch all matching investigators in a single message so they run concurrently. Don't ask one agent to cover multiple MCPs.
+Keep findings separate by evidence category.
 
-Subagent config (each):
-- Seat: [investigator seat](../../agents/investigator.md). Carry the workflow reference prompt in the brief and return findings to the parent.
+For each pass:
 - Scope: read-only source and connector investigation. Use supported read-only tools; never add write permissions to retain MCP access.
 
-Each investigator gets:
+For each category, use:
 1. The base prompt from `references/investigator-prompt.md`
 2. The category playbook `references/sources/<source>.md` for the selected MCP, adapted from the examples in `references/source-playbook.md`
 3. The cross-cutting `references/sources/incident-postmortem.md` **if the target code looks defensive** (null checks, retry logic, timeout handling, rate limiting, feature flags, egress guards, OOM handlers)
@@ -92,11 +88,11 @@ Each investigator gets:
 
 ### Investigator roster. One per available evidence category
 
-Spawn one investigator per category that has a matching MCP. Each owns exactly one tool or MCP.
+Investigate each category that has a matching source, keeping its evidence separate.
 
 Each entry names the category and the kind of "why" it uniquely surfaces. Use it to know what to expect back, how to name a gap when a category returns empty, and (only in the rare provably-irrelevant case) to justify a skip.
 
-1. **Source control investigator**. Git history, `gh` for PRs, code comments, tests. Always spawn. The only guaranteed source. Best at surfacing *implementation-time rationale captured during review*.
+1. **Source control investigator**. Git history, `gh` for PRs, code comments, tests. Always check. The only guaranteed source. Best at surfacing *implementation-time rationale captured during review*.
 
 2. **Issue / ticket tracker investigator** (e.g. Linear, Jira, GitHub Issues, Plane, Shortcut MCP). Best at surfacing *the product or business forcing function*. Strongest when the why is external to engineering.
 
@@ -121,12 +117,11 @@ If your scope assessment suggests a single-commit trivial target where the PR de
 
 ## Step 4. Synthesize
 
-Spawn one synthesizer subagent:
+Synthesize the findings yourself:
 
-- Seat: [investigator seat](../../agents/investigator.md). Carry the workflow reference prompt in the brief and return findings to the parent.
 - Scope: read-only source and MCP citation checks. Do not enable writes to gain connector access.
 
-The synthesizer gets:
+Synthesize from:
 1. The investigator findings, including any null results and any categories skipped with justification
 2. The code anchor from Step 2 (file paths, symbols, commit hashes, PR numbers, ticket IDs)
 3. The user's original question

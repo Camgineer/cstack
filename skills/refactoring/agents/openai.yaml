@@ -1,0 +1,5 @@
+interface:
+  display_name: "Refactoring"
+  short_description: "Use when the user asks for refactoring. Follow the task from evidence and scope through verification on the current..."
+policy:
+  allow_implicit_invocation: false

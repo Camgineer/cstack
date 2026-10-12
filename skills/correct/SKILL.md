@@ -3,8 +3,6 @@ name: correct
 description: Find the mistakes agents keep repeating in a repo and make each one impossible, with architecture first, then types, a lint, or a test, and agent rules last. Use for correct, or when the operator corrects the same agent mistake twice.
 ---
 
-Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
-
 # Correct
 
 The operator keeps correcting agents in this repo for the same mistakes. Change the repo so the next agent can't make them.
@@ -17,11 +15,11 @@ Read recent commits, reverts, review comments, agent instruction files, and comm
 
 ## 2. Pick the highest level that works
 
-Fix each class at the first level that can stop it. This is the **encode-lessons-in-structure** principle skill run over the repo's history.
+Fix each class at the first level that can stop it. This is the [encode-lessons-in-structure](../principles/encode-lessons-in-structure.md) reference run over the repo's history.
 
 1. **Architecture.** Give each piece of state one owner and each task one supported way. Hide internals so the wrong import fails. Replace hand-synced lists with one source of truth. Delete old ways and dead code an agent would copy.
 2. **Types.** Make the bad state impossible to write. If bad code still compiles, add a lint or CI check whose error names the file, type, or function to use instead. If the pattern is already common, fail only when a change adds more of it.
-3. **Tests.** Test the behavior at a public seam per the **test-behavior-not-implementation** principle skill. Fix or delete any test that would still pass if every function it calls returned nothing.
+3. **Tests.** Test the behavior at a public seam per the [test-behavior-not-implementation](../principles/test-behavior-not-implementation.md) reference. Fix or delete any test that would still pass if every function it calls returned nothing.
 4. **Agent rules.** Write docs or agent rules last, and only for judgment calls. Nothing fails when an agent skips them.
 
 Human review is the fallback when every level fails, never the fix.

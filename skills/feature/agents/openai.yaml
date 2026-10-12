@@ -1,0 +1,5 @@
+interface:
+  display_name: "Feature"
+  short_description: "Use when the user asks for feature. Follow the task from evidence and scope through verification on the current branch."
+policy:
+  allow_implicit_invocation: false

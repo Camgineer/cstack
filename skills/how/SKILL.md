@@ -3,9 +3,6 @@ name: how
 description: "Use for \"how does X work\", code walkthroughs before changing something, and placement / ownership / layering questions (\"where should this live\", \"which package owns this\", \"is this the right layer\"). Explains subsystem architecture, runtime flow, onboarding mental models. Use why for motivation."
 ---
 
-Read [the runtime contract](../cstack-mode/references/runtime.md) before executing this workflow.
-
-
 # How
 
 Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
@@ -25,18 +22,15 @@ Every claim about the code rests on source you read. Apply these rules on both p
 If the scope is ambiguous, state your interpretation and explore. The user can redirect.
 
 - **Simple** (a single module, a small utility, a narrow question such as "how does function X work"): no subagents. Explore and explain it yourself in a single pass. Go to Step 2b.
-- **Complex** (a subsystem spanning multiple files or services, a cross-cutting feature, a full architectural overview): spawn parallel explorers first, then hand off to the explainer. Go to Step 2a.
+- **Complex** (a subsystem spanning multiple files or services, a cross-cutting feature, a full architectural overview): use parallel read-only helpers if the harness has them, otherwise do the passes yourself. Go to Step 2a.
 
 When in doubt, take the simple path.
 
 ## Step 2a. Explore (complex questions only)
 
-When delegation is unavailable, take Step 2b directly. Otherwise decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Spawn all explorers in a single message:
+Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Use parallel read-only helpers if the harness has them, otherwise investigate each angle yourself. Use read-only source and connector operations.
 
-- Seat: [investigator seat](../../agents/investigator.md). Carry the workflow reference prompt in the brief and return findings to the parent.
-- Scope: read-only; use the supported sandbox and no connector writes.
-
-Each explorer gets the prompt in `references/explorer-prompt.md` with its angle filled in. Then go to Step 3.
+For each angle, use the prompt in `references/explorer-prompt.md` with its angle filled in. Then go to Step 3.
 
 ## Step 2b. Direct Explain (simple questions)
 
@@ -44,12 +38,9 @@ Read the code yourself and write the explanation in the Output Format of `refere
 
 ## Step 3. Synthesize (complex questions only)
 
-Once all explorers have returned, spawn one native subagent to synthesize their findings into one explanation:
+Once all explorers have returned, synthesize the findings into one explanation yourself. Keep citation checks read-only.
 
-- Seat: [investigator seat](../../agents/investigator.md). Carry the workflow reference prompt in the brief and return findings to the parent.
-- Scope: read-only; use the supported sandbox and no connector writes.
-
-Build its prompt from `references/explainer-prompt.md` with every explorer's findings filled in.
+Use `references/explainer-prompt.md` with every explorer's findings filled in.
 
 ## Step 4. Present
 

@@ -33,7 +33,7 @@ Review the environment the agent worked in, not only the code it wrote. Flag eve
 For each:
 - Principle: a sentence on what the agent needed and where the environment should have given it.
 - Evidence: the calls it took, and what finally answered or caught it.
-- Routing: `repo guidance: <path>` to add, move, sharpen, or delete guidance or a stale doc. A missing check or a mechanical rule routes to Backlog per the **encode-lessons-in-structure** principle. A repo path is fine here, because the guidance changes with the code it describes.
+- Routing: `repo guidance: <path>` to add, move, sharpen, or delete guidance or a stale doc. A missing check or a mechanical rule routes to Backlog per the [encode-lessons-in-structure](../../principles/encode-lessons-in-structure.md) principle. A repo path is fine here, because the guidance changes with the code it describes.
 
 Read the active transcript at <ABSOLUTE_PATH> (or use the digest below if no path is given).
 

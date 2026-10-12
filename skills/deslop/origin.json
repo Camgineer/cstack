@@ -10,6 +10,6 @@
     "Generalized the any-cast rule to each language's type escape hatch.",
     "Added a local-convention check and a post-edit check run; guardrails phrased as positive instructions.",
     "Model-invocable, per the plugin's rule for bundled skills.",
-    "Added the runtime contract opening line and upstream MIT license."
+    "Added upstream MIT license."
   ]
 }

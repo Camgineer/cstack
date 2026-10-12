@@ -1,0 +1,5 @@
+interface:
+  display_name: "Principles"
+  short_description: "Use when choosing a design, implementing a change, debugging, verifying behavior, or deciding how much work a task..."
+policy:
+  allow_implicit_invocation: true

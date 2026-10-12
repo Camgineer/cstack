@@ -1,18 +1,18 @@
 # Skill mechanics
 
-Apply [writing-for-agents](SKILL.md) to the instruction body. This reference covers discovery and invocation. These skills follow the shared `SKILL.md` format, so one skill works in Claude Code, Codex, Cursor, and Intent.
+Apply [writing-for-agents](SKILL.md) to the instruction body. This reference covers discovery and invocation. These skills follow the shared `SKILL.md` format.
 
 ## Discovery
 
-Keep `name` and `description` in `SKILL.md` frontmatter. The description names the task and the conditions for using the skill. Keep required instructions in the body; link branch-specific references where the agent needs them. Keep the body free of harness tool names. Name a capability from the runtime contract instead, and let the host notes map it.
+Keep `name` and `description` in `SKILL.md` frontmatter. The description names the task and the conditions for using the skill. Keep required instructions in the body; link branch-specific references where the agent needs them. Keep the body free of harness tool names. State what the agent needs in plain words, such as asking the person, reading a file, or running a command.
 
 When agents skip the skill and act directly, lead the description with the moment it applies, as in "Use before writing or changing ...".
 
 Hosts select a skill by its description by default. Set `disable-model-invocation: true` in the frontmatter when the skill must be explicit-only. Keep its description for the selector. Omit the key when the model should select the skill by task.
 
-In this plugin, the frontmatter is the single source for invocation policy. Codex reads `agents/openai.yaml` instead, and `bun run sync:hosts` generates that file from the frontmatter. Edit the frontmatter and regenerate. Never edit the YAML by hand.
+In this plugin, the frontmatter is the single source for invocation policy. `bun run sync:hosts` generates host discovery metadata from that frontmatter. Edit the frontmatter and regenerate. Never edit the YAML by hand.
 
-An explicit-only skill stays available to users through its host command; each host note under `skills/cstack-mode/references/hosts/` names the syntax. Another workflow can still read its installed file when instructed. Discovery policy is not a file-access restriction. Confirm actual visibility with the host's skill list.
+An explicit-only skill stays available to users through its host command; the host documents its command syntax. Another workflow can still read its installed file when instructed. Discovery policy is not a file-access restriction. Confirm actual visibility with the host's skill list.
 
 ## Splitting and routing
 

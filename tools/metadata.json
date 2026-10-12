@@ -7,11 +7,10 @@
   "license": "MIT",
   "logo": "assets/logo.png",
   "keywords": [
-    "workflow",
+    "toolkit",
     "principles",
-    "review",
     "planning",
-    "subagents",
-    "verification"
+    "verification",
+    "task-guides"
   ]
 }

@@ -1,12 +1,10 @@
-import { describe, expect, test } from "bun:test";
+import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve, sep } from "node:path";
 
 const root = resolve(import.meta.dir, "../..");
-const pluginName: string = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8")).name;
-const checker = join(root, "skills/cstack-mode/scripts/check-plan.ts");
 
 function inTemporaryDirectory(run: (directory: string) => void): void {
   const directory = mkdtempSync(join(tmpdir(), "plugin consumer "));
@@ -16,171 +14,6 @@ function inTemporaryDirectory(run: (directory: string) => void): void {
     rmSync(directory, { recursive: true, force: true });
   }
 }
-
-const plan = `# Invoice export plan
-
-Give billing staff a CSV download of paid invoices. PR10 adds the download and its verification. The maintainer owns the merge.
-
-## How to read this
-
-One box is one unit of work. Each box names the evidence that checks it. Check a box only when its evidence exists.
-Run the installed playbooks/autopilot-full.md from the resolved plugin root. The maintainer reviews the download and merges PR10.
-Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
-
-## Program checklist
-
-### Arm the program
-
-- [ ] Program objective. Ship a CSV download that preserves invoice amounts. Complete when PR10 is verified and the maintainer merges it.
-- [ ] Continuation. Iterate in this task until the PR is ready for the maintainer.
-- [ ] Cadence. Audit each completed verification checkpoint.
-- [ ] Resources. Read the installed execution playbook and the consumer project's source separately.
-- [ ] Runtime isolation. Give each live lane its own application port and browser profile.
-- [ ] Post a status message when the verified head or a blocker changes.
-
-### Spawn owners
-
-- [ ] Assign the invoice export owner to PR10 with an isolated worktree.
-
-### PR mechanics
-
-- [ ] Open PR10 against main and record its verified SHA.
-
-### Verdict and merge
-
-- [ ] Send the evidence to the maintainer and wait for their merge decision.
-
-### Boot recipe
-
-- [ ] Start the fixture application on the lane's assigned port.
-
-## PR10 invoice export
-
-**Depends on.** None. This PR branches from main.
-
-**Files.**
-- [ ] Update \`src/goals.ts\` and \`src/invoices/export.ts\`.
-
-**Build.**
-- [ ] Add the CSV download using the invoice totals already shown in the billing table.
-
-**You see.**
-- [ ] The download contains each paid invoice and its displayed amount.
-
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
-- [ ] Run the amount and CSV escaping tests. Save \`invoice-unit.log\`.
-
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on \`GPT-6\` at the PR head.
-- [ ] Lane 1. Compare the billing amounts on trunk and head. Save \`amounts.png\`. Pass when every exported amount matches the billing table.
-- [ ] Lane 2. Download an empty account. Save \`empty.png\`. Pass when the CSV contains only its header.
-- [ ] Lane 3. Download one paid invoice. Save \`one.png\`. Pass when its identifier and amount are preserved.
-- [ ] Lane 4. Exclude unpaid invoices. Save \`unpaid.png\`. Pass when no unpaid row appears.
-- [ ] Lane 5. Export a customer name with a comma. Save \`comma.png\`. Pass when the CSV parses into the expected columns.
-- [ ] Lane 6. Export a customer name with quotes. Save \`quotes.png\`. Pass when the CSV preserves the name.
-- [ ] Lane 7. Export a refunded invoice. Save \`refund.png\`. Pass when the signed amount matches the billing table.
-- [ ] Lane 8. Download a large account. Save \`large.png\`. Pass when every paid invoice appears once.
-- [ ] Lane 9. Check the keyboard download action. Save \`keyboard.png\`. Pass when focus reaches the button and Enter downloads the CSV.
-- [ ] Lane 10. Check denied billing access. Save \`denied.png\`. Pass when no invoice data is downloaded.
-
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
-- [ ] Metric. Measure time from the download click to receipt of a 1000-row CSV.
-- [ ] Probe. Alternate five trunk and head billing-table loads and five head downloads. Save \`invoice-perf.json\`.
-- [ ] Baseline. Record the trunk billing-table load before running the head probe. Trunk has no download action.
-- [ ] Rule. Fail if the head billing-table median exceeds trunk by 10 percent or the head download takes more than 500 ms.
-
-**Review gate.** The maintainer reviews before merge.
-- [ ] Give the operator a screenshot and a video of the download. Record the maintainer's decision.
-
-**Merge.**
-- [ ] The maintainer merges the reviewed and verified PR head.
-
-## Close the program
-
-- [ ] Confirm the merged export works and save the final SHA.
-
-## Appendix A Prototype evidence
-
-The prototype preserves decimal amounts and CSV quoting. Its commit and recordings are attached to PR10.
-Read the installed helper at \`/opt/installed plugin/skills/how/SKILL.md\`.
-`;
-
-function runPlan(text: string) {
-  const directory = mkdtempSync(join(tmpdir(), "plugin consumer "));
-  try {
-    const path = join(directory, "reviewable invoice plan.md");
-    writeFileSync(path, text);
-    return spawnSync(process.execPath, [checker, path], {
-      cwd: directory,
-      encoding: "utf8",
-      timeout: 10_000,
-    });
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
-}
-
-describe("plan validation", () => {
-  test("accepts a reviewable plan from a consumer directory with spaces", () => {
-    const result = runPlan(plan);
-    expect(result.status).toBe(0);
-    expect(result.stderr).toBe("");
-    expect(result.stdout).toContain("1 PR sections, 0 problems");
-  });
-
-  test("accepts a consumer project's own skills directory", () => {
-    const result = runPlan(`${plan}\nSee [swarm](../skills/swarm/SKILL.md) and \`app/skills/billing/rules.md\`.\n`);
-    expect(result.stderr).toBe("");
-    expect(result.status).toBe(0);
-  });
-
-  test("accepts readable live lanes and rejects a different count", () => {
-    const readable = plan.replace("Ten lanes on `GPT-6` at the PR head", "Ten verification lanes at the PR head");
-    const accepted = runPlan(readable);
-    expect(accepted.status).toBe(0);
-    expect(accepted.stderr).toBe("");
-    expect(accepted.stdout).toContain("1 PR sections, 0 problems");
-    const rejected = runPlan(readable.replace("Ten verification lanes", "Nine verification lanes"));
-    expect(rejected.status).toBe(1);
-    expect(rejected.stderr).toContain("Verify, live must name ten verification lanes");
-  });
-
-  test.each([
-    {
-      name: "live verification is missing",
-      text: plan.replace(/^- \[ \] Lane \d+\..*\n/gm, ""),
-      diagnostic: "expected 1 to 10",
-    },
-    {
-      name: "performance has no failure budget",
-      text: plan.replace(/^- \[ \] Rule\..*\n/gm, ""),
-      diagnostic: "perf boxes",
-    },
-    {
-      name: "runtime isolation is not planned",
-      text: plan.replace(/^- \[ \] Runtime isolation\..*\n/gm, ""),
-      diagnostic: "Runtime isolation.",
-    },
-    {
-      name: "a host-specific command remains",
-      text: `${plan}\nRun \`/goal\`.\n`,
-      diagnostic: "unresolved host command or bundled resource path",
-    },
-    {
-      name: "a consumer-relative plugin path remains",
-      text: `${plan}\nRead \`./pstack/skills/swarm/SKILL.md\`.\n`,
-      diagnostic: "unresolved host command or bundled resource path",
-    },
-    {
-      name: "the plugin's own consumer-relative path remains",
-      text: `${plan}\nSee (${pluginName}/skills/review/references/gate.md).\n`,
-      diagnostic: "unresolved host command or bundled resource path",
-    },
-  ])("rejects a plan when $name", ({ text, diagnostic }) => {
-    const result = runPlan(text);
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain(diagnostic);
-  });
-});
 
 test("bundled Markdown links point to shipped resources", () => {
   const skills = join(root, "skills");
@@ -199,7 +32,7 @@ test("bundled Markdown links point to shipped resources", () => {
   expect(missing).toEqual([]);
 });
 
-test("the agent's skill list shows the toolkit and hides user-invoked guides and legacy principles", () => {
+test("the agent's skill list shows the toolkit and hides user-invoked guides", () => {
   const skills = join(root, "skills");
   const mismatched: string[] = [];
   const taskGuides = new Set(["investigation", "bug-fix", "perf-issue", "hillclimb", "runtime-forensics", "trace-forensics", "feature", "refactoring", "prototype", "visual-parity", "authoring-a-skill", "eval"]);
@@ -209,40 +42,14 @@ test("the agent's skill list shows the toolkit and hides user-invoked guides and
     const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(readFileSync(source, "utf8"))?.[1];
     expect(frontmatter).toBeDefined();
     const fields = Bun.YAML.parse(frontmatter ?? "") as Record<string, unknown>;
-    if ((fields["disable-model-invocation"] === true) !== (directory.startsWith("principle-") || taskGuides.has(directory))) mismatched.push(directory);
+    if ((fields["disable-model-invocation"] === true) !== (taskGuides.has(directory))) mismatched.push(directory);
   }
   expect(mismatched).toEqual([]);
 });
 
-test("discovery refuses an unauthorized install before launching Codex or creating its home", () => {
-  inTemporaryDirectory((directory) => {
-    const codexHome = join(directory, "codex home");
-    const runtimeHome = join(directory, "runtime home");
-    const temporary = join(directory, "temporary files");
-    const codex = join(directory, "codex");
-    const launched = join(directory, "codex was launched");
-    mkdirSync(runtimeHome);
-    mkdirSync(temporary);
-    writeFileSync(codex, '#!/bin/sh\nprintf launched > "$FAKE_CODEX_LAUNCH"\nexit 91\n');
-    chmodSync(codex, 0o755);
-    const result = spawnSync(process.execPath, [join(root, "tests/e2e/plugin-discovery.ts"), "--codex", codex], {
-      env: { ...process.env, HOME: runtimeHome, CODEX_HOME: codexHome, TMPDIR: temporary, FAKE_CODEX_LAUNCH: launched },
-      encoding: "utf8",
-      timeout: 10_000,
-    });
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain("requires explicit user authorization and --allow-isolated-install");
-    expect(result.stderr).not.toContain("ENOENT");
-    expect(existsSync(codexHome)).toBe(false);
-    expect(existsSync(join(runtimeHome, ".codex"))).toBe(false);
-    expect(existsSync(launched)).toBe(false);
-    expect(readdirSync(temporary)).toEqual([]);
-  });
-});
-
 test("host sync check catches frontmatter drift, stray metadata, and a skill without SKILL.md", () => {
   inTemporaryDirectory((directory) => {
-    for (const entry of ["tools", "skills", "agents", ".claude-plugin", ".codex-plugin", ".cursor-plugin", ".agents"]) {
+    for (const entry of ["tools", "skills", ".claude-plugin", ".codex-plugin", ".cursor-plugin", ".agents"]) {
       cpSync(join(root, entry), join(directory, entry), { recursive: true, filter: (source) => basename(source) !== "node_modules" });
     }
     const sync = (...args: string[]) =>
@@ -250,11 +57,11 @@ test("host sync check catches frontmatter drift, stray metadata, and a skill wit
     expect(sync().status).toBe(0);
     expect(sync("--check").status).toBe(0);
 
-    const skill = join(directory, "skills/cstack-mode/SKILL.md");
+    const skill = join(directory, "skills/how/SKILL.md");
     writeFileSync(skill, readFileSync(skill, "utf8").replace(/^description: .*$/m, "description: Changed for the drift fixture."));
     const drifted = sync("--check");
     expect(drifted.status).toBe(1);
-    expect(drifted.stderr).toContain("out of date: skills/cstack-mode/agents/openai.yaml");
+    expect(drifted.stderr).toContain("out of date: skills/how/agents/openai.yaml");
     expect(sync().status).toBe(0);
 
     mkdirSync(join(directory, "skills/retired/agents"), { recursive: true });
@@ -272,102 +79,17 @@ test("host sync check catches frontmatter drift, stray metadata, and a skill wit
   });
 });
 
-test("host sync generates seat rows and rejects drift or invalid definitions", () => {
-  inTemporaryDirectory((directory) => {
-    for (const entry of ["tools", "skills", "agents", ".claude-plugin", ".codex-plugin", ".cursor-plugin", ".agents"]) {
-      cpSync(join(root, entry), join(directory, entry), { recursive: true, filter: (source) => basename(source) !== "node_modules" });
-    }
-    const sync = (...args: string[]) =>
-      spawnSync(process.execPath, [join(directory, "tools/sync-hosts.ts"), ...args], { encoding: "utf8", timeout: 20_000 });
-    const worker = join(directory, "agents/worker.md");
-    const original = readFileSync(worker, "utf8");
-    writeFileSync(worker, original.replace(/^description: .*$/m, "description: Write a report | preserve its columns."));
-    const drift = sync("--check");
-    expect(drift.status).toBe(1);
-    expect(drift.stderr).toContain(`out of date: skills/${pluginName}-mode/references/runtime.md`);
-    expect(sync().status).toBe(0);
-    const runtime = join(directory, `skills/${pluginName}-mode/references/runtime.md`);
-    expect(readFileSync(runtime, "utf8")).toContain(`| \`worker\` | \`${pluginName}-worker\` | build | The role each site resolves to today | Only the directory or paths the brief names | Write a report \\| preserve its columns. |`);
-    expect(sync("--check").status).toBe(0);
-
-    const scout = join(directory, "agents/scout.md");
-    writeFileSync(scout, readFileSync(scout, "utf8").replace(/^description: .*$/m, "description: Run a check. Return its result without judgment."));
-    const scoutDrift = sync("--check");
-    expect(scoutDrift.status).toBe(1);
-    expect(scoutDrift.stderr).toContain(`out of date: skills/${pluginName}-mode/references/runtime.md`);
-    expect(sync().status).toBe(0);
-    expect(readFileSync(runtime, "utf8")).toContain(`| \`scout\` | \`${pluginName}-scout\` | fast | The host's model | No | Run a check. Return its result without judgment. |`);
-    expect(sync("--check").status).toBe(0);
-
-    writeFileSync(runtime, readFileSync(runtime, "utf8").replace("Write a report", "Stale report"));
-    const tableDrift = sync("--check");
-    expect(tableDrift.status).toBe(1);
-    expect(tableDrift.stderr).toContain(`out of date: skills/${pluginName}-mode/references/runtime.md`);
-    expect(sync().status).toBe(0);
-
-    for (const { field, diagnostic } of [
-      { field: "  fallback: made-up", diagnostic: "invalid seat fallback" },
-      { field: "  tier: made-up", diagnostic: "invalid seat tier" },
-      { field: "  menu: true", diagnostic: "invalid seat menu" },
-      { field: "  writes: everywhere", diagnostic: "invalid seat writes rule" },
-    ]) {
-      const key = field.trim().split(":")[0];
-      writeFileSync(worker, original.replace(new RegExp(`^  ${key}: .*$`, "m"), field));
-      const invalid = sync("--check");
-      expect(invalid.status).toBe(1);
-      expect(invalid.stderr).toContain(diagnostic);
-    }
-    writeFileSync(worker, original.replace("seat:\n", "model: personal-choice\nseat:\n"));
-    const model = sync("--check");
-    expect(model.status).toBe(1);
-    expect(model.stderr).toContain("agents/worker.md must not carry model");
-
-    writeFileSync(worker, original.replace("  writes: assigned-paths", "  writes: assigned-paths\n  provider: hidden-choice"));
-    const nested = sync("--check");
-    expect(nested.status).toBe(1);
-    expect(nested.stderr).toContain("agents/worker.md has an unknown seat key");
-
-    writeFileSync(worker, original);
-    expect(sync().status).toBe(0);
-    const workflow = join(directory, "skills/arena/SKILL.md");
-    const workflowText = readFileSync(workflow, "utf8");
-    for (const reference of [
-      "[worker seat](../../agents/missing.md)",
-      "[worker seat](../../agents/comment-sicko.md)",
-      "[worker seat](../../agents/reviewer.md)",
-      "[unknown seat](../../agents/worker.md)",
-      "[lead seat](../../agents/lead.md)",
-      "[Reviewer seat](../../agents/missing.md)",
-      "[reviewer seats](../../agents/missing.md)",
-    ]) {
-      writeFileSync(workflow, `${workflowText}\nDelegate to the ${reference}.\n`);
-      const invalid = sync("--check");
-      expect(invalid.status).toBe(1);
-      expect(invalid.stderr).toContain("skills/arena/SKILL.md has an invalid seat reference");
-    }
-    writeFileSync(workflow, `${workflowText}\nDelegate to the [builder seat](../../agents/${pluginName}-agent.md).\n`);
-    expect(sync("--check").status).toBe(0);
-    writeFileSync(workflow, `${workflowText}\n\`\`\`markdown\nDelegate to the [reviewer seat](../../agents/missing.md).\n\`\`\`\n`);
-    const invalidTemplate = sync("--check");
-    expect(invalidTemplate.status).toBe(1);
-    expect(invalidTemplate.stderr).toContain("skills/arena/SKILL.md has an invalid seat reference");
-    writeFileSync(workflow, workflowText);
-    const investigator = join(directory, "agents/investigator.md");
-    const investigatorText = readFileSync(investigator, "utf8");
-    writeFileSync(investigator, `${investigatorText}\nDelegate to the [scout seat](missing.md).\n`);
-    const invalidAgent = sync("--check");
-    expect(invalidAgent.status).toBe(1);
-    expect(invalidAgent.stderr).toContain("agents/investigator.md has an invalid seat reference");
-    writeFileSync(investigator, investigatorText);
-    expect(sync("--check").status).toBe(0);
-    writeFileSync(runtime, readFileSync(runtime, "utf8") + "\n<!-- seats:start --><!-- seats:end -->\n");
-    const duplicate = sync("--check");
-    expect(duplicate.status).toBe(1);
-    expect(duplicate.stderr).toContain("needs one generated seat table region");
-
-    rmSync(join(directory, "agents/scout.md"));
-    const missing = sync("--check");
-    expect(missing.status).toBe(1);
-    expect(missing.stderr).toContain("agents/ is missing the scout seat");
-  });
+test("native manifests expose skills without automatic session behavior", () => {
+  for (const host of ["claude", "codex", "cursor"]) {
+    const manifest = JSON.parse(readFileSync(join(root, `.${host}-plugin/plugin.json`), "utf8"));
+    expect(manifest).not.toHaveProperty("hooks");
+    expect(manifest).not.toHaveProperty("agents");
+  }
+  for (const directory of readdirSync(join(root, "skills"))) {
+    const source = readFileSync(join(root, "skills", directory, "SKILL.md"), "utf8");
+    const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(source)?.[1];
+    const fields = Bun.YAML.parse(frontmatter ?? "") as Record<string, unknown>;
+    const metadata = Bun.YAML.parse(readFileSync(join(root, "skills", directory, "agents/openai.yaml"), "utf8"));
+    expect(metadata.policy.allow_implicit_invocation).toBe(fields["disable-model-invocation"] !== true);
+  }
 });

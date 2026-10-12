@@ -1,5 +1,0 @@
-interface:
-  display_name: "Principle Test Behavior Not Implementation"
-  short_description: "Apply when you write, change, review, or keep a test. Test only at a public seam, the entry a module's outside..."
-policy:
-  allow_implicit_invocation: false

@@ -8,11 +8,10 @@
   },
   "license": "MIT",
   "keywords": [
-    "workflow",
+    "toolkit",
     "principles",
-    "review",
     "planning",
-    "subagents",
-    "verification"
+    "verification",
+    "task-guides"
   ]
 }

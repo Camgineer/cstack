@@ -21,126 +21,6 @@ type Skill = {
   readonly explicitOnly: boolean;
 };
 
-const seatNames = ["lead", "builder", "worker", "investigator", "reviewer", "verifier", "advisor", "scout"] as const;
-type SeatName = typeof seatNames[number];
-type Seat = {
-  readonly name: SeatName;
-  readonly description: string;
-  readonly specialist: string;
-  readonly tier: "main" | "build" | "review" | "advisor" | "fast" | "none";
-  readonly fallback: "build" | "review" | "advisor" | "none" | "site";
-  readonly menu: boolean;
-  readonly writes: "none" | "assigned-paths" | "repository" | "verdict-only";
-};
-
-function readSeats(root: string, plugin: string): Seat[] {
-  const seats = new Map<SeatName, Seat>();
-  for (const entry of readdirSync(join(root, "agents"), { withFileTypes: true })) {
-    if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
-    const path = join(root, "agents", entry.name);
-    const text = readFileSync(path, "utf8");
-    const match = /^---\n([\s\S]*?)\n---\n/.exec(text);
-    if (match?.[1] === undefined) throw new Error(`${relative(root, path)} has no frontmatter`);
-    const fields: unknown = Bun.YAML.parse(match[1]);
-    if (typeof fields !== "object" || fields === null) throw new Error(`${relative(root, path)} frontmatter must be a mapping`);
-    if (!("seat" in fields)) continue;
-    const seatName = seatNames.find((name) => entry.name === `${name === "builder" ? `${plugin}-agent` : name}.md`);
-    if (seatName === undefined) throw new Error(`${relative(root, path)} is not a seat file`);
-    const agentName = seatName === "builder" ? `${plugin}-agent` : seatName;
-    if (!("name" in fields) || fields.name !== agentName) throw new Error(`${relative(root, path)} name must be ${agentName}`);
-    if (!("description" in fields) || typeof fields.description !== "string" || fields.description.trim() === "") {
-      throw new Error(`${relative(root, path)} needs a description`);
-    }
-    for (const key of ["codingAgent", "provider", "model", "reasoningEffort", "effort", "modelOptions"]) {
-      if (key in fields) throw new Error(`${relative(root, path)} must not carry ${key}`);
-    }
-    const seat = fields.seat;
-    if (typeof seat !== "object" || seat === null) throw new Error(`${relative(root, path)} seat must be a mapping`);
-    if (!("tier" in seat) || (seat.tier !== "main" && seat.tier !== "build" && seat.tier !== "review" && seat.tier !== "advisor" && seat.tier !== "fast" && seat.tier !== "none")) {
-      throw new Error(`${relative(root, path)} has an invalid seat tier`);
-    }
-    if (!("fallback" in seat) || (seat.fallback !== "build" && seat.fallback !== "review" && seat.fallback !== "advisor" && seat.fallback !== "none" && seat.fallback !== "site")) {
-      throw new Error(`${relative(root, path)} has an invalid seat fallback`);
-    }
-    if (!("menu" in seat) || typeof seat.menu !== "boolean") throw new Error(`${relative(root, path)} needs a boolean seat menu`);
-    if (!("writes" in seat) || (seat.writes !== "none" && seat.writes !== "assigned-paths" && seat.writes !== "repository" && seat.writes !== "verdict-only")) {
-      throw new Error(`${relative(root, path)} has an invalid seat writes rule`);
-    }
-    if (Object.keys(seat).some((key) => !["tier", "fallback", "menu", "writes"].includes(key))) {
-      throw new Error(`${relative(root, path)} has an unknown seat key`);
-    }
-    if ((seatName === "reviewer" || seatName === "verifier") !== seat.menu) throw new Error(`${relative(root, path)} has an invalid seat menu`);
-    seats.set(seatName, {
-      name: seatName,
-      description: fields.description,
-      specialist: seatName === "builder" ? `${plugin}-agent` : `${plugin}-${seatName}`,
-      tier: seat.tier,
-      fallback: seat.fallback,
-      menu: seat.menu,
-      writes: seat.writes,
-    });
-  }
-  return seatNames.map((name) => {
-    const seat = seats.get(name);
-    if (seat === undefined) throw new Error(`agents/ is missing the ${name} seat`);
-    return seat;
-  });
-}
-
-function seatTable(root: string, plugin: string): string {
-  const seats = readSeats(root, plugin);
-  checkSeatReferences(root, plugin, seats);
-  const writes = {
-    none: "No",
-    "assigned-paths": "Only the directory or paths the brief names",
-    repository: "Its own branch and the paths the brief names",
-    "verdict-only": "Commands, and one verdict or ledger row. No source edits",
-  };
-  const fallback = {
-    build: "`build`",
-    review: "`review`",
-    advisor: "`advisor`",
-    none: "The host's model",
-    site: "The role each site resolves to today",
-  };
-  const cell = (text: string) => text.replace(/\|/g, "\\|").replace(/\s+/g, " ").trim();
-  const rows = seats.map((seat) => {
-    const tier = seat.tier === "main" ? "The person's main model" : seat.tier === "none" ? "Explicit choice" : `${seat.tier}${seat.menu ? ", with a menu" : ""}`;
-    return `| \`${seat.name}\` | \`${seat.specialist}\` | ${tier} | ${seat.name === "lead" ? "Not delegated to" : fallback[seat.fallback]} | ${seat.name === "lead" ? "Yes" : writes[seat.writes]} | ${cell(seat.description)} |`;
-  });
-  const table = [
-    "<!-- seats:start -->",
-    "| Seat | Specialist id in Intent | Setup asks | Fallback on other hosts | May write | Use when |",
-    "| --- | --- | --- | --- | --- | --- |",
-    ...rows,
-    "<!-- seats:end -->",
-  ].join("\n");
-  const path = join(root, "skills", `${plugin}-mode`, "references/runtime.md");
-  const runtime = readFileSync(path, "utf8");
-  const region = /<!-- seats:start -->[\s\S]*?<!-- seats:end -->/g;
-  if ([...runtime.matchAll(region)].length !== 1) throw new Error(`${relative(root, path)} needs one generated seat table region`);
-  return runtime.replace(region, () => table);
-}
-
-function checkSeatReferences(root: string, plugin: string, seats: readonly Seat[]): void {
-  const targets = new Map(seats.map((seat) => [seat.name, join(root, "agents", `${seat.name === "builder" ? `${plugin}-agent` : seat.name}.md`)]));
-  for (const directory of ["skills", "agents"]) {
-    const base = join(root, directory);
-    for (const path of readdirSync(base, { recursive: true, encoding: "utf8" })) {
-      if (!path.endsWith(".md") || path.split(/[\\/]/).includes("node_modules")) continue;
-      const source = join(base, path);
-      const text = readFileSync(source, "utf8");
-      for (const match of text.matchAll(/\[([^\]]+\sseats?)\]\(([^)]+)\)/gi)) {
-        const seat = seats.find((entry) => `${entry.name} seat` === match[1]);
-        const target = match[2]?.split("#")[0];
-        if (seat === undefined || target === undefined || resolve(dirname(source), target) !== targets.get(seat.name) || seat.name === "lead") {
-          throw new Error(`${relative(root, source)} has an invalid seat reference: ${match[0]}`);
-        }
-      }
-    }
-  }
-}
-
 const codexDescriptionLimit = 120;
 const lowercaseTitleWords = new Set(["a", "an", "and", "as", "at", "for", "in", "of", "on", "or", "the", "to"]);
 
@@ -279,26 +159,9 @@ function expectedFiles(root: string): Map<string, string> {
     keywords: metadata.keywords,
     category: "developer-tools",
     skills: "./skills/",
-    agents: "./agents/",
-    // Cursor would otherwise auto-load hooks/hooks.json, which uses the Claude Code and Codex event names.
-    hooks: "./hooks/cursor.json",
   }));
-
-  // `npx github:<owner>/<repo>` reads this to install the plugin into hosts that load no plugins.
-  files.set("package.json", json({
-    name: metadata.name,
-    version: metadata.version,
-    description: metadata.description,
-    license: metadata.license,
-    bin: { [`${metadata.name}-intent`]: "hooks/intent-install.sh" },
-    files: ["agents", "hooks", "skills", "tools/metadata.json", "!**/node_modules"],
-  }));
-
-  files.set(`skills/${metadata.name}-mode/references/runtime.md`, seatTable(root, metadata.name));
 
   const skills = readSkills(root);
-  // The hooks and the entry-point docs find the mode skill by the plugin's name.
-  if (!skills.some((skill) => skill.name === `${metadata.name}-mode`)) throw new Error(`skills/${metadata.name}-mode must exist; rename it with the plugin`);
   for (const skill of skills) {
     files.set(`skills/${skill.directory}/agents/openai.yaml`, codexSkillMetadata(skill));
   }
@@ -320,12 +183,12 @@ function main(): void {
 
   if (values.check) {
     if (changed.length === 0 && stale.length === 0) {
-      console.log(`Host files and seat table match tools/metadata.json and frontmatter (${expected.size} files).`);
+      console.log(`Host files match tools/metadata.json and frontmatter (${expected.size} files).`);
       return;
     }
     for (const [path] of changed) console.error(`out of date: ${path}`);
     for (const path of stale) console.error(`stale: ${path}`);
-    console.error("Run `bun run --cwd skills/cstack-mode/scripts sync:hosts` and commit the result.");
+    console.error("Run `bun run --cwd tools sync:hosts` and commit the result.");
     process.exit(1);
   }
 

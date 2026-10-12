@@ -21,10 +21,13 @@ Preconditions: complete Launch and Doctor in [the skill](../SKILL.md). Keep its 
 
 ```sh
 bun check-receipt.ts --receipts "$verifyReceipts" record receipts 'bun test ../../../tests/integration/helpers.test.ts -t "check receipt"' > "$verifyRun/receipts.log" 2>&1
+node -e 'const fs=require("node:fs"); const assert=require("node:assert/strict"); const log=fs.readFileSync(process.argv[1],"utf8"); assert.match(log,/^\s+[1-9]\d* pass$/m); assert.match(log,/^\s+0 fail$/m); const receipt=JSON.parse(fs.readFileSync(process.argv[2],"utf8")); assert.equal(receipt.exitCode,0); console.log("Bun test summary and saved receipt independently confirm success.");' "$verifyRun/receipts.log" "$verifyRun/checks/receipts.json"
 ```
 
 - Read the saved log and require matching passing cases with zero failures. Expect successful record/check on unchanged trees, refusal after content or mode changes and command failure, and refusal when the named commit or index differs. Existing tests inspect saved receipt values, exercise unsafe-storage refusals, and compare real index bytes before and after operations. They prepare isolated Git repositories and invoke the actual helper. The launch's outer receipts separately bind this test command to your checkout.
 
 ## Gotchas
 
---receipts is relative to the project root, even from a subdirectory. A receipt is local bookkeeping, not authenticated proof. It covers Git-normalized content, excludes ignored untracked scratch and state outside the repo, and can miss changes restored before command exit. It refuses sparse checkouts, submodules, and caller Git redirection variables. Passing saved receipts does not establish that every needed check ran.
+The helper is also the command under test. Its wrapper exit code and head gate cannot alone establish success when the helper is faulty. The separate Node assertion above requires a positive Bun pass count, zero failures, and exitCode 0 in the saved receipt.
+
+`--receipts` is relative to the project root, even from a subdirectory. A receipt is local bookkeeping, not authenticated proof. It covers Git-normalized content, excludes ignored untracked scratch and state outside the repo, and can miss changes restored before command exit. It refuses sparse checkouts, submodules, and caller Git redirection variables. Passing saved receipts does not establish that every needed check ran.

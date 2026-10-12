@@ -9,7 +9,9 @@ Read the [feature index](features/README.md), then the files for the commands yo
 
 ## Launch
 
-Use Bun at the version in [package.json](../../../skills/cstack-mode/scripts/package.json), Node, Git, npm, and the POSIX utilities used by the existing fixtures. Put that Bun executable first on `PATH`. Install dependencies once. No server, port, account, or signed-in host is needed.
+Use Node, Git, npm, the fixture's POSIX utilities, and Bun at the version in [package.json](../../../skills/cstack-mode/scripts/package.json). If the pinned Bun is missing, download its matching OS/architecture archive from [Bun's official releases](https://github.com/oven-sh/bun/releases), unpack it under your task's `tmp/` folder, and put that executable first on `PATH`. See [direct downloads](https://bun.sh/docs/installation#direct-downloads).
+
+A cold launch needs network access to obtain Bun and install dependencies once. It needs no running server, port, account, or signed-in host. The install command below overrides any inherited `BUN_INSTALL_CACHE_DIR` with a run-local folder, per [Bun's cache documentation](https://bun.sh/docs/pm/global-cache). Cleanup removes that folder.
 
 Run this in a shell from the checkout. Keep the shell variables for the drive and cleanup steps. Set `VERIFY_TASK` to your task's folder name before launch, or use the default below. Each launch creates a separate run directory.
 
@@ -27,7 +29,7 @@ verifyReceipts="${verifyRun#"$repoRoot"/}/checks"
 export repoRoot verifyRun
 export TMPDIR="$verifyRun/fixtures" TMP="$verifyRun/fixtures" TEMP="$verifyRun/fixtures"
 cd "$repoRoot/skills/cstack-mode/scripts"
-bun check-receipt.ts --receipts "$verifyReceipts" record frozen-install 'bun install --frozen-lockfile --ignore-scripts' > "$verifyRun/frozen-install.log" 2>&1
+bun check-receipt.ts --receipts "$verifyReceipts" record frozen-install 'BUN_INSTALL_CACHE_DIR="$verifyRun/bun-cache" bun install --frozen-lockfile --ignore-scripts' > "$verifyRun/frozen-install.log" 2>&1
 ```
 
 A successful receipt reports `Exit code 0`. Stop on failure and preserve the output. Tests create their own disposable homes and projects under the run's fixture directory. Run recipes serially within a launch. Separate launches can coexist in separate checkouts; do not edit a checkout while another run checks its tree.
@@ -83,22 +85,22 @@ bun check-receipt.ts --receipts "$verifyReceipts" check --head HEAD > "$verifyRu
 
 Require the check to pass and record the head SHA. Tree edits invalidate the receipts; rerun affected checks after an edit. See the [receipt feature](features/check-receipts.md) for the helper's limits.
 
-Capture package exclusion when changing this skill's placement. Run from the checkout root with the same `verifyRun` value:
+Capture package exclusion when changing this skill's placement. Stay in `skills/cstack-mode/scripts` with the same launch variables. The recorded inner command changes to the checkout root for npm:
 
 ```sh
-bun check-receipt.ts --receipts "$verifyReceipts" record package-exclusion 'cd "$repoRoot" && npm --cache "$verifyRun/npm-cache" pack --dry-run --json --ignore-scripts > "$verifyRun/package-inventory.json" && node -e "const fs=require(\"node:fs\"); const assert=require(\"node:assert/strict\"); const files=JSON.parse(fs.readFileSync(process.argv[1],\"utf8\"))[0].files.map(f=>f.path); assert.ok(files.includes(\"skills/cstack-mode/SKILL.md\")); assert.ok(!files.some(f=>f.startsWith(\".agents/skills/\") || f.startsWith(\"tmp/\"))); console.log(\"Repository skill and scratch are absent from the package.\");" "$verifyRun/package-inventory.json"' > "$verifyRun/package-exclusion.log" 2>&1
+bun check-receipt.ts --receipts "$verifyReceipts" record package-exclusion 'cd "$repoRoot" && npm --cache "$verifyRun/npm-cache" pack --dry-run --json --ignore-scripts > "$verifyRun/package-inventory.json" && node -e "const fs=require(\"node:fs\"); const assert=require(\"node:assert/strict\"); const files=JSON.parse(fs.readFileSync(process.argv[1],\"utf8\"))[0].files.map(f=>f.path); assert.ok(files.includes(\"skills/cstack-mode/SKILL.md\")); assert.ok(!files.some(f=>f.startsWith(\".agents/skills/\") || f.startsWith(\".claude/skills/\") || f.startsWith(\"tmp/\"))); console.log(\"Repository skill and scratch are absent from the package.\");" "$verifyRun/package-inventory.json"' > "$verifyRun/package-exclusion.log" 2>&1
 ```
 
-The [host generator](../../../tools/sync-hosts.ts) discovers root `skills/` only. The [delivery copy list](../../../hooks/intent-deliver.mjs) excludes `.agents/skills/`. Keep this skill outside both.
+The [host generator](../../../tools/sync-hosts.ts) discovers root `skills/` only. The [delivery copy list](../../../hooks/intent-deliver.mjs) excludes `.agents/skills/` and `.claude/skills/`. The repository's `.claude/skills/verify-plugin` link reaches this same skill for standalone Claude Code, per [project skill and symlink discovery](https://code.claude.com/docs/en/skills#choose-where-skills-load). Keep the canonical copy and link outside the shipped `skills/` directory.
 
 ## Cleanup
 
 The existing fixtures remove their disposable homes and join the children they own. They start no persistent service. After any drive, including a failed attempt, wait for its test process to exit before cleanup. Never kill by process name. Inspect `$verifyRun/fixtures` for unexpected leftovers; preserve a failed run's leftovers for diagnosis.
 
-After a successful run, remove only the run's fixture and npm-cache directories. Keep the receipts and package inventory for review.
+After a successful run, remove only the run's fixture, Bun-cache, and npm-cache directories. Keep the receipts and package inventory for review.
 
 ```sh
-rm -rf -- "$verifyRun/fixtures" "$verifyRun/npm-cache"
+rm -rf -- "$verifyRun/fixtures" "$verifyRun/bun-cache" "$verifyRun/npm-cache"
 unset TMPDIR TMP TEMP
 test -d "$verifyRun/checks"
 find "$verifyRun" -type f -name '*.log' -print

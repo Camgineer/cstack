@@ -1,4 +1,4 @@
-import { closeSync, existsSync, fchmodSync, openSync, mkdtempSync, rmSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, fchmodSync, fstatSync, openSync, mkdtempSync, rmSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, symlinkSync, unlinkSync, writeFileSync, writeSync } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
 import { dirname, join, basename, resolve, relative, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -70,9 +70,6 @@ function pendingRuns() {
     }
   }
   return runs;
-}
-function activeRun(run) {
-  try { process.kill(run.pid, 0); return true; } catch (error) { return error.code !== "ESRCH"; }
 }
 function loadRecord() {
   const path = recordPath;
@@ -161,6 +158,101 @@ function intentCommand() {
   }
   return null;
 }
+const lockPath = `${recordPath}.lock`;
+const acquisitionPath = `${lockPath}.acquire`;
+const quote = (value) => "'" + value.replaceAll("'", "'\\''") + "'";
+const locked = (path, reason) => new Error(`Installation is locked at ${path}.
+${reason}
+${root === data ? "The installed plugin copy was already replaced. Rerun the install after the other installer finishes to complete it." : "No host links or installation record were changed by this run."}
+Wait for any active installer to finish, then run the same installer command again.
+If the lock remains after you confirm no installer is active, keep a copy by moving only this lock aside:
+mv ${quote(path)} ${quote(`${path}.saved-${randomUUID()}`)}
+Then run the same installer command again.`);
+function releaseLock(path, descriptor, identity, failure) {
+  try {
+    closeSync(descriptor);
+    const remaining = statAt(path);
+    if (identity && remaining?.dev === identity.dev && remaining.ino === identity.ino) unlinkSync(path);
+  } catch (error) {
+    if (failure) process.stderr.write(`${failure.message}\n`);
+    throw new Error(`Could not release installation lock at ${path}. ${error.message}
+Wait for any active installer to finish. If the lock remains after you confirm no installer is active, keep it by moving only this lock aside:
+mv ${quote(path)} ${quote(`${path}.saved-${randomUUID()}`)}
+Then run the same installer command again.`, { cause: error });
+  }
+}
+function acquireLock() {
+  let acquisition;
+  try { acquisition = openSync(acquisitionPath, "wx", 0o600); }
+  catch (error) {
+    if (error.code === "EEXIST") return { kind: "wait", path: acquisitionPath, reason: "Another install may be taking the installation lock." };
+    const message = `Could not create installation acquisition file at ${acquisitionPath}. ${error.message}`;
+    if (["EACCES", "EPERM"].includes(error.code)) throw new Error(message, { cause: error });
+    throw locked(acquisitionPath, message);
+  }
+  const acquired = fstatSync(acquisition);
+  let fd;
+  let created;
+  try {
+    const current = statAt(lockPath);
+    if (current) {
+      let bytes;
+      let owner;
+      try {
+        if (!current.isFile()) throw new Error("Not a regular owner file.");
+        bytes = readFileSync(lockPath).toString();
+        const line = bytes.split("\n").slice(0, -1).at(-1);
+        if (!line) throw new Error("The owner file has no complete owner line.");
+        owner = JSON.parse(line);
+        if (owner?.schemaVersion !== 1 || owner.name !== name || owner.home !== home || !Number.isInteger(owner.pid) || owner.pid < 1) throw new Error("Invalid owner.");
+      } catch (error) { throw locked(lockPath, `The owner record cannot be read or validated, so the installer cannot prove the earlier run stopped. ${error.message}`); }
+      if (owner.pid !== process.pid) try {
+        process.kill(owner.pid, 0);
+        return { kind: "wait", path: lockPath, reason: `Another process holds the installation lock at ${lockPath}.` };
+      } catch (error) {
+        if (error.code !== "ESRCH") throw locked(lockPath, `The installer could not check recorded PID ${owner.pid} and will not clear its lock. ${error.message}`);
+      }
+      const latest = statAt(lockPath);
+      if (latest?.dev !== current.dev || latest.ino !== current.ino || !latest.isFile() || readFileSync(lockPath).toString() !== bytes) return { kind: "wait", path: lockPath, reason: "The installation lock changed. Nothing was removed." };
+      unlinkSync(lockPath);
+      console.log(`Cleared stale installation lock ${lockPath} because no process has its recorded PID ${owner.pid}.`);
+    }
+    try { fd = openSync(lockPath, "wx", 0o600); }
+    catch (error) {
+      if (error.code === "EEXIST") return { kind: "wait", path: lockPath, reason: "Another run acquired the installation lock." };
+      const message = `Could not create installation owner file at ${lockPath}. ${error.message}`;
+      if (["EACCES", "EPERM"].includes(error.code)) throw new Error(message, { cause: error });
+      throw locked(lockPath, message);
+    }
+    created = fstatSync(fd);
+    const bytes = Buffer.from(JSON.stringify({ schemaVersion: 1, name, home, pid: process.pid }) + "\n");
+    for (let offset = 0; offset < bytes.length;) offset += writeSync(fd, bytes, offset, bytes.length - offset);
+    return { kind: "owned", fd, identity: created };
+  } catch (error) {
+    if (fd !== undefined) releaseLock(lockPath, fd, created, error);
+    if (fd !== undefined) throw locked(lockPath, `Could not publish the installation owner at ${lockPath}. ${error.message}`);
+    throw error;
+  } finally { releaseLock(acquisitionPath, acquisition, acquired); }
+}
+function withInstallLock(action) {
+  mkdirSync(dirname(recordPath), { recursive: true });
+  const deadline = performance.now() + 30000;
+  let announced = false;
+  const sleeper = new Int32Array(new SharedArrayBuffer(4));
+  while (true) {
+    const lock = acquireLock();
+    if (lock.kind === "owned") {
+      let failure;
+      try { return action(); }
+      catch (error) { failure = error; throw error; }
+      finally { releaseLock(lockPath, lock.fd, lock.identity, failure); }
+    }
+    if (!announced) { console.log(`${lock.reason} Waiting up to 30 seconds.`); announced = true; }
+    const remaining = deadline - performance.now();
+    if (remaining <= 0) throw locked(lock.path, `Stopped waiting after 30 seconds. ${lock.reason}`);
+    Atomics.wait(sleeper, 0, 0, Math.min(100, remaining));
+  }
+}
 function main() {
   const { values } = parseArgs({ options: { "report-only": { type: "boolean" } } });
   if (values["report-only"]) {
@@ -175,6 +267,11 @@ function main() {
   } catch {
     throw new Error("Cannot read the mode exemption. Reinstall the complete plugin before updating Intent.");
   }
+  preflight();
+  if (root === data) replaceCopy();
+  return withInstallLock(() => deliverHost(exemption));
+}
+function deliverHost(exemption) {
   preflight();
   const loaded = loadRecord();
   const previous = new Map(loaded.record.entries.map((entry) => [entry.path, entry]));
@@ -194,14 +291,6 @@ function main() {
   const pendingPath = join(dirname(recordPath), `${pendingPrefix}${randomUUID()}.json`);
   const journal = { schemaVersion: 1, pid: process.pid, entries: [], operation: null, ruleLifecycle };
   let journalStarted = false;
-  const phaseFrom = (runs, record) => {
-    const phases = [ruleLifecycle, ...runs.map((run) => run.ruleLifecycle)];
-    if (record.state === "valid") {
-      const phase = recordPhase(record.record, runs);
-      if (phase !== null) phases.push(phase);
-    }
-    return rulePhases[Math.max(...phases.map((phase) => rulePhases.indexOf(phase)))];
-  };
   const savePending = () => {
     mkdirSync(dirname(recordPath), { recursive: true });
     journal.entries = [...owned.values()].filter((entry) => same(fingerprint(entry.path), entry));
@@ -209,18 +298,11 @@ function main() {
     replaceFile(pendingPath, JSON.stringify(journal, null, 2) + "\n", 0o600);
     journalStarted = true;
   };
-  const refresh = () => {
-    const current = loadRecord();
-    const runs = pendingRuns();
-    ruleLifecycle = phaseFrom(runs, current);
-    for (const entry of [...current.record.entries, ...runs.flatMap((run) => run.entries)]) {
-      if (same(fingerprint(entry.path), entry)) owned.set(entry.path, entry);
-    }
+  const prune = () => {
     for (const [path, entry] of owned) if (!same(fingerprint(path), entry)) owned.delete(path);
-    return runs;
   };
   const save = () => {
-    refresh();
+    prune();
     if (journalStarted) savePending();
     mkdirSync(dirname(recordPath), { recursive: true });
     replaceFile(recordPath, JSON.stringify({ schemaVersion: 1, entries: [...owned.values()].sort((a, b) => a.path.localeCompare(b.path)), modeRule, ruleLifecycle }, null, 2) + "\n");
@@ -268,7 +350,13 @@ function main() {
     previous.set(operation.after.path, operation.after);
   }
   const recover = () => {
-    const runs = refresh();
+    const phases = [ruleLifecycle, ...initialRuns.map((run) => run.ruleLifecycle)];
+    ruleLifecycle = rulePhases[Math.max(...phases.map((phase) => rulePhases.indexOf(phase)))];
+    for (const entry of initialRuns.flatMap((run) => run.entries)) {
+      if (same(fingerprint(entry.path), entry)) owned.set(entry.path, entry);
+    }
+    prune();
+    const runs = initialRuns;
     if (runs.some((run) => run.operation)) {
       savePending();
       for (const run of runs) {
@@ -290,7 +378,6 @@ function main() {
       return;
     }
     const current = fingerprint(entry.path);
-    refresh();
     const recorded = owned.get(entry.path) ?? previous.get(entry.path);
     const migrated = legacy(current, relativePath);
     if (current && !same(current, recorded) && !migrated) {
@@ -316,9 +403,6 @@ function main() {
     savePending();
   }
   if (loaded.state !== "valid") console.log(`Installation record ${loaded.state}. No host entries were removed.`);
-  if (root === data) {
-    replaceCopy();
-  }
   recover();
   for (const entry of owned.values()) previous.set(entry.path, entry);
   if (ruleLifecycle === "due" && !journalStarted) savePending();
@@ -355,7 +439,6 @@ function main() {
       `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session.`,
     ];
     const rule = `Before any other step, read the \`${name}-mode\` skill's SKILL.md from your skills list and follow it for the rest of the session, ${exemption}`;
-    refresh();
     const firstInstall = ruleLifecycle === "due";
     const uncertain = ruleLifecycle === "attempted";
     const binary = intentCommand();
@@ -376,11 +459,10 @@ function main() {
         ruleLifecycle = "attempted";
         savePending();
         const latest = call("rules.get", key);
-        refresh();
         if (typeof latest?.content !== "string" || typeof latest.enabled !== "boolean") return false;
         const paragraph = latest.content.split(/\r?\n[ \t]*\r?\n/, 1)[0].trimEnd();
         if (latest.content.includes(rule)) { message = unchanged; return false; }
-        if (migration ? !earlierRules.includes(paragraph) : ruleLifecycle === "settled" || latest.content.includes(`${name}-mode`) || !latest.enabled && latest.content.trim() !== "") return false;
+        if (migration ? !earlierRules.includes(paragraph) : latest.content.includes(`${name}-mode`) || !latest.enabled && latest.content.trim() !== "") return false;
         const content = migration ? rule + latest.content.slice(paragraph.length) : latest.content.trim() === "" ? rule : `${rule}\n\n${latest.content}`;
         ruleChanged = call("rules.update", { ...key, content, enabled: migration ? latest.enabled : true }) !== null;
         return ruleChanged;
@@ -396,8 +478,7 @@ function main() {
           modeRule.status = "existing";
           message = unchanged;
         } else if (firstInstall && !current.content.includes(`${name}-mode`) && (current.enabled || current.content.trim() === "")) {
-          refresh();
-          if (ruleLifecycle === "due" && updateRule(false)) {
+          if (updateRule(false)) {
             modeRule.status = "added";
             message = `added the ${name}-mode rule in ${location}, at the top of your personal rule text.`;
           }
@@ -411,15 +492,12 @@ function main() {
     console.log(message);
     ruleLifecycle = "settled";
     if (journalStarted || firstInstall || uncertain || ruleChanged) savePending();
-    const latest = loadRecord();
-    if (!ruleChanged && latest.state === "valid" && latest.record.ruleLifecycle === "settled") modeRule = latest.record.modeRule;
+    if (!ruleChanged && loaded.state === "valid" && loaded.record.ruleLifecycle === "settled") modeRule = loaded.record.modeRule;
   }
   save();
   const runs = pendingRuns();
-  if (loadRecord().state === "valid" && !runs.some((run) => run.path !== pendingPath && activeRun(run))) {
-    for (const run of runs) {
-      if (run.path === pendingPath || !activeRun(run)) unlinkSync(run.path);
-    }
+  if (loadRecord().state === "valid") {
+    for (const run of runs) unlinkSync(run.path);
   }
 }
 try { main(); } catch (error) { process.stderr.write(`${error.message}\n`); process.exitCode = 2; }

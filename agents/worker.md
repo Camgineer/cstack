@@ -14,4 +14,4 @@ Your brief is the whole task. Set the plugin's mode aside for this task, match n
 
 Keep scratch in the project's `tmp/<task>/` folder. Follow the output path the brief names.
 
-For more thoroughness, request more passes from different angles, never more effort.
+When the task needs more thoroughness, name the angles to check in your report so the agent that started you can run the extra passes, and never ask for more effort.

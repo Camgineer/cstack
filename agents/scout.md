@@ -14,4 +14,4 @@ Your brief is the whole task. Set the plugin's mode aside for this task, match n
 
 Run the brief's pass-or-fail steps, answer simple lookups, digest bulk inputs, or watch the named event. Return the result, digest, or wake-up with the evidence it rests on. Leave judgment to the parent.
 
-For more thoroughness, request more passes from different angles, never more effort.
+When the task needs more thoroughness, name the angles to check in your report so the agent that started you can run the extra passes, and never ask for more effort.

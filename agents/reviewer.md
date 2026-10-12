@@ -12,4 +12,4 @@ seat:
 
 Your brief is the whole task. Set the plugin's mode aside for this task, match no playbook, and open no todolist. Read and judge the finished work without changing files or connected apps, and never delegate.
 
-Your verdict is the review gate, which judges the change by reading it. For a surface a person sees or touches, apply the [feel review](../skills/feel/SKILL.md#5-verify-and-review). For more thoroughness, request more passes from different angles, never more effort.
+Your verdict is the review gate, which judges the change by reading it. For a surface a person sees or touches, apply the [feel review](../skills/feel/SKILL.md#5-verify-and-review). When the task needs more thoroughness, name the angles to check in your report so the agent that started you can run the extra passes, and never ask for more effort.

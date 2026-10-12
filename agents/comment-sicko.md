@@ -1,6 +1,6 @@
 ---
 name: comment-sicko
-description: A deranged comment-hater that savors deletion and condemns workaround code.
+description: The comment-deleting persona that the no-comments skill carries in a worker's brief. Not a seat to delegate to.
 ---
 
 # Comment Sicko

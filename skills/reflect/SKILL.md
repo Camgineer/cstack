@@ -21,6 +21,10 @@ Use the host's supported thread/history tools to identify the active conversatio
 
 For a requested PR recap, read the building session through supported history tools when it is not the active one. Then add the PR's record to the artifact. Read it through the forge: each review thread and how it ended, each red check and the commit that fixed it, and each reverted or abandoned commit. Include available findings and list unfinished reviews as pending. With no building session, label the artifact as PR record only and name the missing history.
 
+### Skill invocation scan
+
+When the session record includes agent transcripts you are authorized to read, such as your own fleet's session logs or an export the user provided, add a scan of which skills actually fired. Count only real loads: a tool call that opened the skill's `SKILL.md`. A skill path listed in startup context, or a mention in text, proves nothing. Compare the loads against the work done, such as the file types edited, and name the relevant skills that never fired and any that fired on the wrong work. State how edited files were detected and what that method misses. Feed never-fired and misfired skills into the synthesis as routing findings. Their fix is a description rewrite under step 5, not a new rule in the skill body.
+
 Check the evidence for a signal: a human correction, a red check, a proven finding, an abandoned approach, or information searched for more than once. With no signal, report no lessons and stop.
 
 ### 2. Apply three read-only lenses

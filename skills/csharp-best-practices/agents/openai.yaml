@@ -1,0 +1,5 @@
+interface:
+  display_name: "Csharp Best Practices"
+  short_description: "Use when reading or editing C#. Apply Godot lifecycle discipline, boundary validation, and behavior tests at public..."
+policy:
+  allow_implicit_invocation: true

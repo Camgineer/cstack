@@ -77,7 +77,7 @@ For example, invoke `how` to explain code or `feature` to work through a feature
 | [Codex CLI](https://learn.chatgpt.com/docs/build-skills#how-codex-uses-skills) | `$how` | `$feature` |
 | [Cursor](https://cursor.com/docs/skills#how-skills-work) | `/how` | `/feature` |
 
-The 28 model-invocable descriptions total 454 words against the plugin's 500-word discovery budget. Names and the 12 task-guide descriptions are excluded. This count does not measure speed or guarantee that an agent chooses the right skill. Skill bodies and their reference files load when needed.
+The 29 model-invocable descriptions total 472 words against the plugin's 500-word discovery budget. Names and the 12 task-guide descriptions are excluded. This count does not measure speed or guarantee that an agent chooses the right skill. Skill bodies and their reference files load when needed.
 
 Task guides end with verified work on the current branch. Your environment owns agent assignments, branches, PRs, reviews, CI, and merges.
 
@@ -94,6 +94,7 @@ Task guides end with verified work on the current branch. Your environment owns 
 | [`control-ui`](skills/control-ui/SKILL.md) | Use to reproduce, verify, or profile web, IDE, or Electron behavior through a local browser harness. |
 | [`correct`](skills/correct/SKILL.md) | Use when agents repeat a mistake. Prevent it through architecture, types, or checks before adding instructions. |
 | [`create-verification-skill`](skills/create-verification-skill/SKILL.md) | Use when an app lacks repeatable user-path verification, or its verification skill or feature map needs updating. |
+| [`csharp-best-practices`](skills/csharp-best-practices/SKILL.md) | Use when reading or editing C#. Apply Godot lifecycle discipline, boundary validation, and behavior tests at public seams. |
 | [`design-ui`](skills/design-ui/SKILL.md) | Use before building, changing, or critiquing UI appearance. Apply project tokens, cover states, and inspect screenshots. |
 | [`deslop`](skills/deslop/SKILL.md) | Use when cleaning AI-generated code from a branch diff before commit. |
 | [`domain-modeling`](skills/domain-modeling/SKILL.md) | Use when defining domain terms, editing a glossary, or recording an architecture decision. |
@@ -130,6 +131,10 @@ Task guides end with verified work on the current branch. Your environment owns 
 | [`runtime-forensics`](skills/runtime-forensics/SKILL.md) | Use when the user asks for runtime forensics. Follow the task from evidence and scope through verification on the current branch. |
 | [`trace-forensics`](skills/trace-forensics/SKILL.md) | Use when the user asks for trace forensics. Follow the task from evidence and scope through verification on the current branch. |
 | [`visual-parity`](skills/visual-parity/SKILL.md) | Use when the user asks for visual parity. Follow the task from evidence and scope through verification on the current branch. |
+
+## Check an installation
+
+An installation keeps several copies: the host's installed record, its marketplace clone, and its cache folders. They can disagree, and an app may show the version of any of them. From a checkout, run `bash tools/doctor.sh` to print every copy this machine has, with versions, and flag cache folders that no longer match the installed version. The script only reads; it changes nothing.
 
 ## Remove setup from before 1.0.0
 

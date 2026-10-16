@@ -1,5 +1,5 @@
 interface:
   display_name: "Autopilot"
-  short_description: "Use before a coding task when no task guide is named. Pick one task guide and follow it."
+  short_description: "Use before any request when no task guide is named. Follow the task guide whose description fits."
 policy:
   allow_implicit_invocation: true

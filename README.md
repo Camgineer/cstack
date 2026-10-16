@@ -1,6 +1,6 @@
 # CStack
 
-The plugin is an optional engineering toolkit plus task guides for coding agents. Autopilot is the default mode. When a coding task names no task guide, the agent can load autopilot, and autopilot picks one task guide and follows it. You can still invoke a skill or a task guide yourself.
+The plugin is an optional engineering toolkit plus task guides for coding agents. Autopilot is the default mode. When a request names no task guide, the agent can load autopilot. Autopilot reads the task guides' own descriptions and follows the one that fits. You can still invoke a skill or a task guide yourself.
 
 The plugin aims to shorten the time to a mergeable PR and keep that time short as a project ages. This is a design goal, not a measured result.
 
@@ -62,7 +62,7 @@ Codex and Cursor discover `.agents/skills`. See [Codex skill locations](https://
 
 ## Use a skill
 
-Describe your task, or choose a skill explicitly. Autopilot is model-invocable, so a coding task with no task guide named can load it. It then reads one task guide and follows that file. The plugin has two invocation kinds:
+Describe your request, or choose a skill explicitly. Autopilot is model-invocable, so a request with no task guide named can load it. It reads each task guide's description from that guide and follows the one that fits. The plugin has two invocation kinds:
 
 - **Model-invocable skills** expose descriptions to the agent. The agent may load one unasked when it matches your task. You can also invoke one yourself.
 - **User-invoked task guides** have `disable-model-invocation: true`. Only your typed command loads one. In Codex, generated `agents/openai.yaml` files express the same policy as `allow_implicit_invocation: false`.
@@ -77,7 +77,7 @@ For example, invoke `how` to explain code or `feature` to work through a feature
 | [Codex CLI](https://learn.chatgpt.com/docs/build-skills#how-codex-uses-skills) | `$how` | `$feature` |
 | [Cursor](https://cursor.com/docs/skills#how-skills-work) | `/how` | `/feature` |
 
-The 30 model-invocable descriptions total 490 words against the plugin's 500-word discovery budget. Names and the 12 task-guide descriptions are excluded. This count does not measure speed or guarantee that an agent chooses the right skill. Skill bodies and their reference files load when needed.
+The 30 model-invocable descriptions total 489 words against the plugin's 500-word discovery budget. Names and the 12 task-guide descriptions are excluded. This count does not measure speed or guarantee that an agent chooses the right skill. Skill bodies and their reference files load when needed.
 
 Task guides end with verified work on the current branch. Your environment owns model choice, branches, reviews, CI, and merges. Autopilot does not take those.
 
@@ -87,7 +87,7 @@ Task guides end with verified work on the current branch. Your environment owns 
 | --- | --- |
 | [`align`](skills/align/SKILL.md) | Use before a substantial change to agree scope, design, acceptance criteria, and verification in a signed spec. |
 | [`architect`](skills/architect/SKILL.md) | Use when code needs a new module, public interface, or design choice. Sketch types and callers before implementation. |
-| [`autopilot`](skills/autopilot/SKILL.md) | Use before a coding task when no task guide is named. Pick one task guide and follow it. |
+| [`autopilot`](skills/autopilot/SKILL.md) | Use before any request when no task guide is named. Follow the task guide whose description fits. |
 | [`benchmark-checklist`](skills/benchmark-checklist/SKILL.md) | Use before running a benchmark or reporting a measured speedup or regression. Check limits, errors, tuning, and repeatability. |
 | [`blast-radius`](skills/blast-radius/SKILL.md) | Use when assessing what a change could break beyond its diff. Run code to prove the safety assumptions. |
 | [`bro`](skills/bro/SKILL.md) | Use when asked to restate the last reply in plain language. |

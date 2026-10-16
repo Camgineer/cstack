@@ -35,7 +35,11 @@ Start `codex`, enter `/plugins`, select the plugin from its marketplace, and ins
 
 ### Cursor
 
-Use Cursor's local plugin directory with [.cursor-plugin/plugin.json](.cursor-plugin/plugin.json):
+Open **Customize**, choose **From GitHub Repository**, and enter `<repository-url>`. Install `<plugin>` and choose user scope. User scope makes the plugin available across your projects.
+
+The repository supplies [.cursor-plugin/marketplace.json](.cursor-plugin/marketplace.json) and [.cursor-plugin/plugin.json](.cursor-plugin/plugin.json). GitHub import requires the marketplace file. The file lists one plugin. Its source is `./`, the repository root. See [Installing skills from a repository](https://cursor.com/docs/skills#installing-skills-from-a-repository) and the [plugins reference](https://cursor.com/docs/reference/plugins).
+
+To test a checkout from a local folder, clone the repository into Cursor's local plugin directory:
 
 ```bash
 mkdir -p ~/.cursor/plugins/local
@@ -56,7 +60,7 @@ For a skills-only installation in a project, run this from the project's root:
 npx skills add <repository-url> --skill '*' --agent claude-code codex cursor --yes
 ```
 
-This command was checked with `skills` 1.7.2. It installs all 40 skills under `.agents/skills` and creates Claude Code links under `.claude/skills`. Reference files and invocation metadata are included. It installs skills rather than registering a plugin. See the [skills CLI](https://github.com/vercel-labs/skills).
+This command was checked with `skills` 1.7.2. It installs all 41 `SKILL.md` files from [skills/](skills/) under `.agents/skills` and creates Claude Code links under `.claude/skills`. Reference files and invocation metadata are included. It installs skills rather than registering a plugin. See the [skills CLI](https://github.com/vercel-labs/skills).
 
 Codex and Cursor discover `.agents/skills`. See [Codex skill locations](https://learn.chatgpt.com/docs/build-skills#where-to-save-skills) and [Cursor skill directories](https://cursor.com/docs/skills#skill-directories).
 

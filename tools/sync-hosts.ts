@@ -160,6 +160,12 @@ function expectedFiles(root: string): Map<string, string> {
     category: "developer-tools",
     skills: "./skills/",
   }));
+  files.set(".cursor-plugin/marketplace.json", json({
+    name: metadata.name,
+    owner: author,
+    metadata: { description: metadata.shortDescription },
+    plugins: [{ name: metadata.name, source: "./", description: metadata.description, version: metadata.version }],
+  }));
 
   const skills = readSkills(root);
   for (const skill of skills) {

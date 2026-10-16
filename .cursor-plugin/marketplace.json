@@ -1,0 +1,17 @@
+{
+  "name": "cstack",
+  "owner": {
+    "name": "CStack contributors"
+  },
+  "metadata": {
+    "description": "PStack engineering toolkit for any coding agent."
+  },
+  "plugins": [
+    {
+      "name": "cstack",
+      "source": "./",
+      "description": "Engineering toolkit and task guides for coding agents: investigate, design, build, and verify. Adapted from PStack by Lauren Tan (poteto).",
+      "version": "1.2.0"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # CStack
 
-The plugin is an optional engineering toolkit plus task guides for coding agents. Use it with or without an orchestrator. Nothing runs and no skill body loads until you or your agent reaches for a skill. Model-invocable skill descriptions let the agent discover what is available.
+The plugin is an optional engineering toolkit plus task guides for coding agents. Autopilot is the default mode. When a coding task names no task guide, the agent can load autopilot, and autopilot picks one task guide and follows it. You can still invoke a skill or a task guide yourself.
 
 The plugin aims to shorten the time to a mergeable PR and keep that time short as a project ages. This is a design goal, not a measured result.
 
@@ -56,13 +56,13 @@ For a skills-only installation in a project, run this from the project's root:
 npx skills add <repository-url> --skill '*' --agent claude-code codex cursor --yes
 ```
 
-This command was checked with `skills` 1.7.2. It installs all 40 skills under `.agents/skills` and creates Claude Code links under `.claude/skills`. Reference files and invocation metadata are included. It installs skills rather than registering a plugin. See the [skills CLI](https://github.com/vercel-labs/skills).
+This command was checked with `skills` 1.7.2 against an older tree. It installs the skills in this repository under `.agents/skills` and creates Claude Code links under `.claude/skills`. Reference files and invocation metadata are included. It installs skills rather than registering a plugin. See the [skills CLI](https://github.com/vercel-labs/skills).
 
 Codex and Cursor discover `.agents/skills`. See [Codex skill locations](https://learn.chatgpt.com/docs/build-skills#where-to-save-skills) and [Cursor skill directories](https://cursor.com/docs/skills#skill-directories).
 
 ## Use a skill
 
-Describe your task, or choose a skill explicitly. The plugin has two invocation kinds:
+Describe your task, or choose a skill explicitly. Autopilot is model-invocable, so a coding task with no task guide named can load it. It then reads one task guide and follows that file. The plugin has two invocation kinds:
 
 - **Model-invocable skills** expose descriptions to the agent. The agent may load one unasked when it matches your task. You can also invoke one yourself.
 - **User-invoked task guides** have `disable-model-invocation: true`. Only your typed command loads one. In Codex, generated `agents/openai.yaml` files express the same policy as `allow_implicit_invocation: false`.
@@ -77,9 +77,9 @@ For example, invoke `how` to explain code or `feature` to work through a feature
 | [Codex CLI](https://learn.chatgpt.com/docs/build-skills#how-codex-uses-skills) | `$how` | `$feature` |
 | [Cursor](https://cursor.com/docs/skills#how-skills-work) | `/how` | `/feature` |
 
-The 29 model-invocable descriptions total 472 words against the plugin's 500-word discovery budget. Names and the 12 task-guide descriptions are excluded. This count does not measure speed or guarantee that an agent chooses the right skill. Skill bodies and their reference files load when needed.
+The 30 model-invocable descriptions total 490 words against the plugin's 500-word discovery budget. Names and the 12 task-guide descriptions are excluded. This count does not measure speed or guarantee that an agent chooses the right skill. Skill bodies and their reference files load when needed.
 
-Task guides end with verified work on the current branch. Your environment owns agent assignments, branches, PRs, reviews, CI, and merges.
+Task guides end with verified work on the current branch. Your environment owns model choice, branches, reviews, CI, and merges. Autopilot does not take those.
 
 ### Model-invocable toolkit
 
@@ -87,6 +87,7 @@ Task guides end with verified work on the current branch. Your environment owns 
 | --- | --- |
 | [`align`](skills/align/SKILL.md) | Use before a substantial change to agree scope, design, acceptance criteria, and verification in a signed spec. |
 | [`architect`](skills/architect/SKILL.md) | Use when code needs a new module, public interface, or design choice. Sketch types and callers before implementation. |
+| [`autopilot`](skills/autopilot/SKILL.md) | Use before a coding task when no task guide is named. Pick one task guide and follow it. |
 | [`benchmark-checklist`](skills/benchmark-checklist/SKILL.md) | Use before running a benchmark or reporting a measured speedup or regression. Check limits, errors, tuning, and repeatability. |
 | [`blast-radius`](skills/blast-radius/SKILL.md) | Use when assessing what a change could break beyond its diff. Run code to prove the safety assumptions. |
 | [`bro`](skills/bro/SKILL.md) | Use when asked to restate the last reply in plain language. |

@@ -1,13 +1,23 @@
-# A toolkit without a process layer
+# The mode selects the task guide
 
-The plugin supplies tools and task guides. The person and their environment own who does the work and what happens to the branch. Installing the plugin starts no workflow, runs no plugin hook, and loads no skill body unasked.
+The plugin supplies tools, task guides, and one default mode. The mode is `autopilot`. It picks which task guide to read and follow. The person and their environment choose the model and own the branch. Installing the plugin registers no hook.
 
 ## Process test
 
-A skill is process if it decides who does the work or what happens to the branch. It is a tool if it helps the agent already doing the work do it better. Process goes. Tools stay.
+The previous test said a skill is process when it decides who does the work or what happens to the branch, and that process goes.
+
+The test now has three parts:
+
+- Choosing the task guide is allowed. `autopilot` may make that choice, then follow the chosen guide.
+- Choosing a model is process. No skill names a model for a task. A missing model name is a failure of this rule, and so is a silent default model.
+- Choosing the branch, opening a review, or merging is process. The surrounding environment owns those.
+
+A tool still helps the agent already doing the work. Task guides stay explicit-only. `autopilot` is model-invocable, so a coding task with no guide named loads it and it selects the guide.
 
 ## Consequences
 
-Task guides end when the work is verified on the current branch. Read-only helpers may assist analysis when the harness supports them; the current agent can do those passes itself. Writing delegation and branch, review, CI, and merge management belong to the surrounding environment.
+`autopilot` reads one task guide and follows that file through its Done section. The guide ends when the work is verified on the current branch. The mode does not install hooks, write a model map, or take the branch.
 
-Each supported host installs through its native plugin manifest. Other harnesses can discover a copied `skills/` folder. The plugin ships no installer or automatic session behavior. Principles live as reference files within the `principles` skill. Repository tooling generates the host manifests and each skill's invocation policy from metadata and frontmatter.
+The mode is one skill under `skills/`. Cursor, Claude Code, and Codex discover that same file through their generated manifests. Grok is outside this decision.
+
+The term for this procedure is task guide. The README and `AGENTS.md` already use that term. Runbook does not appear in this repository. In the `why` skill, playbook names an evidence-category reference, which is a different concept, so those files keep their name.

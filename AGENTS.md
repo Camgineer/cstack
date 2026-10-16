@@ -22,7 +22,7 @@ Keep the project name in the README title and `tools/metadata.json`. Everywhere 
 
 Keep the repository user-agnostic. Leave out the names, accounts, repositories, and preferences of anyone who uses or maintains it. That context belongs in the user's own memory, never in the toolkit. Preserve license notices and source provenance.
 
-Set `disable-model-invocation: true` on task guides that only a person invokes. Model-invocable toolkit skills omit the key. A user-invoked skill may invoke only model-invocable skills; reading a reference file is always allowed. The `principles` skill indexes its own reference files.
+Set `disable-model-invocation: true` on task guides. Omit the key on `autopilot` and on other model-invocable skills. `autopilot` selects one task guide by reading its file. A person may still invoke a task guide by command. A user-invoked skill may invoke only model-invocable skills. Reading a reference file is always allowed. The `principles` skill indexes its own reference files.
 
 Keep sources that need one vendor's APIs in `contrib/`, which no manifest loads.
 

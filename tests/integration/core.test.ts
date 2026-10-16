@@ -79,6 +79,14 @@ test("host sync check catches frontmatter drift, stray metadata, and a skill wit
   });
 });
 
+test("the Cursor marketplace lists one plugin at the repository root", () => {
+  const metadata = JSON.parse(readFileSync(join(root, "tools/metadata.json"), "utf8"));
+  const marketplace = JSON.parse(readFileSync(join(root, ".cursor-plugin/marketplace.json"), "utf8"));
+  expect(marketplace.plugins).toEqual([
+    expect.objectContaining({ name: metadata.name, source: "./" }),
+  ]);
+});
+
 test("native manifests expose skills without automatic session behavior", () => {
   for (const host of ["claude", "codex", "cursor"]) {
     const manifest = JSON.parse(readFileSync(join(root, `.${host}-plugin/plugin.json`), "utf8"));

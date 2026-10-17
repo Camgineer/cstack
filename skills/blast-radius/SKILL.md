@@ -41,6 +41,6 @@ Step 4 is usually one small script that imports the same library the app ships a
 - **Cleared.** What you checked and why it's fine.
 - **Verification needed.** The cheapest test or repro that catches the real bug, including the script you wrote.
 
-Write it through `simple-as-prose`, cite real code, and strip anything private before it goes anywhere public.
+Read [simple-as-prose](https://github.com/camgineer/skills/blob/main/skills/simple-as-prose/SKILL.md) and apply it to the text. Cite real code and strip anything private before it goes anywhere public.
 
 **Reply:** the writeup above, with the one safety fact either proven or marked unproven.

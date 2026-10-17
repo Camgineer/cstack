@@ -60,11 +60,13 @@ For a skills-only installation in a project, run this from the project's root:
 npx skills add <repository-url> --skill '*' --agent claude-code codex cursor --yes
 ```
 
-This command was checked with `skills` 1.7.2. It installs all 41 `SKILL.md` files from [skills/](skills/) under `.agents/skills` and creates Claude Code links under `.claude/skills`. Reference files and invocation metadata are included. It installs skills rather than registering a plugin. See the [skills CLI](https://github.com/vercel-labs/skills).
+This command was checked with `skills` 1.7.2. It installs all 40 `SKILL.md` files from [skills/](skills/) under `.agents/skills` and creates Claude Code links under `.claude/skills`. Reference files and invocation metadata are included. It installs skills rather than registering a plugin. See the [skills CLI](https://github.com/vercel-labs/skills).
 
 Codex and Cursor discover `.agents/skills`. See [Codex skill locations](https://learn.chatgpt.com/docs/build-skills#where-to-save-skills) and [Cursor skill directories](https://cursor.com/docs/skills#skill-directories).
 
 ## Use a skill
+
+Writing workflows read the separately maintained [simple-as-prose](https://github.com/camgineer/skills/blob/main/skills/simple-as-prose/SKILL.md) guidance. It is no longer bundled with the plugin.
 
 Describe your task, or choose a skill explicitly. The plugin has two invocation kinds:
 
@@ -81,7 +83,7 @@ For example, invoke `how` to explain code or `feature` to work through a feature
 | [Codex CLI](https://learn.chatgpt.com/docs/build-skills#how-codex-uses-skills) | `$how` | `$feature` |
 | [Cursor](https://cursor.com/docs/skills#how-skills-work) | `/how` | `/feature` |
 
-The 29 model-invocable descriptions total 472 words against the plugin's 500-word discovery budget. Names and the 12 task-guide descriptions are excluded. This count does not measure speed or guarantee that an agent chooses the right skill. Skill bodies and their reference files load when needed.
+The 28 model-invocable descriptions total 454 words against the plugin's 500-word discovery budget. Names and the 12 task-guide descriptions are excluded. This count does not measure speed or guarantee that an agent chooses the right skill. Skill bodies and their reference files load when needed.
 
 Task guides end with verified work on the current branch. Your environment owns agent assignments, branches, PRs, reviews, CI, and merges.
 
@@ -111,7 +113,6 @@ Task guides end with verified work on the current branch. Your environment owns 
 | [`reflect`](skills/reflect/SKILL.md) | Use when drawing durable lessons from a session or retrospective. Route proven lessons to guidance or structural checks. |
 | [`show-me`](skills/show-me/SKILL.md) | Use when explaining a change, showing a design, or presenting options. Show the smallest useful code, diff, diagram, or view. |
 | [`show-me-your-work`](skills/show-me-your-work/SKILL.md) | Use for long or unattended work that needs a decision trail. Log choices, reasons, evidence, and results. |
-| [`simple-as-prose`](skills/simple-as-prose/SKILL.md) | Use when writing or revising replies, documents, UI copy, comments, or other prose. Make the next action clear. |
 | [`tdd`](skills/tdd/SKILL.md) | Use for requested test-first work or a bug with a cheap local regression test. Prove failure before fixing. |
 | [`teach`](skills/teach/SKILL.md) | Use when asked to understand a change or subsystem. Combine how it works with why it exists. |
 | [`technical-writing`](skills/technical-writing/SKILL.md) | Use when drafting or reviewing technical documents, PR descriptions, or commit messages. Match structure and sentences to the reader. |

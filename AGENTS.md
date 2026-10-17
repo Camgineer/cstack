@@ -2,7 +2,7 @@
 
 Before drafting or editing text, identify its audience and read and apply the required guidance:
 
-- For a person, use [Simple as Prose](skills/simple-as-prose/SKILL.md).
+- For a person, use [Simple as Prose](https://github.com/camgineer/skills/blob/main/skills/simple-as-prose/SKILL.md).
 - For an agent, use [Writing for Agents](skills/writing-for-agents/SKILL.md).
 - For both, use both skills.
 

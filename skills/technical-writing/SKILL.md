@@ -7,7 +7,7 @@ description: "Use when drafting or reviewing technical documents, PR description
 
 The goal is writing a tired engineer understands on the first read. Four layers get you there, one question each: what kind of document is this, how do sentences address the reader, how much does each sentence carry, and can any sentence be read two ways. Apply all four.
 
-Apply **simple-as-prose** for vocabulary, rhythm, and the edit pass. Use the real symbols, files, flags, and commands the codebase names. The layers below govern document structure, instruction order, and ambiguity.
+Read and apply [simple-as-prose](https://github.com/camgineer/skills/blob/main/skills/simple-as-prose/SKILL.md) for vocabulary, rhythm, and the edit pass. Use the real symbols, files, flags, and commands the codebase names. The layers below govern document structure, instruction order, and ambiguity.
 
 ## Pick the mode first (Diátaxis)
 
@@ -80,7 +80,7 @@ Source: Kohl, The Global English Style Guide (SAS Press). Guideline text fetched
 
 ## Voice and repo specifics
 
-- Apply the **simple-as-prose** skill to every doc this skill touches. Its `ai-tells.md` owns the slop-pattern catalog: AI vocabulary, filler, hedging, formatting tells.
+- Apply [simple-as-prose](https://github.com/camgineer/skills/blob/main/skills/simple-as-prose/SKILL.md) to every doc this skill touches. Read its [ai-tells.md](https://github.com/camgineer/skills/blob/main/skills/simple-as-prose/ai-tells.md) for the slop-pattern catalog: AI vocabulary, filler, hedging, formatting tells.
 - PR descriptions and commit messages are writing too. Every layer except Diátaxis applies to them. A PR body is a briefing that a reviewer can read in under a minute. Do not paste bulk logs, SHA lists, or metric tables. Link them.
 - Product UI strings are not documentation. Use your product's copy guidelines for those.
 - Indent code snippets with tabs. Write real paths and real symbols. Make every count or tree claim true at the commit that lands it, and include the command that regenerates it.

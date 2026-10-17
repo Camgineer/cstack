@@ -10,7 +10,7 @@ Investigation requests are read-only. They produce a cited explanation or a reco
 
 1. Invoke `how`. For motivation questions, also invoke `why`.
 2. Produce the `how`-shaped output (Overview / Key Concepts / How It Works / Where Things Live / Gotchas), or a recommendation with a tradeoffs table if the request is a decision between alternatives.
-3. Invoke `simple-as-prose` and apply it to the reply.
+3. Read [simple-as-prose](https://github.com/camgineer/skills/blob/main/skills/simple-as-prose/SKILL.md) and apply it to the reply.
 
 End with the cited answer. A code change needs its own scope and authorization.
 

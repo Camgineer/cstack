@@ -478,6 +478,9 @@ export function installCstack({
           destPath,
           reason: "existing non-cstack entry (re-run with --force to replace)",
         });
+        if (prevEntry && normalizePath(prevEntry.destPath) !== normalizePath(destPath)) {
+          nextEntries.push(prevEntry);
+        }
         continue;
       }
 
@@ -760,23 +763,26 @@ export function installGlobalInstructions({
       }
     } else if (plan.action === "replaced") {
       if (!dryRun) {
-        fs.mkdirSync(plan.targetBackupDir, { recursive: true });
+        fs.mkdirSync(plan.targetBackupDir, { recursive: true, mode: 0o700 });
+        try { fs.chmodSync(plan.targetBackupDir, 0o700); } catch {}
         if (plan.previousKind === "symlink") {
           fs.writeFileSync(
             path.join(plan.targetBackupDir, "symlink.txt"),
             `${plan.destPath} -> ${plan.linkTarget}\n`,
-            "utf8",
+            { encoding: "utf8", mode: 0o600 },
           );
         } else if (plan.rawBytes !== null) {
           fs.writeFileSync(
             path.join(plan.targetBackupDir, path.basename(plan.destPath)),
             plan.rawBytes,
+            { mode: 0o600 },
           );
         }
         if (plan.resolvedBytes !== null) {
           fs.writeFileSync(
             path.join(plan.targetBackupDir, "resolved.md"),
             plan.resolvedBytes,
+            { mode: 0o600 },
           );
         }
 

@@ -491,6 +491,12 @@ test("installGlobalInstructions refuses directory at instruction path, refuses o
     assert.equal(events.length, 1);
     assert.equal(events[0].contentAtCallback, "old content\n");
     assert.ok(res.commitSha && res.commitSha.length === 40);
+    const gitBytes = execFileSync("git", ["-C", REPO_ROOT, "show", `${res.commitSha}:global/AGENTS.md`]);
+    assert.deepEqual(fs.readFileSync(dirAtDest), gitBytes);
+    if (process.platform !== "win32") {
+      assert.equal(fs.statSync(path.join(freshBackup, "claude")).mode & 0o777, 0o700);
+      assert.equal(fs.statSync(path.join(freshBackup, "claude", "CLAUDE.md")).mode & 0o777, 0o600);
+    }
   } finally {
     fs.rmSync(homeDir, { recursive: true, force: true });
   }
@@ -525,6 +531,12 @@ test("changing CLAUDE_CONFIG_DIR does not misidentify unrelated skill dir as cst
     });
     assert.equal(res.conflicts.length, 1);
     assert.equal(fs.readFileSync(path.join(unrelated, "SKILL.md"), "utf8"), "user custom\n");
+    const statusAfter = getStatus({ homeDir });
+    assert.ok(
+      statusAfter.entries.some(
+        (e) => e.skill === "cstack-mode" && e.destPath === path.join(claudeDirA, "skills", "cstack-mode"),
+      ),
+    );
   } finally {
     fs.rmSync(homeDir, { recursive: true, force: true });
   }

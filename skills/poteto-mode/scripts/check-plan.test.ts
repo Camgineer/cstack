@@ -20,7 +20,7 @@ ${rule}
 ### PR mechanics
 ### Verdict and merge
 ### Boot recipe
-\`git show origin/main:\` /loop 1h status message
+\`cat <skills>/\` \`schedule_task\` \`everyMs": 3600000\` status message
 
 ## PR 1
 **Depends on.** None.

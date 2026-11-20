@@ -1,8 +1,9 @@
 ---
 name: sharpen
 description: "Make a task deeper, not bigger, then rewrite the prompt. Use for /sharpen."
-disable-model-invocation: true
 ---
+
+Read [the pstack-t3 runtime](../pstack-runtime/SKILL.md) before spawning workers, choosing models, scheduling, or isolating work. It maps those steps onto T3's orchestrator tools.
 
 I want a deeper version of this task, not a bigger one. Before rewriting it, do four things:
 

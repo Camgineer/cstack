@@ -1,10 +1,11 @@
 ---
 name: correct
 description: "Find the mistakes agents keep repeating in this repo and make each one impossible. Try architecture first, then types, then a lint whose error names the fix, then a test, and write docs last. Prove each check fails on a real past mistake. Repeat this each time the operator corrects you. Use for /correct."
-disable-model-invocation: true
 ---
 
 # Correct
+
+Read [the pstack-t3 runtime](../pstack-runtime/SKILL.md) before spawning workers, choosing models, scheduling, or isolating work. It maps those steps onto T3's orchestrator tools.
 
 The operator keeps correcting agents in this repo for the same mistakes. Change the repo so the next agent can't make them.
 

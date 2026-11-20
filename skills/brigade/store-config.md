@@ -1,0 +1,106 @@
+# Store configuration
+
+Read this file before you run `set` on a store key it names.
+
+## affectedTests
+
+`affectedTests` sets the picker layout `affected` reads. Set it with `set --affected-tests`. The flag takes inline JSON, a JSON file, or `-` for stdin. For example `set --affected-tests config/affected.json` records the file contents.
+
+| Key | Meaning |
+| --- | --- |
+| `always` | Required dotted module every modules result includes. |
+| `workflowModule` | Optional dotted module one `.github/workflows/` path maps to. |
+| `entryPoints` | Required list of repository paths the helper modules load or run. |
+| `helpers` | Optional list of repository paths. |
+| `suite` | Optional whole-suite command. |
+| `python` | Optional absolute path of the second interpreter. |
+| `importRoots` | Optional list of repository paths tried as prefixes for absolute imports. |
+| `env` | Optional object of shell variable names to string values printed in front of the affected-module and whole-suite commands. |
+
+The second interpreter file name is `python<major>` or `python<major>.<minor>`. The paragraph names it by that version. A layout that sets `python` needs a `suite` that starts with `python3`. That interpreter replaces the leading `python3`. `importRoots` is tried in candidate order after the loader directory and the root with every match kept. Relative imports never search it. Roots are normalized and deduped in order and never hold the root itself. An absent `importRoots` means the directories of `entryPoints` and `helpers`.
+
+`env` is an optional object of shell variable names to string values. A name matches `[A-Za-z_][A-Za-z0-9_]*`. A value matches `[A-Za-z0-9_.,:/+=@%-]+`, so it is never empty. `set` refuses an `env` that is not an object, a name that does not match the name pattern, and a value that does not match the value pattern. An absent `env` means no assignment. The paragraph prints `env NAME=value ...` in front of the affected-module command and the whole-suite command, and in front of their second interpreter copies, with the pairs sorted by name.
+
+## sharedDocs and docTimebox
+
+`sharedDocs` plus `docTimebox` set the shared-document catalog and timebox `fire` reads. Set them with `set --shared-docs` and `set --doc-timebox`. `--shared-docs` takes inline JSON, a JSON file, or `-` for stdin. `--doc-timebox` takes a whole number of minutes. For example `set --shared-docs config/shared.json` records the file contents and `set --doc-timebox 60` records 60 minutes.
+
+A `file` entry names one document. A `file` entry whose path ends with `/` names a directory prefix. Files under it are documents. A `skill` entry names a directory with or without its trailing slash. Its `SKILL.md` files are documents. `docTimebox` is a whole number of minutes above zero. It defaults to 90. `fire` refuses a lease holding a shared document when `--timebox` is over `docTimebox` or `--tickets` names more than one ticket, unless `--doc-item`. A successful `fire --doc-item` with no held shared document records the shared-document note `doc-item`. A successful `fire --doc-item` with held shared documents records `doc-item` followed by a colon and the sorted held documents.
+
+## changeNoteDir
+
+`changeNoteDir` sets the fragment directory `fire` leases. Set it with `set --change-note-dir`. For example `set --change-note-dir notes` records `notes`. Clear it with an empty value.
+
+It is an optional repository-relative directory path. It defaults to unset. When it is set, `fire` leases `<dir>/<branch>.md` for the branch that attempt will use. `%` is written as `%25` and `/` is written as `%2F`. When it is unset, `fire` leases no fragment. `fire` with no paths reads no `changeNoteDir` and leases no fragment.
+
+## houseRulesCap
+
+`houseRulesCap` caps one role's house rules by bytes. `brief` and `next` read it. It is a positive integer count of bytes, written by hand in `restaurant.json` as a JSON integer. It is absent by default, and an absent key leaves both commands as they are. A present value that is a boolean, is not an integer, or is under 1 is refused by `brief` and by `next`.
+
+The three roles are `worker`, `reviewer`, and `coordinator`. A rule is a line that starts at column 0 and the indented or blank lines under it. The first of the four tags anywhere on its first line selects its destination. A role tag sends the rule only to that role's STANDING ORDERS text, with the tag and at most one space after it removed. Later tags stay in the text. An untagged rule is in every role's text as it is. The size of that STANDING ORDERS text is its byte count.
+
+`[standing rule]` is the fourth tag. When it is the first tag, the rule is recorded for STANDING RULES and no role's STANDING ORDERS text carries it. The tag and at most one space after it are removed, and trailing whitespace is stripped. An empty block is dropped. Other text, including later tags, stays as written, and no placeholder is filled in. `brief` prints the recorded block once under STANDING RULES, after the built-in lines. A block that CONTEXT or VERIFY already states is not printed again, and neither is a block that an earlier printed line already states, by the same collapsed-whitespace, case-folded test the built-in lines use. The worker's size adds every recorded block once to its STANDING ORDERS size, whether or not a given brief prints it, as its bullet, `- ` plus the block, with no added trailing newline. The reviewer and coordinator sizes do not count it. A rule block's indented lines stay one bullet. A tagged heading does not tag the column-0 rules below it. A file with no such tag reads as it did before.
+
+When a role's size is over the cap, `brief` exits 1 and writes no brief and no contract, and prints one line for each over-cap role that names the role, its size, and the cap. `next` prints the same line for each over-cap role on standard error and exits 0.
+
+## prCredit
+
+`prCredit` sets whether pull requests credit the models that did the work. Set it with `set --pr-credit` or at creation with `open --pr-credit`. Both flags take `on` or `off`. For example `set --pr-credit on` records `true`.
+
+It is a JSON boolean and defaults to unset. A missing key reads as off. When it is off, `credit` prints `credit: off for this restaurant; set --pr-credit on to turn it on`. Onboard lists it as `pr_credit`, missing until it is recorded, and its fix is `open --pr-credit on or set --pr-credit on`. A present value that is not a boolean is refused.
+
+## notify
+
+`notify` is an opt-in outside ping. Set it with `set --notify '<command>'`, and clear it with `set --notify ''`. The value is a command line that is split into words with no shell, so no expansion, pipe, or redirect applies. A value that cannot be split is refused with nothing written.
+
+When the key is set, the command runs once, after the triggering command has finished and released the store lock, at only these times:
+
+- `86 add` parks a new decision. It does not run when `86 add` returns the open decision that already exists for the same dish.
+- `next --failure stuck` runs, which is how a wake reports a paused queue or a provider failure. `next` writes nothing, and the ping fires on the flag alone.
+
+The command runs with the line as its last argument, one word after the words you set. The line is not sent on standard input, and standard input, output, and error go to `/dev/null`. The line names the restaurant and says that a decision is waiting or that work is stuck. It never holds the question text. The only variable part is the restaurant name, and a filter replaces a name that looks like a thread id, path, email, token, or URL with `brigade`. The line is cut at 200 characters. A restaurant name the filter would change prints as `brigade`.
+
+The command gets about 10 seconds. A failure, a missing command, or a timeout prints one `brigade: warning:` line on standard error. It never changes the exit status, the printed result, or the stored result of the command that triggered it. A command that fails before it writes anything never pings.
+
+`status` ends with `outside ping: on` when the key is set and prints nothing extra when it is not. `set` prints `on` in place of the command, and no other output shows it. The command is stored in `restaurant.json`. No schedule is created.
+
+## Refusals
+
+`set` validates the prospective settings with the same readers `affected` and `fire` use. `layout` judges `affectedTests`. `doc_policy` judges `sharedDocs` and `docTimebox`. `set` refuses a malformed `changeNoteDir` with nothing written. `fire` with paths refuses a malformed `changeNoteDir` before it claims a lease. `fire` with no paths reads no `changeNoteDir` and leases no fragment. `fire` always reads `sharedDocs` and `docTimebox` and never reads `affectedTests`.
+
+## Example
+
+This section is an example. It holds example values. It names no default. The `affectedTests` block is a key fragment. Save its inner object to a file and pass that file with `set --affected-tests`, or pipe that object. Replace the placeholder interpreter path.
+
+```json
+"affectedTests": {
+  "always": "tests.test_pstack_t3",
+  "workflowModule": "tests.test_run_tests",
+  "entryPoints": ["t3/added/brigade/scripts/brigade.py", "t3/added/landing/scripts/land.py"],
+  "helpers": ["tests/brigade/support.py", "tests/landing/support.py"],
+  "suite": "python3 scripts/run_tests.py -j 8",
+  "python": "<path to a Python 3.10 interpreter>",
+  "importRoots": ["scripts", "t3/scripts"]
+}
+```
+
+```json
+{
+  "sharedDocs": [
+    {"path": "README.md", "kind": "file"},
+    {"path": "docs/guide.md", "kind": "file"},
+    {"path": "t3/runtime.md", "kind": "file"},
+    {"path": "t3/setup.md", "kind": "file"},
+    {"path": "t3/added/", "kind": "skill"},
+    {"path": "t3/overrides/", "kind": "skill"},
+    {"path": "skills/", "kind": "skill"}
+  ],
+  "docTimebox": 90
+}
+```
+
+```json
+{
+  "changeNoteDir": "changes"
+}
+```

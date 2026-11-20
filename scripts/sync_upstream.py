@@ -1,0 +1,442 @@
+#!/usr/bin/env python3
+"""Replace vendor/pstack with a newer upstream revision and report override drift.
+
+After syncing, `python3 scripts/build.py` lists every override and persona whose
+upstream file changed. Re-port each one, then run `build.py --update-lock`.
+
+With --check, sync nothing. Print each path upstream changed since the pinned
+commit and what pstack-t3 does with that path, and write nothing in the checkout.
+
+With --merge, sync and, for each override and each persona whose vendored
+file changed, either write a clean three-way merge of it or leave it as it is and
+name it. The merge base is the file in vendor/pstack before the sync, used only
+when its sha256 is the one in t3/overrides.lock.json. The lock is never refreshed.
+With --merge --dry-run, print a row for each of those files and write nothing in
+the checkout.
+
+With --merge --conflicts DIR, also write git's conflict-marked merge of each file
+whose merge conflicts to DIR under the lock key. The files are written before the
+sync writes anything in the checkout, and under --dry-run too. DIR is refused when
+it resolves to the checkout or a path under it, and when it exists. DIR is not
+created when nothing conflicts.
+
+When the sync writes upstream.json it also rewrites the README upstream badge
+so the url and the alt text carry the new version. When the badge line is
+missing or not in the expected form, the sync prints one line naming README.md
+and exits with status 1 before it writes upstream.json or replaces vendor/pstack.
+
+With --check, a change under a path in upstream.json's excluded list gets its own
+row marked excluded by upstream.json. An excluded path must sit outside the
+pinned path. A sync copies the pinned path only, so it never copies an excluded
+one.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from dataclasses import asdict, dataclass
+from pathlib import Path, PurePosixPath
+from typing import Literal, Mapping
+
+ROOT = Path(__file__).resolve().parents[1]
+UPSTREAM = ROOT / "upstream.json"
+
+Change = Literal["changed", "added", "removed"]
+Handling = Literal["overridden", "dropped", "unchanged", "not-shipped", "excluded"]
+Kind = Literal["clean", "same", "conflict", "markers", "deleted", "binary", "no-base"]
+
+STATUS = {"M": "changed", "T": "changed", "A": "added", "D": "removed"}
+HANDLING_TEXT = {
+    "overridden": "overridden by {t3_path}",
+    "dropped": "dropped by t3/removed.txt",
+    "unchanged": "ships unchanged",
+    "not-shipped": "not shipped",
+    "excluded": "excluded by upstream.json",
+}
+MERGE_DETAIL = {
+    "clean": "merged",
+    "same": "the merge changes nothing, left as is",
+    "conflict": "left as is, re-port by hand",
+    "markers": "the merge result holds a line starting with <<<<<<<, >>>>>>>, or |||||||, left as is, re-port by hand",
+    "deleted": "upstream deleted its file, left as is",
+    "binary": "a NUL byte in one of the three texts, left as is, re-port by hand",
+    "no-base": "no old upstream text that matches the lock, left as is, re-port by hand",
+}
+DRY_RUN_DETAIL = {**MERGE_DETAIL, "clean": "would merge"}
+SAVED_SUFFIX = ", git's marked merge is in {path}"
+# Without -L, git ends each <<<<<<< and >>>>>>> line with a path it was given, and the new upstream file is in a temporary directory.
+MERGE_LABELS = ("override", "old upstream", "new upstream")
+MERGE_FOOTER = """\
+t3/overrides.lock.json is not refreshed.
+A clean merge is not a reviewed port, because upstream's new lines can hold a Cursor mechanism.
+Once the merges are written, review each merged override or persona and re-port each override or persona whose row says so. Then run python3 scripts/build.py --update-lock, which runs the build's Cursor-leftover check.
+"""
+# No "=======" here. That line also underlines a Markdown heading, and git writes it only between a "<<<<<<<" line and a ">>>>>>>" line.
+MARKER_LINE = re.compile(rb"^(?:<{7}|>{7}|\|{7})", re.MULTILINE)
+FIXED_COPIES = {
+    "pstack-runtime/SKILL.md": "runtime.md",
+    "pstack-runtime/scripts/roles.py": "scripts/roles.py",
+    "setup-pstack/SKILL.md": "setup.md",
+}
+
+
+@dataclass(frozen=True)
+class Layers:
+    hand_ported: Mapping[str, str]
+    added: frozenset[str]
+    overrides: frozenset[str]
+    removed: frozenset[str]
+
+
+@dataclass(frozen=True)
+class Entry:
+    path: str
+    change: Change
+    handling: Handling
+    t3_path: str | None
+
+
+@dataclass(frozen=True)
+class Report:
+    repository: str
+    ref: str
+    pinned: str
+    commit: str
+    version: str | None
+    changes: tuple[Entry, ...]
+
+    @property
+    def up_to_date(self):
+        return self.commit == self.pinned
+
+
+@dataclass(frozen=True)
+class Outcome:
+    t3_path: str
+    conflict_rel: str
+    kind: Kind
+    merged: bytes | None = None
+    marked: bytes | None = None
+
+
+def run(*command, cwd=None):
+    return subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+
+
+def load_layers():
+    # Importing build would otherwise leave scripts/__pycache__ in the checkout.
+    sys.dont_write_bytecode = True
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import build
+
+    t3 = build.T3
+    hand_ported = {f"skills/{key}": f"t3/{file}" for key, file in FIXED_COPIES.items() if (t3 / file).is_file()}
+    for persona in sorted((t3 / "agents").glob("*.md")):
+        hand_ported[f"agents/{persona.name}"] = f"t3/agents/{persona.name}"
+        hand_ported[f"skills/pstack-runtime/agents/{persona.name}"] = f"t3/agents/{persona.name}"
+    return Layers(
+        hand_ported=hand_ported,
+        added=frozenset(rel.as_posix() for rel in build.relative_files(t3 / "added")),
+        overrides=frozenset(rel.as_posix() for rel in build.relative_files(t3 / "overrides")),
+        removed=frozenset(rel.as_posix() for rel in build.removed_paths()),
+    )
+
+
+def excluded_paths(meta: Mapping) -> tuple[str, ...]:
+    paths = tuple(meta.get("excluded", ()))
+    tracked = meta["path"]
+    for entry in paths:
+        if not isinstance(entry, str) or not entry:
+            raise ValueError(f"upstream.json excluded path {entry!r} is not a non-empty string")
+        if entry.startswith("/") or any(part in ("", ".", "..") for part in entry.split("/")):
+            raise ValueError(f"upstream.json excluded path {entry!r} is not a relative path")
+        if entry == tracked or entry.startswith(tracked + "/") or tracked.startswith(entry + "/"):
+            raise ValueError(f"upstream.json excluded path {entry} overlaps the tracked path {tracked}")
+    return paths
+
+
+def classify(path, prefix, layers, excluded):
+    for entry in excluded:
+        if path == entry or path.startswith(entry + "/"):
+            return "excluded", None
+    rest = PurePosixPath(path).relative_to(prefix)
+    if "__pycache__" in rest.parts:
+        return "not-shipped", None
+    if str(rest) in layers.hand_ported:
+        return "overridden", layers.hand_ported[str(rest)]
+    if len(rest.parts) < 2 or rest.parts[0] != "skills":
+        return "not-shipped", None
+    key = PurePosixPath(*rest.parts[1:])
+    if str(key) in layers.added:
+        return "overridden", f"t3/added/{key}"
+    if str(key) in layers.overrides:
+        return "overridden", f"t3/overrides/{key}"
+    if str(key) in layers.removed or any(str(parent) in layers.removed for parent in key.parents):
+        return "dropped", None
+    return "unchanged", None
+
+
+def upstream_changes(repository, ref, pinned, prefix, excluded):
+    with tempfile.TemporaryDirectory(prefix="pstack-upstream-") as temporary:
+        clone = Path(temporary) / "upstream.git"
+
+        def git(*arguments, cwd=clone):
+            return subprocess.run(
+                ("git", *arguments),
+                cwd=cwd,
+                check=True,
+                capture_output=True,
+                encoding="utf-8",
+                errors="surrogateescape",
+                env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+            ).stdout
+
+        git("clone", "--bare", "--filter=blob:none", repository, str(clone), cwd=temporary)
+        commit = git("rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}").strip()
+        changes = []
+        if commit != pinned:
+            pathspecs = [f":(literal){prefix}", *(f":(literal){path}" for path in excluded)]
+            listing = git(
+                "diff", "--name-status", "--no-renames", "--no-ext-diff", "-z", pinned, commit, "--", *pathspecs
+            )
+            fields = listing.split("\0")[:-1]
+            changes = [(STATUS[status], path) for status, path in zip(fields[::2], fields[1::2])]
+        try:
+            version = json.loads(git("show", f"{commit}:{prefix}/.cursor-plugin/plugin.json")).get("version")
+        except (subprocess.CalledProcessError, ValueError, AttributeError):
+            version = None
+    return commit, version if isinstance(version, str) else None, changes
+
+
+def quoted(text):
+    return text if text.isprintable() and " " not in text else json.dumps(text)
+
+
+def render_text(report, prefix):
+    if report.up_to_date:
+        return f"up to date ({report.pinned[:12]})\n"
+    version = f" ({quoted(report.version)})" if report.version else ""
+    lines = [f"upstream {report.ref}: {report.pinned[:12]} -> {report.commit[:12]}{version}"]
+    for entry in report.changes:
+        handling = HANDLING_TEXT[entry.handling].format(t3_path=quoted(entry.t3_path or ""))
+        lines.append(f"{entry.change:<7}  {quoted(entry.path)}  {handling}")
+    if not report.changes:
+        lines.append(f"no changes under {prefix}/")
+    return "\n".join(lines) + "\n"
+
+
+def render_json(report):
+    fields = asdict(report)
+    changes = fields.pop("changes")
+    return json.dumps({**fields, "up_to_date": report.up_to_date, "changes": changes}, indent=2) + "\n"
+
+
+def check(args, meta, excluded):
+    repository = args.repository or meta["repository"]
+    try:
+        commit, version, changes = upstream_changes(repository, args.ref, meta["commit"], meta["path"], excluded)
+    except subprocess.CalledProcessError as error:
+        print(error.stderr.strip() or error, file=sys.stderr)
+        return 1
+    except OSError as error:
+        print(error, file=sys.stderr)
+        return 1
+    layers = load_layers()
+    entries = (Entry(path, change, *classify(path, meta["path"], layers, excluded)) for change, path in changes)
+    report = Report(
+        repository, args.ref, meta["commit"], commit, version, tuple(sorted(entries, key=lambda entry: entry.path))
+    )
+    sys.stdout.write(render_json(report) if args.json else render_text(report, meta["path"]))
+    return 0
+
+
+def merge_file(current, base, other):
+    labels = (argument for label in MERGE_LABELS for argument in ("-L", label))
+    result = subprocess.run(
+        ("git", "merge-file", "-p", *labels, str(current), str(base), str(other)), capture_output=True
+    )
+    if result.returncode and not 1 <= result.returncode <= 127:
+        raise subprocess.CalledProcessError(result.returncode, result.args, stderr=os.fsdecode(result.stderr))
+    return bool(result.returncode), result.stdout
+
+
+def outcome(row, kind, merged=None, marked=None):
+    # t3_path is both the row the sync prints and the file the merge lands in.
+    return Outcome(row.t3_path, row.conflict_rel, kind, merged, marked)
+
+
+def merge_outcome(row, current, base, other, digest):
+    old = base.read_bytes() if base.is_file() else None
+    new = other.read_bytes() if other.is_file() else None
+    if old == new:
+        return None
+    if new is None:
+        return outcome(row, "deleted")
+    if old is None or hashlib.sha256(old).hexdigest() != digest:
+        return outcome(row, "no-base")
+    mine = current.read_bytes()
+    if any(b"\0" in text for text in (old, mine, new)):
+        return outcome(row, "binary")
+    conflicted, merged = merge_file(current, base, other)
+    if conflicted:
+        return outcome(row, "conflict", marked=merged)
+    if merged == mine:
+        return outcome(row, "same")
+    return outcome(row, "markers") if MARKER_LINE.search(merged) else outcome(row, "clean", merged)
+
+
+def plan_merges(old_root, new_root, lock):
+    import build
+
+    outcomes = (
+        merge_outcome(row, ROOT / row.t3_path, old_root / row.upstream_rel, new_root / row.upstream_rel, lock.get(row.lock_key))
+        for row in build.replacements()
+    )
+    return tuple(outcome for outcome in outcomes if outcome)
+
+
+def apply(outcomes, t3):
+    # Staged beside the lock, so a crash leaves each replaced file whole and no extra file under t3/overrides.
+    staging = t3 / "overrides.merge-incoming"
+    for outcome in outcomes:
+        if outcome.kind == "clean":
+            target = ROOT / outcome.t3_path
+            staging.write_bytes(outcome.merged)
+            shutil.copymode(target, staging)
+            os.replace(staging, target)
+
+
+def conflicts_path(text):
+    path = Path(text).resolve()
+    if path == ROOT or ROOT in path.parents:
+        raise ValueError("--conflicts needs a path outside the checkout")
+    if os.path.lexists(text) or os.path.lexists(path):
+        raise ValueError("--conflicts needs a path that does not exist yet")
+    return path
+
+
+def save_conflicts(outcomes, directory):
+    conflicts = [outcome for outcome in outcomes if outcome.kind == "conflict"]
+    if not conflicts:
+        return
+    directory.mkdir(parents=True)
+    for outcome in conflicts:
+        target = directory / outcome.conflict_rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(outcome.marked)
+
+
+def render_merges(outcomes, dry_run, directory=None):
+    if not outcomes:
+        return "no override's upstream file changed\n"
+    detail = DRY_RUN_DETAIL if dry_run else MERGE_DETAIL
+    rows = []
+    for outcome in outcomes:
+        text = detail[outcome.kind]
+        if directory and outcome.kind == "conflict":
+            text += SAVED_SUFFIX.format(path=quoted(str(directory / outcome.conflict_rel)))
+        rows.append(f"{outcome.kind:<8}  {quoted(outcome.t3_path)}  {text}\n")
+    return "".join(rows)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--ref", default="main", help="upstream branch, tag, or commit")
+    parser.add_argument("--check", action="store_true", help="report what upstream changed since the pinned commit and sync nothing")
+    parser.add_argument("--json", action="store_true", help="with --check, print the report as one JSON object")
+    parser.add_argument("--repository", help="with --check, the upstream to read (default: the repository in upstream.json)")
+    parser.add_argument("--merge", action="store_true", help="sync and apply the three-way merge described above")
+    parser.add_argument("--dry-run", action="store_true", help="with --merge, write nothing in the checkout")
+    parser.add_argument(
+        "--conflicts",
+        metavar="DIR",
+        help="with --merge, write git's conflict-marked merge of each file whose merge conflicts under DIR, as described above. DIR is refused when it exists or resolves to the checkout or a path under it",
+    )
+    args = parser.parse_args()
+    if not args.check and (args.json or args.repository):
+        parser.error("--json and --repository need --check")
+    if args.merge and args.check:
+        parser.error("--merge does not combine with --check")
+    if args.dry_run and not args.merge:
+        parser.error("--dry-run needs --merge")
+    if args.conflicts is not None and not args.merge:
+        parser.error("--conflicts needs --merge")
+    directory = None
+    if args.conflicts is not None:
+        try:
+            directory = conflicts_path(args.conflicts)
+        except ValueError as error:
+            parser.error(str(error))
+    meta = json.loads(UPSTREAM.read_text())
+    try:
+        excluded = excluded_paths(meta)
+    except ValueError as error:
+        print(error, file=sys.stderr)
+        return 1
+    if args.check:
+        return check(args, meta, excluded)
+    sys.dont_write_bytecode = True
+    with tempfile.TemporaryDirectory(prefix="pstack-upstream-") as temporary:
+        try:
+            checkout = Path(temporary) / "plugins"
+            run("git", "clone", "--filter=blob:none", "--no-checkout", meta["repository"], str(checkout))
+            run("git", "sparse-checkout", "set", meta["path"], cwd=checkout)
+            run("git", "checkout", args.ref, cwd=checkout)
+            commit = run("git", "rev-parse", "HEAD", cwd=checkout)
+            source = checkout / meta["path"]
+            plugin = json.loads((source / ".cursor-plugin/plugin.json").read_text())
+            sys.path.insert(0, str(ROOT / "scripts"))
+            import build
+
+            outcomes = ()
+            if not args.dry_run:
+                import check as readme_check
+
+                version = plugin.get("version", meta.get("version"))
+                if not isinstance(version, str) or re.fullmatch(r"[0-9]+(?:\.[0-9]+)+", version) is None:
+                    print(f"upstream version {version} cannot be carried by the README upstream badge", file=sys.stderr)
+                    return 1
+                new_readme = readme_check.rewritten_readme(ROOT / "README.md", version)
+                if new_readme is None:
+                    print("README.md has no upstream badge in the expected form", file=sys.stderr)
+                    return 1
+            if args.merge:
+                lock = json.loads(build.LOCK.read_text()) if build.LOCK.exists() else {}
+                outcomes = plan_merges(build.VENDOR, source, lock)
+                if directory:
+                    save_conflicts(outcomes, directory)
+        except (subprocess.CalledProcessError, OSError) as error:
+            if not args.merge:
+                raise
+            stderr = error.stderr.strip() if isinstance(error, subprocess.CalledProcessError) else ""
+            print(stderr or error, file=sys.stderr)
+            return 1
+        if args.dry_run:
+            version = plugin.get("version", meta.get("version"))
+            print(f"vendor/pstack: {meta['commit'][:12]} -> {commit[:12]} ({version}), dry run, nothing written in the checkout")
+            sys.stdout.write(render_merges(outcomes, dry_run=True, directory=directory) + (MERGE_FOOTER if outcomes else ""))
+            return 0
+        shutil.rmtree(source / ".git", ignore_errors=True)
+        build.replace_tree(source, ROOT / "vendor/pstack")
+    previous = meta["commit"]
+    meta.update(commit=commit, version=version)
+    (ROOT / "README.md").write_bytes(new_readme.encode("utf-8"))
+    UPSTREAM.write_text(json.dumps(meta, indent=2) + "\n")
+    print(f"vendor/pstack: {previous[:12]} -> {commit[:12]} ({meta['version']})")
+    if args.merge:
+        apply(outcomes, build.T3)
+        sys.stdout.write(render_merges(outcomes, dry_run=False, directory=directory))
+    result = subprocess.run([sys.executable, str(ROOT / "scripts/build.py")], capture_output=True, text=True)
+    print(result.stdout + result.stderr)
+    sys.stdout.write(MERGE_FOOTER if outcomes else "")
+    return result.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())

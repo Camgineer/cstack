@@ -14,6 +14,10 @@ Other explorers are investigating different slices of the same subsystem in para
 
 {EXPLORATION_ANGLE}
 
+## Exploration Instructions
+
+This exploration is read-only. Do not edit files, commit, or push.
+
 ## Output
 
 ### Components Found

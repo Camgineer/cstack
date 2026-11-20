@@ -1,0 +1,9 @@
+# Config for ops/t3-archive-threads.py. Copy this file to ~/.config/pstack-t3/ops.conf and set every key.
+#
+# One KEY=value per line. A line that starts with # is a comment.
+# A value runs to the end of the line. Blanks around it are dropped.
+# Nothing is expanded. Write no quotes, no $HOME, and no ~.
+# The script reads the keys with its ARCHIVE_ prefix and refuses any other ARCHIVE_ key.
+#
+# T3 Code's home directory. The script reads userdata/statev2.sqlite and userdata/server-runtime.json under it.
+ARCHIVE_T3_HOME=/path/to/.t3

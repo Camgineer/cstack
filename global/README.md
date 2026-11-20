@@ -1,17 +1,18 @@
 # Global instruction files
 
-`AGENTS.md` in this folder is the one source for the owner's global agent instructions. Every machine gets the same bytes. This folder installs nothing by itself.
+`AGENTS.md` in this folder is the one source for the owner's global agent instructions. Every machine gets the same bytes. This folder installs nothing by itself; `scripts/install.mjs` handles installation.
 
 ## Where the text goes
 
-An install step manages two files on each machine. These are the default paths.
+An install step manages three files on each machine. These are the default paths.
 
-| Harness | Installed file |
-| --- | --- |
-| Claude Code | `~/.claude/CLAUDE.md` |
-| Codex | `~/.codex/AGENTS.md` |
+| Harness | Installed file | Skills folder |
+| --- | --- | --- |
+| Claude Code | `~/.claude/CLAUDE.md` | `~/.claude/skills/` |
+| Codex | `~/.codex/AGENTS.md` | `~/.agents/skills/` (and `~/.codex/skills/`) |
+| Antigravity | `~/.gemini/GEMINI.md` | `~/.gemini/config/skills/` |
 
-Claude Code uses `CLAUDE_CONFIG_DIR` in place of `~/.claude` when that variable is set. Codex uses `CODEX_HOME` in place of `~/.codex` in the same way, and it prefers a non-empty `AGENTS.override.md` in the same folder. Claude Code skips the user file when its `managed-only` setting is on.
+Claude Code uses `CLAUDE_CONFIG_DIR` in place of `~/.claude` when that variable is set. Codex uses `CODEX_HOME` in place of `~/.codex` in the same way, and it prefers a non-empty `AGENTS.override.md` in the same folder. Claude Code skips the user file when its `managed-only` setting is on. Inside an Orca Bot directory (`~/.orca/bots/<name>/`), Orca manages `AGENTS.md` and `CLAUDE.md` itself, so bot-specific instructions live in `SOUL.md`.
 
 ## Machine facts stay local
 

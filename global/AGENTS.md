@@ -1,4 +1,4 @@
-Start every task with the cstack-mode skill. Read its file first and follow it. In Claude Code the file is `~/.claude/skills/cstack-mode/SKILL.md`. In Codex it is `~/.agents/skills/cstack-mode/SKILL.md`. `~` means the current user's home folder on every operating system.
+Start every task with the cstack-mode skill. Read its file first and follow it. In Claude Code the file is `~/.claude/skills/cstack-mode/SKILL.md`. In Codex it is `~/.agents/skills/cstack-mode/SKILL.md`. In Antigravity it is `~/.gemini/config/skills/cstack-mode/SKILL.md`. `~` means the current user's home folder on every operating system.
 
 Then read `~/.config/cstack/local.md` when it exists. It holds rules about this machine and my other machines.
 
@@ -24,7 +24,3 @@ Where a skill's reply-style rules differ, these rules win. That includes the rul
 - Who may merge, and when, is set per project. Follow the project's own rule. Where a project has none, ask me before you merge.
 - Before any merge, by me or by you, run the repository's checks and get a review from another model family at the exact head commit.
 - File issues only in repositories I own.
-
-## Skill precedence
-
-cstack is the core of every workflow. When a cstack skill and a mattpocock-skills skill cover the same job, use the cstack skill. Use mattpocock-skills only for wayfinder, grilling, grill-me, grill-with-docs, domain-modeling, to-spec, to-tickets, research, to-questionnaire and wizard. Never run `setup-matt-pocock-skills`.

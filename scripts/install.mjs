@@ -588,12 +588,15 @@ export function installGlobalInstructions({
   const resolvedRepoRoot = fs.realpathSync(repoRoot);
 
   // Step 1 of global/README.md contract: verify required skills exist first.
-  const missingSkills = [];
   for (const targetName of globalTargets) {
-    const def = GLOBAL_TARGET_DEFS[targetName];
-    if (!def) {
+    if (!GLOBAL_TARGET_DEFS[targetName]) {
       throw new Error(`Unknown global target "${targetName}"`);
     }
+  }
+
+  const missingSkills = [];
+  for (const targetName of ALL_GLOBAL_TARGETS) {
+    const def = GLOBAL_TARGET_DEFS[targetName];
     const skillsDir = getTargetDir(homeDir, def.requiredSkillsTarget, {
       env,
       respectEnv,
@@ -728,18 +731,30 @@ export function installGlobalInstructions({
   }
 
   // Step 4a: report every difference BEFORE performing any write.
-  if (typeof onDifference === "function") {
-    for (const plan of plans) {
-      if (plan.action === "replaced") {
-        onDifference({
-          target: plan.target,
-          destPath: plan.destPath,
-          previousKind: plan.previousKind,
-          linkTarget: plan.linkTarget,
-          atImportTarget: plan.atImportTarget,
-          backupPath: plan.targetBackupDir,
-        });
-      }
+  const reportDifference =
+    typeof onDifference === "function"
+      ? onDifference
+      : (diff) => {
+          const prefix = dryRun ? "[dry-run] " : "";
+          const targetInfo = diff.linkTarget
+            ? ` (symlink -> ${diff.linkTarget})`
+            : diff.atImportTarget
+              ? ` (@ import -> ${diff.atImportTarget})`
+              : "";
+          console.log(
+            `${prefix}Difference before write [${diff.target}]: ${diff.destPath} is ${diff.previousKind}${targetInfo}; backing up to ${diff.backupPath}`,
+          );
+        };
+  for (const plan of plans) {
+    if (plan.action === "replaced") {
+      reportDifference({
+        target: plan.target,
+        destPath: plan.destPath,
+        previousKind: plan.previousKind,
+        linkTarget: plan.linkTarget,
+        atImportTarget: plan.atImportTarget,
+        backupPath: plan.targetBackupDir,
+      });
     }
   }
 
@@ -769,6 +784,12 @@ export function installGlobalInstructions({
         fs.mkdirSync(plan.targetBackupDir, { recursive: true, mode: 0o700 });
         try { fs.chmodSync(plan.targetBackupDir, 0o700); } catch {}
         if (plan.previousKind === "symlink") {
+          const backupLinkPath = path.join(plan.targetBackupDir, path.basename(plan.destPath));
+          try {
+            fs.symlinkSync(plan.linkTarget, backupLinkPath);
+          } catch {
+            // Fall back to symlink.txt record when OS disallows creating file symlinks (e.g. unprivileged Windows)
+          }
           fs.writeFileSync(
             path.join(plan.targetBackupDir, "symlink.txt"),
             `${plan.destPath} -> ${plan.linkTarget}\n`,

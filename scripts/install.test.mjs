@@ -271,6 +271,24 @@ test("installGlobalInstructions enforces skills first, backs up symlinks/@-impor
       /Install cstack skills before installing global instructions/,
     );
 
+    // Partial globalTargets must still require skills in ALL folders named by AGENTS.md
+    installCstack({
+      repoRoot: fakeRepo,
+      homeDir,
+      targets: ["claude"],
+    });
+    assert.throws(
+      () =>
+        installGlobalInstructions({
+          repoRoot: fakeRepo,
+          homeDir,
+          globalTargets: ["claude"],
+          globalRef: "HEAD",
+          backupDir,
+        }),
+      /antigravity/,
+    );
+
     // Install skills first
     installCstack({
       repoRoot: fakeRepo,
@@ -352,6 +370,11 @@ test("installGlobalInstructions enforces skills first, backs up symlinks/@-impor
       fs.readFileSync(path.join(backupDir, "claude", "resolved.md"), "utf8"),
       "legacy toolkit instructions\n",
     );
+    const backedUpLink = path.join(backupDir, "codex", "AGENTS.md");
+    if (process.platform !== "win32") {
+      assert.equal(fs.lstatSync(backedUpLink).isSymbolicLink(), true);
+      assert.equal(fs.readlinkSync(backedUpLink), symTarget);
+    }
     assert.equal(
       fs.readFileSync(path.join(backupDir, "codex", "symlink.txt"), "utf8").includes(symTarget),
       true,

@@ -59,9 +59,10 @@ Options:
   --targets <list>         Comma-separated skill targets: ${ALL_TARGETS.join(", ")}, or "all"
                            (default: ${DEFAULT_TARGETS.join(",")})
   --global                 Also install global/AGENTS.md to each harness's global instruction file
+                           (requires --global-ref <commit>)
   --global-targets <list>  Comma-separated global instruction targets: ${ALL_GLOBAL_TARGETS.join(", ")}, or "all"
                            (default: ${DEFAULT_GLOBAL_TARGETS.join(",")}; implies --global)
-  --global-ref <ref>       Git commit/ref to read global/AGENTS.md from (default: working tree file)
+  --global-ref <ref>       Required with --global: approved git commit/ref to read global/AGENTS.md from
   --backup-dir <dir>       Directory for backups when replacing existing global instruction files
                            (default: ~/.config/cstack/global-backups/<timestamp>)
   --copy                   Copy skill directories instead of linking
@@ -161,6 +162,10 @@ export function parseArgs(argv) {
       default:
         throw new Error(`Unknown option: ${arg}`);
     }
+  }
+
+  if (opts.installGlobal && (!opts.globalRef || !String(opts.globalRef).trim())) {
+    throw new Error("--global and --global-targets require --global-ref <commit> (approved commit SHA or ref)");
   }
 
   return opts;
@@ -368,31 +373,25 @@ function parseSingleLineAtImport(rawText, destPath, homeDir) {
 }
 
 function readGlobalSourceBytes(resolvedRepoRoot, globalRef) {
-  if (globalRef) {
-    const commitSha = execFileSync(
-      "git",
-      ["-C", resolvedRepoRoot, "rev-parse", "--verify", `${globalRef}^{commit}`],
-      { encoding: "utf8" },
-    ).trim();
-    const bytes = execFileSync(
-      "git",
-      ["-C", resolvedRepoRoot, "show", `${commitSha}:global/AGENTS.md`],
-      { maxBuffer: 1024 * 1024 },
+  if (!globalRef || !String(globalRef).trim()) {
+    throw new Error(
+      "installGlobalInstructions requires an approved git commit ref (--global-ref <commit>); refusing to read uncommitted working-tree bytes.",
     );
-    return {
-      sourceLabel: `${commitSha}:global/AGENTS.md`,
-      commitSha,
-      bytes,
-    };
   }
-  const sourcePath = path.join(resolvedRepoRoot, "global", "AGENTS.md");
-  if (!fs.existsSync(sourcePath)) {
-    throw new Error(`Global instructions source not found: ${sourcePath}`);
-  }
+  const commitSha = execFileSync(
+    "git",
+    ["-C", resolvedRepoRoot, "rev-parse", "--verify", `${globalRef}^{commit}`],
+    { encoding: "utf8" },
+  ).trim();
+  const bytes = execFileSync(
+    "git",
+    ["-C", resolvedRepoRoot, "show", `${commitSha}:global/AGENTS.md`],
+    { maxBuffer: 1024 * 1024 },
+  );
   return {
-    sourceLabel: sourcePath,
-    commitSha: null,
-    bytes: fs.readFileSync(sourcePath),
+    sourceLabel: `${commitSha}:global/AGENTS.md`,
+    commitSha,
+    bytes,
   };
 }
 

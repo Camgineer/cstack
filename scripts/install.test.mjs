@@ -240,6 +240,22 @@ test("installGlobalInstructions enforces skills first, backs up symlinks/@-impor
     fs.mkdirSync(globalDir, { recursive: true });
     const sourceText = "Start every task with cstack-mode.\n";
     fs.writeFileSync(path.join(globalDir, "AGENTS.md"), sourceText, "utf8");
+    execFileSync("git", ["-C", fakeRepo, "init", "-q"]);
+    execFileSync("git", ["-C", fakeRepo, "add", "global/AGENTS.md"]);
+    execFileSync("git", [
+      "-C",
+      fakeRepo,
+      "-c",
+      "user.name=Test",
+      "-c",
+      "user.email=test@example.com",
+      "commit",
+      "-q",
+      "-m",
+      "approve global instructions",
+    ]);
+    // Uncommitted working-tree edit must NEVER be installed
+    fs.writeFileSync(path.join(globalDir, "AGENTS.md"), "UNAPPROVED WORKING TREE EDIT\n", "utf8");
     const expectedSha = sha256(Buffer.from(sourceText, "utf8"));
 
     // Fails when skills are not installed yet
@@ -249,6 +265,7 @@ test("installGlobalInstructions enforces skills first, backs up symlinks/@-impor
           repoRoot: fakeRepo,
           homeDir,
           globalTargets: ["claude", "codex", "antigravity"],
+          globalRef: "HEAD",
           backupDir,
         }),
       /Install cstack skills before installing global instructions/,
@@ -280,11 +297,24 @@ test("installGlobalInstructions enforces skills first, backs up symlinks/@-impor
 
     // 3. Antigravity: missing (~/.gemini/GEMINI.md)
 
+    // Refuses omitting globalRef
+    assert.throws(
+      () =>
+        installGlobalInstructions({
+          repoRoot: fakeRepo,
+          homeDir,
+          globalTargets: ["claude", "codex", "antigravity"],
+          backupDir,
+        }),
+      /requires an approved git commit ref/,
+    );
+
     // Dry run touches nothing
     const dryRes = installGlobalInstructions({
       repoRoot: fakeRepo,
       homeDir,
       globalTargets: ["claude", "codex", "antigravity"],
+      globalRef: "HEAD",
       backupDir,
       dryRun: true,
     });
@@ -297,6 +327,7 @@ test("installGlobalInstructions enforces skills first, backs up symlinks/@-impor
       repoRoot: fakeRepo,
       homeDir,
       globalTargets: ["claude", "codex", "antigravity"],
+      globalRef: "HEAD",
       backupDir,
     });
     assert.equal(res.sourceSha256, expectedSha);
@@ -335,6 +366,7 @@ test("installGlobalInstructions enforces skills first, backs up symlinks/@-impor
       repoRoot: fakeRepo,
       homeDir,
       globalTargets: ["claude", "codex", "antigravity"],
+      globalRef: "HEAD",
       backupDir: path.join(homeDir, "second-backup"),
     });
     assert.ok(rerun.results.every((r) => r.action === "unchanged"));
@@ -414,6 +446,8 @@ test("parseArgs validates options and target names", () => {
     "all",
     "--global-targets",
     "claude,antigravity",
+    "--global-ref",
+    "HEAD",
     "--copy",
     "--dry-run",
   ]);
@@ -421,9 +455,12 @@ test("parseArgs validates options and target names", () => {
   assert.deepEqual(DEFAULT_TARGETS, ["claude", "agents", "codex", "antigravity"]);
   assert.equal(parsed.installGlobal, true);
   assert.deepEqual(parsed.globalTargets, ["claude", "antigravity"]);
+  assert.equal(parsed.globalRef, "HEAD");
   assert.equal(parsed.copy, true);
   assert.equal(parsed.dryRun, true);
 
+  assert.throws(() => parseArgs(["--global"]), /require --global-ref/);
+  assert.throws(() => parseArgs(["--global-targets", "claude"]), /require --global-ref/);
   assert.throws(() => parseArgs(["--targets", "unknown"]), /Unknown target/);
   assert.throws(() => parseArgs(["--global-targets", "cursor"]), /Unknown target/);
   assert.throws(() => parseArgs(["--bogus"]), /Unknown option/);
@@ -449,6 +486,7 @@ test("installGlobalInstructions refuses directory at instruction path, refuses o
           repoRoot: REPO_ROOT,
           homeDir,
           globalTargets: ["claude"],
+          globalRef: "HEAD",
           backupDir,
         }),
       /Refusing to replace directory/,
@@ -465,6 +503,7 @@ test("installGlobalInstructions refuses directory at instruction path, refuses o
           repoRoot: REPO_ROOT,
           homeDir,
           globalTargets: ["claude"],
+          globalRef: "HEAD",
           backupDir,
         }),
       /Refusing to overwrite existing backup directory/,

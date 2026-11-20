@@ -1,0 +1,113 @@
+name: Sync pstack upstream
+
+on:
+  schedule:
+    # Runs nightly at 09:00 UTC (4:00 AM EST / 5:00 AM EDT)
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: "Upstream cursor/plugins ref to sync (branch, tag, or SHA)"
+        required: false
+        default: "main"
+        type: string
+      dry_run:
+        description: "Preview upstream changes without committing or opening a PR"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-pstack-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync upstream pstack onto pstack-upstream branch
+        id: sync
+        env:
+          UPSTREAM_REF: ${{ inputs.upstream_ref || 'main' }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+        run: |
+          args=(--ref "$UPSTREAM_REF")
+          if [[ "$DRY_RUN" == "true" ]]; then
+            args+=(--dry-run)
+          else
+            args+=(--push)
+          fi
+          ./scripts/sync-upstream.sh "${args[@]}"
+
+      - name: Open or update pull request into main
+        if: inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OLD_VERSION: ${{ steps.sync.outputs.old_version }}
+          NEW_VERSION: ${{ steps.sync.outputs.new_version }}
+          UPSTREAM_SHA: ${{ steps.sync.outputs.upstream_sha }}
+          UPSTREAM_SHORT_SHA: ${{ steps.sync.outputs.upstream_short_sha }}
+        run: |
+          git fetch origin main pstack-upstream
+
+          AHEAD_COUNT="$(git rev-list --count origin/main..origin/pstack-upstream)"
+          if [[ "$AHEAD_COUNT" -eq 0 ]]; then
+            echo "pstack-upstream has no unmerged commits relative to main."
+            exit 0
+          fi
+
+          PR_TITLE="Sync pstack upstream to $NEW_VERSION"
+          if [[ "$OLD_VERSION" == "$NEW_VERSION" ]]; then
+            PR_TITLE="Sync pstack upstream ($NEW_VERSION, $UPSTREAM_SHORT_SHA)"
+          fi
+
+          COMMIT_LOG="$(git log --oneline origin/main..origin/pstack-upstream)"
+          DIFF_STAT="$(git diff --stat origin/main...origin/pstack-upstream)"
+
+          PR_BODY="$(cat <<EOF
+          Automated nightly sync of upstream Cursor \`pstack\` from [\`cursor/plugins/pstack\`](https://github.com/cursor/plugins/tree/$UPSTREAM_SHA/pstack).
+
+          - **Upstream version:** \`$OLD_VERSION\` -> \`$NEW_VERSION\`
+          - **Upstream commit:** [\`$UPSTREAM_SHORT_SHA\`](https://github.com/cursor/plugins/commit/$UPSTREAM_SHA)
+          - **Unmerged upstream commits:** $AHEAD_COUNT
+
+          ### Commits on \`pstack-upstream\`
+          \`\`\`
+          $COMMIT_LOG
+          \`\`\`
+
+          ### Changed files
+          \`\`\`
+          $DIFF_STAT
+          \`\`\`
+
+          > **Merge note:** Use **Create a merge commit** (not squash merge) so \`main\` keeps \`pstack-upstream\` as a common ancestor for clean future syncs.
+          EOF
+          )"
+
+          EXISTING_PR="$(gh pr list --base main --head pstack-upstream --state open --json number --jq '.[0].number // empty')"
+          if [[ -n "$EXISTING_PR" ]]; then
+            echo "Updating existing PR #$EXISTING_PR..."
+            gh pr edit "$EXISTING_PR" --title "$PR_TITLE" --body "$PR_BODY"
+          else
+            echo "Opening new PR from pstack-upstream into main..."
+            gh pr create \
+              --base main \
+              --head pstack-upstream \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY"
+          fi

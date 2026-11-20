@@ -11,6 +11,7 @@ import {
   ALL_TARGETS,
   DEFAULT_TARGETS,
   discoverSkills,
+  formatUpdateSummary,
   getGlobalInstructionPath,
   getManifestPath,
   getStatus,
@@ -751,18 +752,55 @@ test("updateCstack fast-forwards, re-links new skills, prunes removed skills, an
     );
     execFileSync("git", ["-C", localClone, "checkout", "-q", "main"]);
 
-    // Copy-mode installations stay in copy mode on --update (never silently replaced with links)
-    const copyHome = makeTempDir("cstack-update-copy-home-");
+    // Mixed-mode installations preserve copy vs link per target across updates (including newly added skills)
+    const mixedHome = makeTempDir("cstack-update-mixed-home-");
     try {
-      installCstack({ repoRoot: localClone, homeDir: copyHome, targets: ["claude"], copy: true });
-      const copyRes = updateCstack({ repoRoot: localClone, homeDir: copyHome });
-      assert.equal(copyRes.installSummary.mode, "copy");
-      const skillStat = fs.lstatSync(path.join(copyHome, ".claude", "skills", "new-skill"));
-      assert.equal(skillStat.isSymbolicLink(), false);
-      assert.equal(skillStat.isDirectory(), true);
+      installCstack({ repoRoot: localClone, homeDir: mixedHome, targets: ["claude"], copy: true });
+      installCstack({ repoRoot: localClone, homeDir: mixedHome, targets: ["codex"], copy: false });
+
+      // Push a v3 skill upstream and update
+      fs.mkdirSync(path.join(authorRepo, "skills", "v3-skill"), { recursive: true });
+      fs.writeFileSync(path.join(authorRepo, "skills", "v3-skill", "SKILL.md"), "# v3-skill\n");
+      gitCommit(authorRepo, "v3");
+      execFileSync("git", ["-C", authorRepo, "push", "-q", "origin", "main"]);
+
+      const mixedRes = updateCstack({ repoRoot: localClone, homeDir: mixedHome });
+      assert.equal(mixedRes.installSummary.mode, "mixed");
+
+      const claudeExisting = fs.lstatSync(path.join(mixedHome, ".claude", "skills", "new-skill"));
+      const claudeAdded = fs.lstatSync(path.join(mixedHome, ".claude", "skills", "v3-skill"));
+      assert.equal(claudeExisting.isSymbolicLink(), false);
+      assert.equal(claudeExisting.isDirectory(), true);
+      assert.equal(claudeAdded.isSymbolicLink(), false);
+      assert.equal(claudeAdded.isDirectory(), true);
+
+      const codexExisting = fs.lstatSync(path.join(mixedHome, ".codex", "skills", "new-skill"));
+      const codexAdded = fs.lstatSync(path.join(mixedHome, ".codex", "skills", "v3-skill"));
+      assert.equal(codexExisting.isSymbolicLink(), true);
+      assert.equal(codexAdded.isSymbolicLink(), true);
     } finally {
-      fs.rmSync(copyHome, { recursive: true, force: true });
+      fs.rmSync(mixedHome, { recursive: true, force: true });
     }
+
+    // Dry-run does not report "already up to date" when upstream is unset or missing on remote
+    execFileSync("git", ["-C", localClone, "branch", "--unset-upstream"]);
+    const noUpstreamRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
+    assert.equal(noUpstreamRes.upstreamRelation, "no-upstream");
+    assert.equal(noUpstreamRes.wouldFailPull, true);
+    const noUpstreamText = formatUpdateSummary(noUpstreamRes, true);
+    assert.match(noUpstreamText, /no upstream/i);
+    assert.match(noUpstreamText, /would fail/i);
+    assert.doesNotMatch(noUpstreamText, /already up to date/i);
+
+    execFileSync("git", ["-C", localClone, "config", "branch.main.remote", "origin"]);
+    execFileSync("git", ["-C", localClone, "config", "branch.main.merge", "refs/heads/does-not-exist"]);
+    const missingRefRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
+    assert.equal(missingRefRes.upstreamRelation, "missing-remote-ref");
+    assert.equal(missingRefRes.wouldFailPull, true);
+    const missingRefText = formatUpdateSummary(missingRefRes, true);
+    assert.match(missingRefText, /missing on remote/i);
+    assert.match(missingRefText, /would fail/i);
+    assert.doesNotMatch(missingRefText, /already up to date/i);
   } finally {
     fs.rmSync(bareOrigin, { recursive: true, force: true });
     fs.rmSync(authorRepo, { recursive: true, force: true });

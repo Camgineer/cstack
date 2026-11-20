@@ -417,6 +417,7 @@ export function installCstack({
   homeDir = os.homedir(),
   targets = DEFAULT_TARGETS,
   copy = false,
+  preserveExistingMode = false,
   force = false,
   dryRun = false,
   platform = process.platform,
@@ -427,7 +428,7 @@ export function installCstack({
   const skills = discoverSkills(resolvedRepoRoot);
   const manifestPath = getManifestPath(homeDir);
   const prevManifest = loadManifest(manifestPath);
-  const mode = copy ? "copy" : "link";
+  const defaultMode = copy ? "copy" : "link";
 
   const prevManagedByKey = new Map();
   if (prevManifest && Array.isArray(prevManifest.entries)) {
@@ -441,11 +442,12 @@ export function installCstack({
 
   const desiredKeys = new Set();
   const activeTargetDirs = new Map();
+  const usedModes = new Set();
   const nextEntries = [];
   const summary = {
     repoRoot: resolvedRepoRoot,
     manifestPath,
-    mode,
+    mode: defaultMode,
     targets: [...targets],
     skillCount: skills.length,
     installed: 0,
@@ -458,9 +460,25 @@ export function installCstack({
 
   for (const targetName of targets) {
     const targetDir = getTargetDir(homeDir, targetName, { env, respectEnv });
-    activeTargetDirs.set(targetName, normalizePath(targetDir));
+    const normalizedTargetDir = normalizePath(targetDir);
+    activeTargetDirs.set(targetName, normalizedTargetDir);
     if (!dryRun) {
       fs.mkdirSync(targetDir, { recursive: true });
+    }
+
+    let targetDefaultMode = defaultMode;
+    if (preserveExistingMode && prevManifest && Array.isArray(prevManifest.entries)) {
+      const prevTargetEntries = prevManifest.entries.filter(
+        (e) =>
+          e.target === targetName &&
+          normalizePath(path.dirname(e.destPath)) === normalizedTargetDir,
+      );
+      if (
+        prevTargetEntries.length > 0 &&
+        prevTargetEntries.every((e) => e.mode === "copy")
+      ) {
+        targetDefaultMode = "copy";
+      }
     }
 
     for (const skill of skills) {
@@ -469,15 +487,22 @@ export function installCstack({
       desiredKeys.add(key);
       const stat = lstatOrNull(destPath);
       const prevEntry = prevManagedByKey.get(key);
+      const entryMode =
+        preserveExistingMode &&
+        prevEntry &&
+        (prevEntry.mode === "copy" || prevEntry.mode === "link")
+          ? prevEntry.mode
+          : targetDefaultMode;
 
-      if (mode === "link" && stat && isLinkTo(destPath, skill.sourceDir)) {
+      if (entryMode === "link" && stat && isLinkTo(destPath, skill.sourceDir)) {
         summary.unchanged += 1;
+        usedModes.add(entryMode);
         nextEntries.push({
           target: targetName,
           skill: skill.name,
           destPath,
           sourceDir: skill.sourceDir,
-          mode,
+          mode: entryMode,
         });
         continue;
       }
@@ -503,20 +528,21 @@ export function installCstack({
       }
 
       const actionType = stat ? "update" : "install";
+      usedModes.add(entryMode);
       summary.actions.push({
         type: actionType,
         target: targetName,
         skill: skill.name,
         destPath,
         sourceDir: skill.sourceDir,
-        mode,
+        mode: entryMode,
       });
 
       if (!dryRun) {
         if (stat) {
           removeEntry(destPath, stat);
         }
-        if (mode === "copy") {
+        if (entryMode === "copy") {
           copyDir(skill.sourceDir, destPath);
         } else {
           createLink(skill.sourceDir, destPath, platform);
@@ -534,9 +560,15 @@ export function installCstack({
         skill: skill.name,
         destPath,
         sourceDir: skill.sourceDir,
-        mode,
+        mode: entryMode,
       });
     }
+  }
+
+  if (usedModes.size === 1) {
+    summary.mode = [...usedModes][0];
+  } else if (usedModes.size > 1) {
+    summary.mode = "mixed";
   }
 
   if (prevManifest && Array.isArray(prevManifest.entries)) {
@@ -1166,20 +1198,14 @@ export function updateCstack({
       effectiveTargets = DEFAULT_TARGETS;
     }
   }
-  let effectiveCopy = copy;
-  if (effectiveCopy === null || effectiveCopy === undefined) {
-    const relevantEntries =
-      prev && Array.isArray(prev.entries)
-        ? prev.entries.filter((e) => effectiveTargets.includes(e.target))
-        : [];
-    effectiveCopy = relevantEntries.length > 0 && relevantEntries.some((e) => e.mode === "copy");
-  }
+  const preserveExistingMode = copy === null || copy === undefined;
 
   const installSummary = installCstack({
     repoRoot: resolvedRepoRoot,
     homeDir,
     targets: effectiveTargets,
-    copy: effectiveCopy,
+    copy: copy === true,
+    preserveExistingMode,
     force,
     dryRun,
     platform,
@@ -1209,6 +1235,11 @@ export function updateCstack({
       upstreamRelation === "fast-forward" ||
       upstreamRelation === "remote-unfetched" ||
       upstreamRelation === "fast-forwarded",
+    wouldFailPull:
+      dryRun &&
+      (upstreamRelation === "no-upstream" ||
+        upstreamRelation === "missing-remote-ref" ||
+        upstreamRelation === "diverged"),
     previewFromLocalHeadOnly: dryRun && remoteSha !== null && remoteSha !== beforeSha,
     installSummary,
     status,
@@ -1263,7 +1294,7 @@ function formatUninstallSummary(summary, dryRun) {
   return lines.join("\n");
 }
 
-function formatUpdateSummary(result, dryRun) {
+export function formatUpdateSummary(result, dryRun) {
   const prefix = dryRun ? "[dry-run] " : "";
   let gitLine;
   if (dryRun) {
@@ -1273,10 +1304,16 @@ function formatUpdateSummary(result, dryRun) {
       gitLine = `${prefix}Git (${result.branch}): fast-forward available ${result.beforeSha.slice(0, 7)} -> ${result.remoteSha.slice(0, 7)} (skill/global diff below reflects local HEAD only)`;
     } else if (result.upstreamRelation === "diverged" && result.remoteSha) {
       gitLine = `${prefix}Git (${result.branch}): diverged from remote ${result.remoteSha.slice(0, 7)} (local HEAD ${result.beforeSha.slice(0, 7)}); git pull --ff-only would fail`;
+    } else if (result.upstreamRelation === "no-upstream") {
+      gitLine = `${prefix}Git (${result.branch}): no upstream tracking branch configured; git pull --ff-only would fail`;
+    } else if (result.upstreamRelation === "missing-remote-ref") {
+      gitLine = `${prefix}Git (${result.branch}): upstream ref is missing on remote; git pull --ff-only would fail`;
     } else if (result.upstreamRelation === "ahead") {
       gitLine = `${prefix}Git (${result.branch}): local HEAD ${result.beforeSha.slice(0, 7)} is ahead of remote`;
-    } else {
+    } else if (result.upstreamRelation === "up-to-date") {
       gitLine = `${prefix}Git (${result.branch}): already up to date at ${result.beforeSha.slice(0, 7)}`;
+    } else {
+      gitLine = `${prefix}Git (${result.branch}): upstream status "${result.upstreamRelation}" at ${result.beforeSha.slice(0, 7)}`;
     }
   } else {
     gitLine = result.pulled
@@ -1363,7 +1400,7 @@ function main() {
         respectEnv,
       });
       console.log(formatUpdateSummary(result, opts.dryRun));
-      if (result.installSummary.conflicts.length > 0) {
+      if (result.installSummary.conflicts.length > 0 || result.wouldFailPull) {
         process.exit(1);
       }
       process.exit(0);

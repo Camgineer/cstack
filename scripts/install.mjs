@@ -783,25 +783,6 @@ export function installGlobalInstructions({
       if (!dryRun) {
         fs.mkdirSync(plan.targetBackupDir, { recursive: true, mode: 0o700 });
         try { fs.chmodSync(plan.targetBackupDir, 0o700); } catch {}
-        if (plan.previousKind === "symlink") {
-          const backupLinkPath = path.join(plan.targetBackupDir, path.basename(plan.destPath));
-          try {
-            fs.symlinkSync(plan.linkTarget, backupLinkPath);
-          } catch {
-            // Fall back to symlink.txt record when OS disallows creating file symlinks (e.g. unprivileged Windows)
-          }
-          fs.writeFileSync(
-            path.join(plan.targetBackupDir, "symlink.txt"),
-            `${plan.destPath} -> ${plan.linkTarget}\n`,
-            { encoding: "utf8", mode: 0o600 },
-          );
-        } else if (plan.rawBytes !== null) {
-          fs.writeFileSync(
-            path.join(plan.targetBackupDir, path.basename(plan.destPath)),
-            plan.rawBytes,
-            { mode: 0o600 },
-          );
-        }
         if (plan.resolvedBytes !== null) {
           fs.writeFileSync(
             path.join(plan.targetBackupDir, "resolved.md"),
@@ -809,9 +790,38 @@ export function installGlobalInstructions({
             { mode: 0o600 },
           );
         }
+        let alreadyMoved = false;
+        if (plan.previousKind === "symlink") {
+          fs.writeFileSync(
+            path.join(plan.targetBackupDir, "symlink.txt"),
+            `${plan.destPath} -> ${plan.linkTarget}\n`,
+            { encoding: "utf8", mode: 0o600 },
+          );
+          const backupLinkPath = path.join(plan.targetBackupDir, path.basename(plan.destPath));
+          try {
+            fs.symlinkSync(plan.linkTarget, backupLinkPath);
+          } catch (symErr) {
+            try {
+              fs.renameSync(plan.destPath, backupLinkPath);
+              alreadyMoved = true;
+            } catch (renameErr) {
+              throw new Error(
+                `Failed to preserve symlink ${plan.destPath} in ${backupLinkPath}: ${symErr.message}; rename fallback failed: ${renameErr.message}`,
+              );
+            }
+          }
+        } else if (plan.rawBytes !== null) {
+          fs.writeFileSync(
+            path.join(plan.targetBackupDir, path.basename(plan.destPath)),
+            plan.rawBytes,
+            { mode: 0o600 },
+          );
+        }
 
-        // Never write through a symlink: unlink the entry itself, then write a regular file.
-        fs.unlinkSync(plan.destPath);
+        // Never write through a symlink: unlink (if not already moved) then write a regular file.
+        if (!alreadyMoved) {
+          fs.unlinkSync(plan.destPath);
+        }
         fs.mkdirSync(path.dirname(plan.destPath), { recursive: true });
         fs.writeFileSync(plan.destPath, sourceBytes, { mode: 0o600 });
         try { fs.chmodSync(plan.destPath, 0o600); } catch {}

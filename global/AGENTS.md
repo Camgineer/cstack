@@ -21,7 +21,8 @@ Where a skill's reply-style rules differ, these rules win. That includes the rul
 ## Boundaries
 
 - Only I approve a plan or a ticket for implementation.
-- Merge only when I say so in my own words. Before any merge, by me or by you, get a review from another model family at the exact head commit.
+- Merge only when I say so in my own words. Before any merge, by me or by you, run the repository's checks and get a review from another model family at the exact head commit.
+- Only I merge a change to these global instructions.
 - File issues only in repositories I own.
 
 ## Skill precedence

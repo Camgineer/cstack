@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -7,32 +8,40 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+  ALL_TARGETS,
+  DEFAULT_TARGETS,
   discoverSkills,
+  getGlobalInstructionPath,
   getManifestPath,
   getStatus,
   getTargetDir,
   installCstack,
+  installGlobalInstructions,
   parseArgs,
   uninstallCstack,
 } from "./install.mjs";
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const INSTALL_SCRIPT = path.join(REPO_ROOT, "scripts", "install.mjs");
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..");
+const INSTALL_SCRIPT = path.join(__dirname, "install.mjs");
 
 function makeTempDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
+function sha256(buf) {
+  return crypto.createHash("sha256").update(buf).digest("hex");
+}
+
 test("install, idempotent re-run, status, and uninstall preserve unrelated skills", () => {
   const homeDir = makeTempDir("cstack-home-");
   try {
-    // Seed unrelated skills (e.g., T3 Projects new-project and Codex .system)
-    const claudeNewProject = path.join(homeDir, ".claude", "skills", "new-project");
     const codexSystem = path.join(homeDir, ".codex", "skills", ".system");
-    fs.mkdirSync(claudeNewProject, { recursive: true });
+    const agyCustom = path.join(homeDir, ".gemini", "config", "skills", "custom-skill");
     fs.mkdirSync(codexSystem, { recursive: true });
-    fs.writeFileSync(path.join(claudeNewProject, "SKILL.md"), "# new-project\n");
+    fs.mkdirSync(agyCustom, { recursive: true });
     fs.writeFileSync(path.join(codexSystem, "keep.txt"), "built-in\n");
+    fs.writeFileSync(path.join(agyCustom, "SKILL.md"), "# custom\n");
 
     const skills = discoverSkills(REPO_ROOT);
     assert.ok(skills.some((s) => s.name === "cstack-mode"));
@@ -42,64 +51,70 @@ test("install, idempotent re-run, status, and uninstall preserve unrelated skill
     const dry = installCstack({
       repoRoot: REPO_ROOT,
       homeDir,
-      targets: ["claude", "codex"],
+      targets: ["claude", "codex", "antigravity"],
       dryRun: true,
     });
-    assert.equal(dry.installed, skills.length * 2);
+    assert.equal(dry.installed, skills.length * 3);
     assert.equal(fs.existsSync(getManifestPath(homeDir)), false);
 
     // Real install
     const first = installCstack({
       repoRoot: REPO_ROOT,
       homeDir,
-      targets: ["claude", "codex"],
+      targets: ["claude", "codex", "antigravity"],
     });
-    assert.equal(first.installed, skills.length * 2);
+    assert.equal(first.installed, skills.length * 3);
     assert.equal(first.conflicts.length, 0);
     assert.equal(fs.existsSync(getManifestPath(homeDir)), true);
 
-    // Verify cstack-mode symlink resolves back to repo root so docs/harness/t3-code.md is reachable
-    const linkedCstackMode = path.join(
-      getTargetDir(homeDir, "claude"),
-      "cstack-mode",
-      "SKILL.md",
-    );
-    const resolvedSkill = fs.realpathSync(linkedCstackMode);
-    const resolvedAdapter = path.resolve(
-      path.dirname(resolvedSkill),
-      "..",
-      "..",
-      "docs",
-      "harness",
-      "t3-code.md",
-    );
-    assert.equal(fs.existsSync(resolvedAdapter), true);
+    // Verify cstack-mode symlink resolves back to repo root so Orca and T3 Code adapters are reachable
+    for (const target of ["claude", "antigravity"]) {
+      const linkedCstackMode = path.join(
+        getTargetDir(homeDir, target),
+        "cstack-mode",
+        "SKILL.md",
+      );
+      const resolvedSkill = fs.realpathSync(linkedCstackMode);
+      const docsHarnessDir = path.resolve(
+        path.dirname(resolvedSkill),
+        "..",
+        "..",
+        "docs",
+        "harness",
+      );
+      assert.equal(fs.existsSync(path.join(docsHarnessDir, "orca.md")), true);
+      assert.equal(fs.existsSync(path.join(docsHarnessDir, "t3-code.md")), true);
+      assert.equal(
+        fs.existsSync(path.join(docsHarnessDir, "t3-code-projects.md")),
+        false,
+      );
+    }
 
     // Re-run is idempotent
     const second = installCstack({
       repoRoot: REPO_ROOT,
       homeDir,
-      targets: ["claude", "codex"],
+      targets: ["claude", "codex", "antigravity"],
     });
     assert.equal(second.installed, 0);
     assert.equal(second.updated, 0);
-    assert.equal(second.unchanged, skills.length * 2);
+    assert.equal(second.unchanged, skills.length * 3);
 
     // Status reports healthy
     const status = getStatus({ homeDir });
     assert.equal(status.installed, true);
-    assert.equal(status.entries.length, skills.length * 2);
+    assert.equal(status.entries.length, skills.length * 3);
     assert.ok(status.entries.every((e) => e.state === "ok"));
 
     // Uninstall removes only cstack entries
     const removed = uninstallCstack({ homeDir });
-    assert.equal(removed.removed, skills.length * 2);
+    assert.equal(removed.removed, skills.length * 3);
     assert.equal(removed.skipped.length, 0);
     assert.equal(fs.existsSync(getManifestPath(homeDir)), false);
 
     // Unrelated skills are completely untouched
-    assert.equal(fs.existsSync(path.join(claudeNewProject, "SKILL.md")), true);
     assert.equal(fs.existsSync(path.join(codexSystem, "keep.txt")), true);
+    assert.equal(fs.existsSync(path.join(agyCustom, "SKILL.md")), true);
   } finally {
     fs.rmSync(homeDir, { recursive: true, force: true });
   }
@@ -210,6 +225,154 @@ test("prunes skills removed from repo on re-install", () => {
   }
 });
 
+test("installGlobalInstructions enforces skills first, backs up symlinks/@-imports without writing through links, and verifies digests", () => {
+  const fakeRepo = makeTempDir("cstack-global-repo-");
+  const homeDir = makeTempDir("cstack-global-home-");
+  const externalDir = makeTempDir("cstack-global-ext-");
+  const backupDir = path.join(homeDir, "test-backups");
+  try {
+    for (const s of ["cstack-mode", "poteto-mode"]) {
+      const dir = path.join(fakeRepo, "skills", s);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, "SKILL.md"), `# ${s}\n`);
+    }
+    const globalDir = path.join(fakeRepo, "global");
+    fs.mkdirSync(globalDir, { recursive: true });
+    const sourceText = "Start every task with cstack-mode.\n";
+    fs.writeFileSync(path.join(globalDir, "AGENTS.md"), sourceText, "utf8");
+    const expectedSha = sha256(Buffer.from(sourceText, "utf8"));
+
+    // Fails when skills are not installed yet
+    assert.throws(
+      () =>
+        installGlobalInstructions({
+          repoRoot: fakeRepo,
+          homeDir,
+          globalTargets: ["claude", "codex", "antigravity"],
+          backupDir,
+        }),
+      /Install cstack skills before installing global instructions/,
+    );
+
+    // Install skills first
+    installCstack({
+      repoRoot: fakeRepo,
+      homeDir,
+      targets: ["claude", "agents", "antigravity"],
+    });
+
+    // Set up tricky pre-existing destinations:
+    // 1. Claude: single-line @ import pointing to an external file
+    const extTarget = path.join(externalDir, "old-AGENTS.md");
+    fs.writeFileSync(extTarget, "legacy toolkit instructions\n", "utf8");
+    fs.mkdirSync(path.join(homeDir, ".claude"), { recursive: true });
+    fs.writeFileSync(
+      path.join(homeDir, ".claude", "CLAUDE.md"),
+      `@${extTarget}\n`,
+      "utf8",
+    );
+
+    // 2. Codex: symlink pointing to a file that ALREADY holds sourceText (must still be replaced as regular file!)
+    const symTarget = path.join(externalDir, "same-bytes.md");
+    fs.writeFileSync(symTarget, sourceText, "utf8");
+    fs.mkdirSync(path.join(homeDir, ".codex"), { recursive: true });
+    fs.symlinkSync(symTarget, path.join(homeDir, ".codex", "AGENTS.md"));
+
+    // 3. Antigravity: missing (~/.gemini/GEMINI.md)
+
+    // Dry run touches nothing
+    const dryRes = installGlobalInstructions({
+      repoRoot: fakeRepo,
+      homeDir,
+      globalTargets: ["claude", "codex", "antigravity"],
+      backupDir,
+      dryRun: true,
+    });
+    assert.equal(dryRes.results.length, 3);
+    assert.equal(fs.lstatSync(path.join(homeDir, ".codex", "AGENTS.md")).isSymbolicLink(), true);
+    assert.equal(fs.existsSync(path.join(homeDir, ".gemini", "GEMINI.md")), false);
+
+    // Real install
+    const res = installGlobalInstructions({
+      repoRoot: fakeRepo,
+      homeDir,
+      globalTargets: ["claude", "codex", "antigravity"],
+      backupDir,
+    });
+    assert.equal(res.sourceSha256, expectedSha);
+
+    const byTarget = Object.fromEntries(res.results.map((r) => [r.target, r]));
+    assert.equal(byTarget.claude.previousKind, "at-import");
+    assert.equal(byTarget.claude.action, "replaced");
+    assert.equal(byTarget.codex.previousKind, "symlink");
+    assert.equal(byTarget.codex.action, "replaced");
+    assert.equal(byTarget.antigravity.previousKind, "missing");
+    assert.equal(byTarget.antigravity.action, "created");
+
+    // Verify regular files, matching digests, and untouched external symlink target
+    for (const target of ["claude", "codex", "antigravity"]) {
+      const dest = getGlobalInstructionPath(homeDir, target);
+      const stat = fs.lstatSync(dest);
+      assert.equal(stat.isSymbolicLink(), false);
+      assert.equal(stat.isFile(), true);
+      assert.equal(sha256(fs.readFileSync(dest)), expectedSha);
+    }
+    assert.equal(
+      fs.readFileSync(path.join(backupDir, "claude", "resolved.md"), "utf8"),
+      "legacy toolkit instructions\n",
+    );
+    assert.equal(
+      fs.readFileSync(path.join(backupDir, "codex", "symlink.txt"), "utf8").includes(symTarget),
+      true,
+    );
+    assert.equal(
+      fs.readFileSync(path.join(backupDir, "codex", "resolved.md"), "utf8"),
+      sourceText,
+    );
+
+    // Re-run is completely unchanged
+    const rerun = installGlobalInstructions({
+      repoRoot: fakeRepo,
+      homeDir,
+      globalTargets: ["claude", "codex", "antigravity"],
+      backupDir: path.join(homeDir, "second-backup"),
+    });
+    assert.ok(rerun.results.every((r) => r.action === "unchanged"));
+    assert.equal(fs.existsSync(path.join(homeDir, "second-backup")), false);
+  } finally {
+    fs.rmSync(fakeRepo, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+    fs.rmSync(externalDir, { recursive: true, force: true });
+  }
+});
+
+test("respects CLAUDE_CONFIG_DIR and CODEX_HOME when respectEnv is enabled", () => {
+  const homeDir = makeTempDir("cstack-env-home-");
+  const customClaude = path.join(homeDir, "custom-claude");
+  const customCodex = path.join(homeDir, "custom-codex");
+  const env = { CLAUDE_CONFIG_DIR: customClaude, CODEX_HOME: customCodex };
+  try {
+    assert.equal(
+      getTargetDir(homeDir, "claude", { env, respectEnv: true }),
+      path.join(customClaude, "skills"),
+    );
+    assert.equal(
+      getGlobalInstructionPath(homeDir, "claude", { env, respectEnv: true }),
+      path.join(customClaude, "CLAUDE.md"),
+    );
+    assert.equal(
+      getGlobalInstructionPath(homeDir, "codex", { env, respectEnv: true }),
+      path.join(customCodex, "AGENTS.md"),
+    );
+    assert.equal(
+      getGlobalInstructionPath(homeDir, "antigravity", { env, respectEnv: true }),
+      path.join(homeDir, ".gemini", "GEMINI.md"),
+    );
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
 test("CLI --help, --targets, --status, and --uninstall work end-to-end", () => {
   const homeDir = makeTempDir("cstack-cli-");
   try {
@@ -217,13 +380,14 @@ test("CLI --help, --targets, --status, and --uninstall work end-to-end", () => {
       encoding: "utf8",
     });
     assert.match(helpOut, /Usage: node scripts\/install\.mjs/);
+    assert.match(helpOut, /--global/);
 
     const installOut = execFileSync(
       process.execPath,
-      [INSTALL_SCRIPT, "--home", homeDir, "--targets", "claude,cursor"],
+      [INSTALL_SCRIPT, "--home", homeDir, "--targets", "claude,antigravity"],
       { encoding: "utf8" },
     );
-    assert.match(installOut, /Targets: claude, cursor/);
+    assert.match(installOut, /Targets: claude, antigravity/);
     assert.match(installOut, /0 conflicts/);
 
     const statusOut = execFileSync(
@@ -245,11 +409,22 @@ test("CLI --help, --targets, --status, and --uninstall work end-to-end", () => {
 });
 
 test("parseArgs validates options and target names", () => {
-  const parsed = parseArgs(["--targets", "all", "--copy", "--dry-run"]);
-  assert.equal(parsed.targets.length, 6);
+  const parsed = parseArgs([
+    "--targets",
+    "all",
+    "--global-targets",
+    "claude,antigravity",
+    "--copy",
+    "--dry-run",
+  ]);
+  assert.equal(parsed.targets.length, ALL_TARGETS.length);
+  assert.deepEqual(DEFAULT_TARGETS, ["claude", "agents", "codex", "antigravity"]);
+  assert.equal(parsed.installGlobal, true);
+  assert.deepEqual(parsed.globalTargets, ["claude", "antigravity"]);
   assert.equal(parsed.copy, true);
   assert.equal(parsed.dryRun, true);
 
   assert.throws(() => parseArgs(["--targets", "unknown"]), /Unknown target/);
+  assert.throws(() => parseArgs(["--global-targets", "cursor"]), /Unknown target/);
   assert.throws(() => parseArgs(["--bogus"]), /Unknown option/);
 });

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -12,31 +13,62 @@ export const TARGET_DEFS = {
   claude: [".claude", "skills"],
   agents: [".agents", "skills"],
   codex: [".codex", "skills"],
+  antigravity: [".gemini", "config", "skills"],
   cursor: [".cursor", "skills"],
   gemini: [".gemini", "skills"],
   opencode: [".config", "opencode", "skills"],
 };
 
-export const DEFAULT_TARGETS = ["claude", "agents", "codex", "cursor"];
+export const DEFAULT_TARGETS = ["claude", "agents", "codex", "antigravity"];
 export const ALL_TARGETS = Object.keys(TARGET_DEFS);
+
+export const GLOBAL_TARGET_DEFS = {
+  claude: {
+    envDir: "CLAUDE_CONFIG_DIR",
+    defaultDir: [".claude"],
+    filename: "CLAUDE.md",
+    requiredSkillsTarget: "claude",
+  },
+  codex: {
+    envDir: "CODEX_HOME",
+    defaultDir: [".codex"],
+    filename: "AGENTS.md",
+    requiredSkillsTarget: "agents",
+  },
+  antigravity: {
+    envDir: null,
+    defaultDir: [".gemini"],
+    filename: "GEMINI.md",
+    requiredSkillsTarget: "antigravity",
+  },
+};
+
+export const DEFAULT_GLOBAL_TARGETS = ["claude", "codex", "antigravity"];
+export const ALL_GLOBAL_TARGETS = Object.keys(GLOBAL_TARGET_DEFS);
 
 export function usage() {
   return `Usage: node scripts/install.mjs [options]
 
-Install cstack skills (upstream pstack + cstack overlay) into coding-agent skill directories.
+Install cstack skills (upstream pstack + cstack overlay) into coding-agent skill directories,
+and optionally install global instruction files from global/AGENTS.md.
 Uses symlinks on macOS/Linux and directory junctions on Windows by default.
-Never modifies unrelated skills (such as T3 Projects' new-project or built-in system skills).
+Never modifies unrelated skills (such as built-in system skills or Orca bundled skills).
 
 Options:
-  --targets <list>  Comma-separated targets: ${ALL_TARGETS.join(", ")}, or "all"
-                    (default: ${DEFAULT_TARGETS.join(",")})
-  --copy            Copy skill directories instead of linking
-  --force           Replace conflicting non-cstack entries at target paths
-  --dry-run         Print planned changes without modifying the filesystem
-  --uninstall       Remove cstack-managed entries recorded in the manifest
-  --status          Show current installation status from the manifest
-  --home <dir>      Override the home directory (default: current user's home)
-  -h, --help        Show this help message
+  --targets <list>         Comma-separated skill targets: ${ALL_TARGETS.join(", ")}, or "all"
+                           (default: ${DEFAULT_TARGETS.join(",")})
+  --global                 Also install global/AGENTS.md to each harness's global instruction file
+  --global-targets <list>  Comma-separated global instruction targets: ${ALL_GLOBAL_TARGETS.join(", ")}, or "all"
+                           (default: ${DEFAULT_GLOBAL_TARGETS.join(",")}; implies --global)
+  --backup-dir <dir>       Directory for backups when replacing existing global instruction files
+                           (default: ~/.config/cstack/global-backups/<timestamp>)
+  --copy                   Copy skill directories instead of linking
+  --force                  Replace conflicting non-cstack entries at skill target paths
+  --dry-run                Print planned changes without modifying the filesystem
+  --uninstall              Remove cstack-managed skill entries recorded in the manifest
+  --status                 Show current installation status from the manifest
+  --home <dir>             Override the home directory (default: current user's home)
+  -h, --help               Show this help message
 `;
 }
 
@@ -44,10 +76,14 @@ export function parseArgs(argv) {
   const opts = {
     action: "install",
     targets: null,
+    installGlobal: false,
+    globalTargets: null,
+    backupDir: null,
     copy: false,
     force: false,
     dryRun: false,
     homeDir: os.homedir(),
+    homeOverridden: false,
     help: false,
   };
 
@@ -58,7 +94,30 @@ export function parseArgs(argv) {
         if (i + 1 >= argv.length) {
           throw new Error("--targets requires a comma-separated value");
         }
-        opts.targets = parseTargetList(argv[++i]);
+        opts.targets = parseTargetList(argv[++i], TARGET_DEFS, ALL_TARGETS, "--targets");
+        break;
+      }
+      case "--global":
+        opts.installGlobal = true;
+        break;
+      case "--global-targets": {
+        if (i + 1 >= argv.length) {
+          throw new Error("--global-targets requires a comma-separated value");
+        }
+        opts.installGlobal = true;
+        opts.globalTargets = parseTargetList(
+          argv[++i],
+          GLOBAL_TARGET_DEFS,
+          ALL_GLOBAL_TARGETS,
+          "--global-targets",
+        );
+        break;
+      }
+      case "--backup-dir": {
+        if (i + 1 >= argv.length) {
+          throw new Error("--backup-dir requires a directory path");
+        }
+        opts.backupDir = path.resolve(argv[++i]);
         break;
       }
       case "--copy":
@@ -81,6 +140,7 @@ export function parseArgs(argv) {
           throw new Error("--home requires a directory path");
         }
         opts.homeDir = path.resolve(argv[++i]);
+        opts.homeOverridden = true;
         break;
       }
       case "-h":
@@ -95,27 +155,27 @@ export function parseArgs(argv) {
   return opts;
 }
 
-function parseTargetList(raw) {
+function parseTargetList(raw, defs, allNames, flagName) {
   const tokens = raw
     .split(",")
     .map((t) => t.trim().toLowerCase())
     .filter(Boolean);
 
   if (tokens.length === 0) {
-    throw new Error("--targets must specify at least one target");
+    throw new Error(`${flagName} must specify at least one target`);
   }
 
   const resolved = new Set();
   for (const token of tokens) {
     if (token === "all") {
-      for (const name of ALL_TARGETS) {
+      for (const name of allNames) {
         resolved.add(name);
       }
-    } else if (Object.hasOwn(TARGET_DEFS, token)) {
+    } else if (Object.hasOwn(defs, token)) {
       resolved.add(token);
     } else {
       throw new Error(
-        `Unknown target "${token}". Valid targets: ${ALL_TARGETS.join(", ")}, all`,
+        `Unknown target "${token}". Valid targets: ${allNames.join(", ")}, all`,
       );
     }
   }
@@ -127,12 +187,33 @@ export function getManifestPath(homeDir) {
   return path.join(homeDir, ".config", "cstack", "install-manifest.json");
 }
 
-export function getTargetDir(homeDir, targetName) {
+export function getTargetDir(homeDir, targetName, { env = process.env, respectEnv = false } = {}) {
   const segments = TARGET_DEFS[targetName];
   if (!segments) {
     throw new Error(`Unknown target "${targetName}"`);
   }
+  if (respectEnv && targetName === "claude" && env.CLAUDE_CONFIG_DIR) {
+    return path.join(path.resolve(env.CLAUDE_CONFIG_DIR), "skills");
+  }
+  if (respectEnv && targetName === "codex" && env.CODEX_HOME) {
+    return path.join(path.resolve(env.CODEX_HOME), "skills");
+  }
   return path.join(homeDir, ...segments);
+}
+
+export function getGlobalInstructionPath(
+  homeDir,
+  targetName,
+  { env = process.env, respectEnv = false } = {},
+) {
+  const def = GLOBAL_TARGET_DEFS[targetName];
+  if (!def) {
+    throw new Error(`Unknown global target "${targetName}"`);
+  }
+  if (respectEnv && def.envDir && env[def.envDir]) {
+    return path.join(path.resolve(env[def.envDir]), def.filename);
+  }
+  return path.join(homeDir, ...def.defaultDir, def.filename);
 }
 
 export function discoverSkills(repoRoot) {
@@ -157,6 +238,10 @@ export function discoverSkills(repoRoot) {
 
   skills.sort((a, b) => a.name.localeCompare(b.name));
   return skills;
+}
+
+function sha256(buf) {
+  return crypto.createHash("sha256").update(buf).digest("hex");
 }
 
 function lstatOrNull(targetPath) {
@@ -256,6 +341,21 @@ function copyDir(sourceDir, destPath) {
   fs.cpSync(sourceDir, destPath, { recursive: true });
 }
 
+function parseSingleLineAtImport(rawText, destPath, homeDir) {
+  const trimmed = rawText.trim();
+  if (!trimmed.startsWith("@") || trimmed.includes("\n") || trimmed.includes("\r")) {
+    return null;
+  }
+  let target = trimmed.slice(1).trim();
+  if (!target) {
+    return null;
+  }
+  if (target.startsWith("~/") || target.startsWith("~\\")) {
+    target = path.join(homeDir, target.slice(2));
+  }
+  return path.resolve(path.dirname(destPath), target);
+}
+
 export function installCstack({
   repoRoot = DEFAULT_REPO_ROOT,
   homeDir = os.homedir(),
@@ -264,6 +364,8 @@ export function installCstack({
   force = false,
   dryRun = false,
   platform = process.platform,
+  env = process.env,
+  respectEnv = false,
 } = {}) {
   const resolvedRepoRoot = fs.realpathSync(repoRoot);
   const skills = discoverSkills(resolvedRepoRoot);
@@ -295,7 +397,7 @@ export function installCstack({
   };
 
   for (const targetName of targets) {
-    const targetDir = getTargetDir(homeDir, targetName);
+    const targetDir = getTargetDir(homeDir, targetName, { env, respectEnv });
     if (!dryRun) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
@@ -422,6 +524,188 @@ export function installCstack({
   return summary;
 }
 
+export function installGlobalInstructions({
+  repoRoot = DEFAULT_REPO_ROOT,
+  homeDir = os.homedir(),
+  globalTargets = DEFAULT_GLOBAL_TARGETS,
+  backupDir = null,
+  dryRun = false,
+  env = process.env,
+  respectEnv = false,
+} = {}) {
+  const resolvedRepoRoot = fs.realpathSync(repoRoot);
+  const sourcePath = path.join(resolvedRepoRoot, "global", "AGENTS.md");
+  if (!fs.existsSync(sourcePath)) {
+    throw new Error(`Global instructions source not found: ${sourcePath}`);
+  }
+
+  // Step 1 of global/README.md contract: verify required skills exist first.
+  const missingSkills = [];
+  for (const targetName of globalTargets) {
+    const def = GLOBAL_TARGET_DEFS[targetName];
+    if (!def) {
+      throw new Error(`Unknown global target "${targetName}"`);
+    }
+    const skillsDir = getTargetDir(homeDir, def.requiredSkillsTarget, {
+      env,
+      respectEnv,
+    });
+    for (const requiredSkill of ["cstack-mode", "poteto-mode"]) {
+      const skillFile = path.join(skillsDir, requiredSkill, "SKILL.md");
+      if (!fs.existsSync(skillFile)) {
+        missingSkills.push({ target: targetName, skillFile });
+      }
+    }
+  }
+  if (missingSkills.length > 0 && !dryRun) {
+    const details = missingSkills
+      .map((m) => `${m.target}: missing ${m.skillFile}`)
+      .join("; ");
+    throw new Error(
+      `Install cstack skills before installing global instructions (${details})`,
+    );
+  }
+
+  // Step 2: read source bytes (pinned LF via .gitattributes).
+  const sourceBytes = fs.readFileSync(sourcePath);
+  const sourceSha256 = sha256(sourceBytes);
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const effectiveBackupDir =
+    backupDir || path.join(homeDir, ".config", "cstack", "global-backups", stamp);
+
+  const summary = {
+    sourcePath,
+    sourceSha256,
+    backupDir: effectiveBackupDir,
+    missingSkills,
+    results: [],
+  };
+
+  for (const targetName of globalTargets) {
+    const destPath = getGlobalInstructionPath(homeDir, targetName, {
+      env,
+      respectEnv,
+    });
+    const stat = lstatOrNull(destPath);
+
+    // Case 1: missing
+    if (!stat) {
+      if (!dryRun) {
+        fs.mkdirSync(path.dirname(destPath), { recursive: true });
+        fs.writeFileSync(destPath, sourceBytes);
+        const writtenSha = sha256(fs.readFileSync(destPath));
+        if (writtenSha !== sourceSha256) {
+          throw new Error(`Digest mismatch after writing ${destPath}`);
+        }
+      }
+      summary.results.push({
+        target: targetName,
+        destPath,
+        previousKind: "missing",
+        action: "created",
+        backupPath: null,
+        sha256: sourceSha256,
+      });
+      continue;
+    }
+
+    // Case 2: regular file with exact matching bytes
+    if (stat.isFile() && !stat.isSymbolicLink()) {
+      const existingBytes = fs.readFileSync(destPath);
+      if (sha256(existingBytes) === sourceSha256) {
+        summary.results.push({
+          target: targetName,
+          destPath,
+          previousKind: "regular-match",
+          action: "unchanged",
+          backupPath: null,
+          sha256: sourceSha256,
+        });
+        continue;
+      }
+    }
+
+    // Case 3: anything else (symlink, @ import, differing regular file, or non-regular entry)
+    let previousKind = "other";
+    let linkTarget = null;
+    let atImportTarget = null;
+    let rawBytes = null;
+    let resolvedBytes = null;
+
+    if (stat.isSymbolicLink()) {
+      previousKind = "symlink";
+      linkTarget = fs.readlinkSync(destPath);
+      const absTarget = readLinkTarget(destPath);
+      if (fs.existsSync(absTarget) && fs.statSync(absTarget).isFile()) {
+        resolvedBytes = fs.readFileSync(absTarget);
+      }
+    } else if (stat.isFile()) {
+      rawBytes = fs.readFileSync(destPath);
+      const rawText = rawBytes.toString("utf8");
+      atImportTarget = parseSingleLineAtImport(rawText, destPath, homeDir);
+      if (atImportTarget) {
+        previousKind = "at-import";
+        if (fs.existsSync(atImportTarget) && fs.statSync(atImportTarget).isFile()) {
+          resolvedBytes = fs.readFileSync(atImportTarget);
+        }
+      } else {
+        previousKind = "regular-diff";
+      }
+    }
+
+    const targetBackupDir = path.join(effectiveBackupDir, targetName);
+    if (!dryRun) {
+      fs.mkdirSync(targetBackupDir, { recursive: true });
+      if (previousKind === "symlink") {
+        fs.writeFileSync(
+          path.join(targetBackupDir, "symlink.txt"),
+          `${destPath} -> ${linkTarget}\n`,
+          "utf8",
+        );
+      } else if (rawBytes !== null) {
+        fs.writeFileSync(
+          path.join(targetBackupDir, path.basename(destPath)),
+          rawBytes,
+        );
+      }
+      if (resolvedBytes !== null) {
+        fs.writeFileSync(
+          path.join(targetBackupDir, "resolved.md"),
+          resolvedBytes,
+        );
+      }
+
+      // Never write through a symlink: remove the entry itself, then create a regular file.
+      removeEntry(destPath, stat);
+      fs.mkdirSync(path.dirname(destPath), { recursive: true });
+      fs.writeFileSync(destPath, sourceBytes);
+
+      const postStat = fs.lstatSync(destPath);
+      if (postStat.isSymbolicLink() || !postStat.isFile()) {
+        throw new Error(`Expected regular file at ${destPath} after install`);
+      }
+      const writtenSha = sha256(fs.readFileSync(destPath));
+      if (writtenSha !== sourceSha256) {
+        throw new Error(`Digest mismatch after writing ${destPath}`);
+      }
+    }
+
+    summary.results.push({
+      target: targetName,
+      destPath,
+      previousKind,
+      linkTarget,
+      atImportTarget,
+      action: "replaced",
+      backupPath: targetBackupDir,
+      sha256: sourceSha256,
+    });
+  }
+
+  return summary;
+}
+
 export function uninstallCstack({
   homeDir = os.homedir(),
   targets = null,
@@ -541,6 +825,21 @@ function formatInstallSummary(summary, dryRun) {
   return lines.join("\n");
 }
 
+function formatGlobalSummary(summary, dryRun) {
+  const prefix = dryRun ? "[dry-run] " : "";
+  const lines = [
+    `${prefix}Global instructions from ${summary.sourcePath} (sha256: ${summary.sourceSha256})`,
+  ];
+  for (const r of summary.results) {
+    let detail = `${r.action} (${r.previousKind})`;
+    if (r.backupPath) {
+      detail += `, backed up to ${r.backupPath}`;
+    }
+    lines.push(`  - ${r.target}: ${r.destPath} -> ${detail}`);
+  }
+  return lines.join("\n");
+}
+
 function formatUninstallSummary(summary, dryRun) {
   const prefix = dryRun ? "[dry-run] " : "";
   const lines = [
@@ -605,6 +904,7 @@ function main() {
     process.exit(summary.skipped.length > 0 ? 1 : 0);
   }
 
+  const respectEnv = !opts.homeOverridden;
   const summary = installCstack({
     repoRoot: DEFAULT_REPO_ROOT,
     homeDir: opts.homeDir,
@@ -612,9 +912,29 @@ function main() {
     copy: opts.copy,
     force: opts.force,
     dryRun: opts.dryRun,
+    respectEnv,
   });
   console.log(formatInstallSummary(summary, opts.dryRun));
-  process.exit(summary.conflicts.length > 0 ? 1 : 0);
+  if (summary.conflicts.length > 0) {
+    process.exit(1);
+  }
+
+  if (opts.installGlobal) {
+    try {
+      const globalSummary = installGlobalInstructions({
+        repoRoot: DEFAULT_REPO_ROOT,
+        homeDir: opts.homeDir,
+        globalTargets: opts.globalTargets || DEFAULT_GLOBAL_TARGETS,
+        backupDir: opts.backupDir,
+        dryRun: opts.dryRun,
+        respectEnv,
+      });
+      console.log(formatGlobalSummary(globalSummary, opts.dryRun));
+    } catch (err) {
+      console.error(`Error: ${err.message}`);
+      process.exit(1);
+    }
+  }
 }
 
 const isDirectRun =

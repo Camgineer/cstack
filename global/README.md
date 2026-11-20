@@ -1,6 +1,6 @@
 # Global instruction files
 
-`AGENTS.md` in this folder is the one source for the owner's global agent instructions. Every machine gets the same bytes. This folder installs nothing by itself; `scripts/install.mjs` handles installation.
+`AGENTS.md` in this folder is the one source for the owner's global agent instructions. Every machine gets the same bytes. This folder installs nothing by itself.
 
 ## Where the text goes
 
@@ -35,4 +35,4 @@ The install step must do the following, in this order:
 
 ## Proof of an install
 
-On each machine, start a fresh session in each harness from a folder outside this repository. Check which instruction files the session loaded, and ask it to quote its rules on how to talk to the owner. The install is proven on that machine when the digests match and the session loaded the installed file.
+On each machine, start a fresh session in each harness from a folder outside this repository. Check which instruction files are active, verify that no higher-precedence override blocks the user file (such as a non-empty `AGENTS.override.md` in Codex or `managed-only` in Claude Code), and ask the session to quote its rules on how to talk to the owner. The install is proven on that machine when the digests match and the session quotes the effective rules from the installed file; otherwise report the blocking override or missing load.

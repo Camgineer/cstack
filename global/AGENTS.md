@@ -1,4 +1,4 @@
-Start every task with the cstack-mode skill. Read its file first and follow it. In Claude Code the file is `~/.claude/skills/cstack-mode/SKILL.md`. In Codex it is `~/.agents/skills/cstack-mode/SKILL.md`. In Antigravity it is `~/.gemini/config/skills/cstack-mode/SKILL.md`. `~` means the current user's home folder on every operating system.
+Start every task with the cstack-mode skill. Read its file first and follow it. In Claude Code the file is `~/.claude/skills/cstack-mode/SKILL.md` (or `$CLAUDE_CONFIG_DIR/skills/cstack-mode/SKILL.md` when set). In Codex it is `~/.agents/skills/cstack-mode/SKILL.md`. In Antigravity it is `~/.gemini/config/skills/cstack-mode/SKILL.md`. `~` means the current user's home folder on every operating system.
 
 Then read `~/.config/cstack/local.md` when it exists. It holds rules about this machine and my other machines.
 

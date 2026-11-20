@@ -19,6 +19,7 @@ import {
   installGlobalInstructions,
   parseArgs,
   uninstallCstack,
+  updateCstack,
 } from "./install.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -641,4 +642,113 @@ test("changing CODEX_HOME preserves prior manifest entries on a clean move", () 
   } finally {
     fs.rmSync(homeDir, { recursive: true, force: true });
   }
+});
+
+test("updateCstack fast-forwards, re-links new skills, prunes removed skills, and alerts on global/AGENTS.md drift without overwriting", () => {
+  const bareOrigin = makeTempDir("cstack-update-origin-");
+  const authorRepo = makeTempDir("cstack-update-author-");
+  const localClone = makeTempDir("cstack-update-clone-");
+  const homeDir = makeTempDir("cstack-update-home-");
+  const gitCommit = (cwd, msg) => {
+    execFileSync("git", ["-C", cwd, "add", "-A"]);
+    execFileSync("git", [
+      "-C",
+      cwd,
+      "-c",
+      "user.name=Test",
+      "-c",
+      "user.email=test@example.com",
+      "commit",
+      "-q",
+      "-m",
+      msg,
+    ]);
+  };
+  try {
+    execFileSync("git", ["init", "--bare", "-q", bareOrigin]);
+    execFileSync("git", ["clone", "-q", bareOrigin, authorRepo]);
+    execFileSync("git", ["-C", authorRepo, "checkout", "-q", "-b", "main"]);
+
+    // Initial skills + global/AGENTS.md v1
+    for (const s of ["cstack-mode", "poteto-mode", "old-skill"]) {
+      const dir = path.join(authorRepo, "skills", s);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, "SKILL.md"), `# ${s}\n`);
+    }
+    fs.mkdirSync(path.join(authorRepo, "global"), { recursive: true });
+    const v1Global = "Approved global v1\n";
+    fs.writeFileSync(path.join(authorRepo, "global", "AGENTS.md"), v1Global);
+    gitCommit(authorRepo, "v1");
+    execFileSync("git", ["-C", authorRepo, "push", "-q", "-u", "origin", "main"]);
+
+    // Clone to local machine and install skills + v1 global instructions (claude & codex only)
+    fs.rmSync(localClone, { recursive: true, force: true });
+    execFileSync("git", ["clone", "-q", "-b", "main", bareOrigin, localClone]);
+    installCstack({ repoRoot: localClone, homeDir, targets: ["claude", "agents", "antigravity"] });
+    installGlobalInstructions({
+      repoRoot: localClone,
+      homeDir,
+      globalTargets: ["claude", "codex"],
+      globalRef: "HEAD",
+      backupDir: path.join(homeDir, "bk-v1"),
+    });
+
+    // Upstream adds new-skill, removes old-skill, and updates global/AGENTS.md to v2
+    fs.rmSync(path.join(authorRepo, "skills", "old-skill"), { recursive: true, force: true });
+    fs.mkdirSync(path.join(authorRepo, "skills", "new-skill"), { recursive: true });
+    fs.writeFileSync(path.join(authorRepo, "skills", "new-skill", "SKILL.md"), "# new-skill\n");
+    fs.writeFileSync(path.join(authorRepo, "global", "AGENTS.md"), "Unapproved global v2\n");
+    gitCommit(authorRepo, "v2");
+    const v2Sha = execFileSync("git", ["-C", authorRepo, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+    execFileSync("git", ["-C", authorRepo, "push", "-q", "origin", "main"]);
+
+    // Dry-run sees upstream update & global drift without touching working tree or installed files
+    const dryRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
+    assert.equal(dryRes.hasUpstreamUpdate, true);
+    assert.equal(dryRes.pulled, false);
+    assert.equal(dryRes.afterSha, v2Sha);
+    assert.equal(dryRes.globalDrift.needsApproval, true);
+    assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "new-skill")), false);
+    assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "old-skill")), true);
+
+    // Real update fast-forwards, links new-skill, prunes old-skill, and NEVER overwrites global files
+    const res = updateCstack({ repoRoot: localClone, homeDir });
+    assert.equal(res.pulled, true);
+    assert.equal(res.afterSha, v2Sha);
+    assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "new-skill")), true);
+    assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "old-skill")), false);
+    assert.ok(res.status.entries.every((e) => e.state === "ok"));
+    // Preserved installed target set (claude, agents, antigravity — did not add codex)
+    assert.equal(fs.existsSync(path.join(homeDir, ".codex", "skills", "new-skill")), false);
+
+    // Global files still hold v1 bytes, while globalDrift flags both claude & codex and leaves missing antigravity non-blocking
+    assert.equal(fs.readFileSync(path.join(homeDir, ".claude", "CLAUDE.md"), "utf8"), v1Global);
+    assert.equal(fs.readFileSync(path.join(homeDir, ".codex", "AGENTS.md"), "utf8"), v1Global);
+    assert.equal(res.globalDrift.needsApproval, true);
+    assert.equal(res.globalDrift.commitSha, v2Sha);
+    const byT = Object.fromEntries(res.globalDrift.targets.map((t) => [t.target, t.state]));
+    assert.equal(byT.claude, "changed");
+    assert.equal(byT.codex, "changed");
+    assert.equal(byT.antigravity, "missing");
+
+    // Refuses to update when tracked files have uncommitted edits
+    fs.writeFileSync(path.join(localClone, "global", "AGENTS.md"), "dirty edit\n");
+    assert.throws(
+      () => updateCstack({ repoRoot: localClone, homeDir }),
+      /uncommitted changes to tracked files/,
+    );
+  } finally {
+    fs.rmSync(bareOrigin, { recursive: true, force: true });
+    fs.rmSync(authorRepo, { recursive: true, force: true });
+    fs.rmSync(localClone, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
+test("parseArgs supports --update/--refresh and rejects conflicting flags", () => {
+  assert.equal(parseArgs(["--update"]).action, "update");
+  assert.equal(parseArgs(["--refresh"]).action, "update");
+  assert.throws(() => parseArgs(["--update", "--uninstall"]), /mutually exclusive/);
+  assert.throws(() => parseArgs(["--update", "--status"]), /mutually exclusive/);
+  assert.throws(() => parseArgs(["--update", "--global", "--global-ref", "HEAD"]), /Cannot combine --update with --global/);
 });

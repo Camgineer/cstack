@@ -17,6 +17,16 @@ Resolve `<cstack>` from the real path of this file (two directories above `skill
 - **Standalone Claude Code.** When running in Claude Code without Orca or T3 Code tools, read `<cstack>/docs/harness/claude-code.md` once per session instead.
 - **Cursor.** No adapter is needed; Cursor names apply directly.
 
+## Repo-local domain skills
+
+Keep general engineering process in `cstack` and project- or domain-specific skills (such as Unity or repo-specific eval workflows) inside each repository.
+
+- **Canonical location.** Store repo-embedded domain skills at `<repo>/.agents/skills/<skill-name>/SKILL.md` (no git symlinks needed, so macOS and Windows checkouts work identically). When discovering skills in existing repos, also check `<repo>/.claude/skills/*/SKILL.md` and `<repo>/.codex/skills/*/SKILL.md` as fallbacks.
+- **Scan cheaply at task start.** When starting work in a repository, scan its repo-local skill directories and read only each skill's short frontmatter (`name` and `description`) so the context window stays small.
+- **Load on match.** Before planning or editing in a domain covered by a repo-local skill, read that skill's full `SKILL.md` and only the specific reference files that match the task.
+- **Pass matches to workers.** Whenever delegating to a `poteto-agent` worker inside a repository, include the absolute paths of any relevant repo-local `SKILL.md` files alongside `worker.md`, `poteto-mode/SKILL.md`, and the harness adapter so workers apply the same domain rules.
+- **Precedence.** `cstack` owns engineering process (playbooks, verification, review, PR lifecycle, and communication style). Repo-local skills own domain knowledge and repo tooling. Where a third-party domain skill conflicts with `cstack` on process, `cstack` wins unless the repository's own `AGENTS.md` or `CLAUDE.md` explicitly sets a project rule (such as merge authority).
+
 ## PR lifecycle
 
 - **Open a draft early while work is in progress.** As soon as a branch has work worth tracking, open a draft PR (`gh pr create --draft`, or `draft: true`) and keep it up to date so in-flight work is clearly visible in one place.

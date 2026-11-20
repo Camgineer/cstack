@@ -68,6 +68,8 @@ Options:
   --copy                   Copy skill directories instead of linking
   --force                  Replace conflicting non-cstack entries at skill target paths
   --dry-run                Print planned changes without modifying the filesystem
+  --update, --refresh      Pull latest fast-forward commits (git pull --ff-only), re-sync skills,
+                           verify status, and report if global/AGENTS.md changed (never overwrites)
   --uninstall              Remove cstack-managed skill entries recorded in the manifest
   --status                 Show current installation status from the manifest
   --home <dir>             Override the home directory (default: current user's home)
@@ -91,6 +93,7 @@ export function parseArgs(argv) {
     help: false,
   };
 
+  const actions = [];
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     switch (arg) {
@@ -141,10 +144,17 @@ export function parseArgs(argv) {
       case "--dry-run":
         opts.dryRun = true;
         break;
+      case "--update":
+      case "--refresh":
+        actions.push("update");
+        opts.action = "update";
+        break;
       case "--uninstall":
+        actions.push("uninstall");
         opts.action = "uninstall";
         break;
       case "--status":
+        actions.push("status");
         opts.action = "status";
         break;
       case "--home": {
@@ -164,6 +174,13 @@ export function parseArgs(argv) {
     }
   }
 
+  const uniqueActions = [...new Set(actions)];
+  if (uniqueActions.length > 1) {
+    throw new Error(`Cannot combine mutually exclusive actions: ${uniqueActions.map((a) => `--${a}`).join(", ")}`);
+  }
+  if (opts.action === "update" && opts.installGlobal) {
+    throw new Error("Cannot combine --update with --global/--global-ref; run --update first, review any global/AGENTS.md changes, then run --global --global-ref <approved-commit>");
+  }
   if (opts.installGlobal && (!opts.globalRef || !String(opts.globalRef).trim())) {
     throw new Error("--global and --global-targets require --global-ref <commit> (approved commit SHA or ref)");
   }
@@ -950,6 +967,170 @@ export function getStatus({ homeDir = os.homedir() } = {}) {
   };
 }
 
+export function checkGlobalInstructionDrift({
+  repoRoot = DEFAULT_REPO_ROOT,
+  homeDir = os.homedir(),
+  globalTargets = DEFAULT_GLOBAL_TARGETS,
+  globalRef = "HEAD",
+  env = process.env,
+  respectEnv = false,
+} = {}) {
+  const resolvedRepoRoot = fs.realpathSync(repoRoot);
+  const { commitSha, bytes: sourceBytes } = readGlobalSourceBytes(resolvedRepoRoot, globalRef);
+  const sourceSha256 = sha256(sourceBytes);
+  const targets = [];
+
+  for (const targetName of globalTargets) {
+    if (!GLOBAL_TARGET_DEFS[targetName]) {
+      throw new Error(`Unknown global target "${targetName}"`);
+    }
+    const destPath = getGlobalInstructionPath(homeDir, targetName, { env, respectEnv });
+    const stat = lstatOrNull(destPath);
+    if (!stat) {
+      targets.push({ target: targetName, destPath, state: "missing", installedSha256: null });
+      continue;
+    }
+    if (stat.isSymbolicLink()) {
+      targets.push({
+        target: targetName,
+        destPath,
+        state: "symlink",
+        installedSha256: null,
+        linkTarget: fs.readlinkSync(destPath),
+      });
+      continue;
+    }
+    if (!stat.isFile()) {
+      targets.push({ target: targetName, destPath, state: "non-file", installedSha256: null });
+      continue;
+    }
+    const installedSha256 = sha256(fs.readFileSync(destPath));
+    targets.push({
+      target: targetName,
+      destPath,
+      state: installedSha256 === sourceSha256 ? "up-to-date" : "changed",
+      installedSha256,
+    });
+  }
+
+  const changed = targets.filter((t) => t.state === "changed" || t.state === "symlink" || t.state === "non-file");
+  return {
+    commitSha,
+    sourceSha256,
+    targets,
+    needsApproval: changed.length > 0,
+  };
+}
+
+export function updateCstack({
+  repoRoot = DEFAULT_REPO_ROOT,
+  homeDir = os.homedir(),
+  targets = null,
+  globalTargets = DEFAULT_GLOBAL_TARGETS,
+  copy = false,
+  force = false,
+  dryRun = false,
+  platform = process.platform,
+  env = process.env,
+  respectEnv = false,
+} = {}) {
+  const resolvedRepoRoot = fs.realpathSync(repoRoot);
+  const branch = execFileSync(
+    "git",
+    ["-C", resolvedRepoRoot, "symbolic-ref", "--quiet", "--short", "HEAD"],
+    { encoding: "utf8" },
+  ).trim();
+  if (!branch) {
+    throw new Error(`Refusing to update detached HEAD in ${resolvedRepoRoot}; check out a branch first`);
+  }
+
+  const trackedDirty = execFileSync(
+    "git",
+    ["-C", resolvedRepoRoot, "status", "--porcelain", "--untracked-files=no"],
+    { encoding: "utf8" },
+  ).trim();
+  if (trackedDirty) {
+    throw new Error(
+      `Refusing to update ${resolvedRepoRoot} with uncommitted changes to tracked files; commit or stash them first`,
+    );
+  }
+
+  const beforeSha = execFileSync(
+    "git",
+    ["-C", resolvedRepoRoot, "rev-parse", "HEAD"],
+    { encoding: "utf8" },
+  ).trim();
+
+  let afterSha = beforeSha;
+  let pulled = false;
+  if (dryRun) {
+    execFileSync("git", ["-C", resolvedRepoRoot, "fetch", "--quiet"], { encoding: "utf8" });
+    try {
+      afterSha = execFileSync(
+        "git",
+        ["-C", resolvedRepoRoot, "rev-parse", "@{u}"],
+        { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+      ).trim();
+    } catch {
+      afterSha = beforeSha;
+    }
+  } else {
+    execFileSync("git", ["-C", resolvedRepoRoot, "pull", "--ff-only"], { encoding: "utf8" });
+    afterSha = execFileSync(
+      "git",
+      ["-C", resolvedRepoRoot, "rev-parse", "HEAD"],
+      { encoding: "utf8" },
+    ).trim();
+    pulled = afterSha !== beforeSha;
+  }
+
+  // Preserve previously installed target set when --targets is not explicitly passed
+  let effectiveTargets = targets;
+  if (!effectiveTargets) {
+    const prev = loadManifest(getManifestPath(homeDir));
+    if (prev && Array.isArray(prev.entries) && prev.entries.length > 0) {
+      const seen = [...new Set(prev.entries.map((e) => e.target).filter((t) => TARGET_DEFS[t]))];
+      effectiveTargets = seen.length > 0 ? seen : DEFAULT_TARGETS;
+    } else {
+      effectiveTargets = DEFAULT_TARGETS;
+    }
+  }
+
+  const installSummary = installCstack({
+    repoRoot: resolvedRepoRoot,
+    homeDir,
+    targets: effectiveTargets,
+    copy,
+    force,
+    dryRun,
+    platform,
+    env,
+    respectEnv,
+  });
+
+  const status = getStatus({ homeDir });
+  const globalDrift = checkGlobalInstructionDrift({
+    repoRoot: resolvedRepoRoot,
+    homeDir,
+    globalTargets,
+    globalRef: afterSha,
+    env,
+    respectEnv,
+  });
+
+  return {
+    repoRoot: resolvedRepoRoot,
+    branch,
+    beforeSha,
+    afterSha,
+    pulled,
+    hasUpstreamUpdate: afterSha !== beforeSha,
+    installSummary,
+    status,
+    globalDrift,
+  };
+}
+
 function formatInstallSummary(summary, dryRun) {
   const prefix = dryRun ? "[dry-run] " : "";
   const lines = [
@@ -997,6 +1178,45 @@ function formatUninstallSummary(summary, dryRun) {
   return lines.join("\n");
 }
 
+function formatUpdateSummary(result, dryRun) {
+  const prefix = dryRun ? "[dry-run] " : "";
+  const gitLine = dryRun
+    ? result.hasUpstreamUpdate
+      ? `${prefix}Git (${result.branch}): updates available ${result.beforeSha.slice(0, 7)} -> ${result.afterSha.slice(0, 7)}`
+      : `${prefix}Git (${result.branch}): already up to date at ${result.beforeSha.slice(0, 7)}`
+    : result.pulled
+      ? `Git (${result.branch}): fast-forwarded ${result.beforeSha.slice(0, 7)} -> ${result.afterSha.slice(0, 7)}`
+      : `Git (${result.branch}): already up to date at ${result.afterSha.slice(0, 7)}`;
+
+  const lines = [
+    gitLine,
+    formatInstallSummary(result.installSummary, dryRun),
+    formatStatus(result.status),
+  ];
+
+  const gd = result.globalDrift;
+  if (gd.needsApproval) {
+    lines.push(
+      `Global instructions changed relative to ${gd.commitSha.slice(0, 7)}:global/AGENTS.md (sha256: ${gd.sourceSha256}) — NOT overwritten automatically.`,
+    );
+    for (const t of gd.targets) {
+      if (t.state === "changed" || t.state === "symlink" || t.state === "non-file") {
+        lines.push(`  - ${t.target}: ${t.destPath} (${t.state})`);
+      }
+    }
+    lines.push(
+      `Review global/AGENTS.md and, once approved, run: node scripts/install.mjs --global --global-ref ${gd.commitSha}`,
+    );
+  } else {
+    const installedCount = gd.targets.filter((t) => t.state === "up-to-date").length;
+    lines.push(
+      `Global instructions: ${installedCount} installed file(s) match ${gd.commitSha.slice(0, 7)}:global/AGENTS.md (sha256: ${gd.sourceSha256}).`,
+    );
+  }
+
+  return lines.join("\n");
+}
+
 function formatStatus(status) {
   if (!status.installed) {
     return `cstack is not installed (no manifest at ${status.manifestPath}).`;
@@ -1034,7 +1254,30 @@ function main() {
     process.exit(0);
   }
 
-  if (opts.action === "status") {
+  if (opts.action === "update") {
+    const respectEnv = !opts.homeOverridden;
+    try {
+      const result = updateCstack({
+        repoRoot: DEFAULT_REPO_ROOT,
+        homeDir: opts.homeDir,
+        targets: opts.targets,
+        copy: opts.copy,
+        force: opts.force,
+        dryRun: opts.dryRun,
+        respectEnv,
+      });
+      console.log(formatUpdateSummary(result, opts.dryRun));
+      if (result.installSummary.conflicts.length > 0) {
+        process.exit(1);
+      }
+      process.exit(0);
+    } catch (err) {
+      console.error(`Error: ${err.message}`);
+      process.exit(1);
+    }
+  }
+
+    if (opts.action === "status") {
     const status = getStatus({ homeDir: opts.homeDir });
     console.log(formatStatus(status));
     process.exit(0);

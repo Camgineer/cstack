@@ -416,11 +416,15 @@ export function installCstack({
   const prevManagedByKey = new Map();
   if (prevManifest && Array.isArray(prevManifest.entries)) {
     for (const entry of prevManifest.entries) {
-      prevManagedByKey.set(`${entry.target}:${entry.skill}`, entry);
+      prevManagedByKey.set(
+        `${entry.target}:${entry.skill}:${normalizePath(entry.destPath)}`,
+        entry,
+      );
     }
   }
 
   const desiredKeys = new Set();
+  const activeTargetDirs = new Map();
   const nextEntries = [];
   const summary = {
     repoRoot: resolvedRepoRoot,
@@ -438,14 +442,15 @@ export function installCstack({
 
   for (const targetName of targets) {
     const targetDir = getTargetDir(homeDir, targetName, { env, respectEnv });
+    activeTargetDirs.set(targetName, normalizePath(targetDir));
     if (!dryRun) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
 
     for (const skill of skills) {
-      const key = `${targetName}:${skill.name}`;
-      desiredKeys.add(key);
       const destPath = path.join(targetDir, skill.name);
+      const key = `${targetName}:${skill.name}:${normalizePath(destPath)}`;
+      desiredKeys.add(key);
       const stat = lstatOrNull(destPath);
       const prevEntry = prevManagedByKey.get(key);
 
@@ -478,9 +483,6 @@ export function installCstack({
           destPath,
           reason: "existing non-cstack entry (re-run with --force to replace)",
         });
-        if (prevEntry && normalizePath(prevEntry.destPath) !== normalizePath(destPath)) {
-          nextEntries.push(prevEntry);
-        }
         continue;
       }
 
@@ -523,12 +525,13 @@ export function installCstack({
 
   if (prevManifest && Array.isArray(prevManifest.entries)) {
     for (const prevEntry of prevManifest.entries) {
-      const key = `${prevEntry.target}:${prevEntry.skill}`;
+      const key = `${prevEntry.target}:${prevEntry.skill}:${normalizePath(prevEntry.destPath)}`;
       if (desiredKeys.has(key)) {
         continue;
       }
-      // A run with a subset of targets must not drop the manifest's record of the other harnesses.
-      if (!targets.includes(prevEntry.target)) {
+      // Preserve entries belonging to unselected targets or a different config dir (e.g. changed CLAUDE_CONFIG_DIR/CODEX_HOME).
+      const activeDir = activeTargetDirs.get(prevEntry.target);
+      if (!activeDir || normalizePath(path.dirname(prevEntry.destPath)) !== activeDir) {
         nextEntries.push(prevEntry);
         continue;
       }
@@ -755,7 +758,8 @@ export function installGlobalInstructions({
     if (plan.action === "created") {
       if (!dryRun) {
         fs.mkdirSync(path.dirname(plan.destPath), { recursive: true });
-        fs.writeFileSync(plan.destPath, sourceBytes);
+        fs.writeFileSync(plan.destPath, sourceBytes, { mode: 0o600 });
+        try { fs.chmodSync(plan.destPath, 0o600); } catch {}
         const writtenSha = sha256(fs.readFileSync(plan.destPath));
         if (writtenSha !== sourceSha256) {
           throw new Error(`Digest mismatch after writing ${plan.destPath}`);
@@ -789,7 +793,8 @@ export function installGlobalInstructions({
         // Never write through a symlink: unlink the entry itself, then write a regular file.
         fs.unlinkSync(plan.destPath);
         fs.mkdirSync(path.dirname(plan.destPath), { recursive: true });
-        fs.writeFileSync(plan.destPath, sourceBytes);
+        fs.writeFileSync(plan.destPath, sourceBytes, { mode: 0o600 });
+        try { fs.chmodSync(plan.destPath, 0o600); } catch {}
 
         const postStat = fs.lstatSync(plan.destPath);
         if (postStat.isSymbolicLink() || !postStat.isFile()) {

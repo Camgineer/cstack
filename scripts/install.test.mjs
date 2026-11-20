@@ -496,6 +496,7 @@ test("installGlobalInstructions refuses directory at instruction path, refuses o
     if (process.platform !== "win32") {
       assert.equal(fs.statSync(path.join(freshBackup, "claude")).mode & 0o777, 0o700);
       assert.equal(fs.statSync(path.join(freshBackup, "claude", "CLAUDE.md")).mode & 0o777, 0o600);
+      assert.equal(fs.statSync(dirAtDest).mode & 0o777, 0o600);
     }
   } finally {
     fs.rmSync(homeDir, { recursive: true, force: true });
@@ -535,6 +536,16 @@ test("changing CLAUDE_CONFIG_DIR does not misidentify unrelated skill dir as cst
     assert.ok(
       statusAfter.entries.some(
         (e) => e.skill === "cstack-mode" && e.destPath === path.join(claudeDirA, "skills", "cstack-mode"),
+      ),
+    );
+    assert.ok(
+      statusAfter.entries.some(
+        (e) => e.skill === "poteto-mode" && e.destPath === path.join(claudeDirA, "skills", "poteto-mode"),
+      ),
+    );
+    assert.ok(
+      statusAfter.entries.some(
+        (e) => e.skill === "poteto-mode" && e.destPath === path.join(claudeDirB, "skills", "poteto-mode"),
       ),
     );
   } finally {

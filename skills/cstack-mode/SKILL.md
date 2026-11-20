@@ -17,6 +17,11 @@ Resolve `<cstack>` from the real path of this file (two directories above `skill
 - **Standalone Claude Code.** When running in Claude Code without T3 Code MCP tools, read `<cstack>/docs/harness/claude-code.md` once per session instead.
 - **Cursor.** No adapter is needed; Cursor names apply directly.
 
+## PR lifecycle
+
+- **Open a draft early while work is in progress.** As soon as a branch has work worth tracking, open a draft PR (`draft: true`) and keep it up to date so in-flight work is clearly visible in one place.
+- **Mark ready for review once verified.** Completing `pstack` verification and review is the signal that the PR is ready for review. As soon as the change is agentically proven and done in `pstack` terms, mark the PR ready for review (`pull_request_update` with `ready: true`), or open it ready directly if verification is already complete. Never leave verified, finished work sitting in draft.
+
 ## Investigation and recommendations
 
 - **Thorough analysis, bold recommendations.** Be thorough in your analysis and bold in your recommendations. Attack the premise before patching symptoms, and surface the bigger architectural option alongside any tactical fix.

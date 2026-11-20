@@ -16,7 +16,7 @@ Where a `pstack` playbook rule conflicts with a T3 Code Projects coordination ru
 
 | Area | pstack default | Inside T3 Code Projects |
 | --- | --- | --- |
-| **Opening a PR** | `opening-a-pr` and `worker.md` open PRs ready for review (`draft: false`). | Open a **draft** PR (`draft: true` on `pull_request_create`) per T3 Code Projects thread rules unless the user explicitly asks for a ready PR. |
+| **Opening a PR** | `opening-a-pr` and `worker.md` open PRs ready for review (`draft: false`). | Open a **draft** PR (`draft: true`) early while work is in progress and keep it up to date so the work is visible in one place. Once `pstack` verification and review are complete, mark the PR **ready for review** (`pull_request_update` with `ready: true`), or open it ready directly if verification is already complete. |
 | **New top-level threads** | Plain T3 Code allows `t3_thread_launch` / `create_threads` when the user asks. | Work threads must never spawn top-level threads directly. Use `projects_ask` (`kind: "new_thread"`) with the user's verbatim quote. Use `delegate_task` or native subagents only for hidden helpers inside your own task. |
 | **Checklists and todolists** | Copy playbook steps into the provider's todolist tool. | Keep playbook steps in sync with the T3 Code Projects checklist (`projects_report` when available) alongside any provider-native todolist tool. |
 | **Questions and irreversible steps** | Ask via `AskQuestion` (mapped to the provider's question tool). | For forks that change the goal, visible output, or an irreversible step, pair the question tool with `decision_open` / `decision_choose` (setting `irreversible: true` on irreversible steps) per `projects_rules`. |

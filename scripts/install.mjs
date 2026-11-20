@@ -1022,12 +1022,80 @@ export function checkGlobalInstructionDrift({
   };
 }
 
+function inspectRemoteUpstreamReadOnly(resolvedRepoRoot, branch, beforeSha) {
+  let remoteName = "";
+  let mergeRef = "";
+  try {
+    remoteName = execFileSync(
+      "git",
+      ["-C", resolvedRepoRoot, "config", "--get", `branch.${branch}.remote`],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    ).trim();
+    mergeRef = execFileSync(
+      "git",
+      ["-C", resolvedRepoRoot, "config", "--get", `branch.${branch}.merge`],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    ).trim();
+  } catch {
+    return { remoteSha: null, relation: "no-upstream" };
+  }
+  if (!remoteName || !mergeRef) {
+    return { remoteSha: null, relation: "no-upstream" };
+  }
+
+  // Strictly read-only: git ls-remote does not write objects, refs, or FETCH_HEAD.
+  const out = execFileSync(
+    "git",
+    ["-C", resolvedRepoRoot, "ls-remote", "--refs", remoteName, mergeRef],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+  ).trim();
+  const firstLine = out.split(/\r?\n/)[0] || "";
+  const remoteSha = firstLine.split(/\s+/)[0] || null;
+  if (!remoteSha) {
+    return { remoteSha: null, relation: "missing-remote-ref" };
+  }
+  if (remoteSha === beforeSha) {
+    return { remoteSha, relation: "up-to-date" };
+  }
+
+  // Check relationship only if remoteSha is already present in the local object store.
+  try {
+    execFileSync(
+      "git",
+      ["-C", resolvedRepoRoot, "cat-file", "-e", `${remoteSha}^{commit}`],
+      { stdio: ["ignore", "ignore", "ignore"] },
+    );
+  } catch {
+    return { remoteSha, relation: "remote-unfetched" };
+  }
+
+  try {
+    execFileSync(
+      "git",
+      ["-C", resolvedRepoRoot, "merge-base", "--is-ancestor", beforeSha, remoteSha],
+      { stdio: ["ignore", "ignore", "ignore"] },
+    );
+    return { remoteSha, relation: "fast-forward" };
+  } catch {}
+
+  try {
+    execFileSync(
+      "git",
+      ["-C", resolvedRepoRoot, "merge-base", "--is-ancestor", remoteSha, beforeSha],
+      { stdio: ["ignore", "ignore", "ignore"] },
+    );
+    return { remoteSha, relation: "ahead" };
+  } catch {}
+
+  return { remoteSha, relation: "diverged" };
+}
+
 export function updateCstack({
   repoRoot = DEFAULT_REPO_ROOT,
   homeDir = os.homedir(),
   targets = null,
   globalTargets = DEFAULT_GLOBAL_TARGETS,
-  copy = false,
+  copy = null,
   force = false,
   dryRun = false,
   platform = process.platform,
@@ -1035,11 +1103,16 @@ export function updateCstack({
   respectEnv = false,
 } = {}) {
   const resolvedRepoRoot = fs.realpathSync(repoRoot);
-  const branch = execFileSync(
-    "git",
-    ["-C", resolvedRepoRoot, "symbolic-ref", "--quiet", "--short", "HEAD"],
-    { encoding: "utf8" },
-  ).trim();
+  let branch = "";
+  try {
+    branch = execFileSync(
+      "git",
+      ["-C", resolvedRepoRoot, "symbolic-ref", "--quiet", "--short", "HEAD"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    ).trim();
+  } catch {
+    branch = "";
+  }
   if (!branch) {
     throw new Error(`Refusing to update detached HEAD in ${resolvedRepoRoot}; check out a branch first`);
   }
@@ -1063,17 +1136,13 @@ export function updateCstack({
 
   let afterSha = beforeSha;
   let pulled = false;
+  let remoteSha = null;
+  let upstreamRelation = "up-to-date";
   if (dryRun) {
-    execFileSync("git", ["-C", resolvedRepoRoot, "fetch", "--quiet"], { encoding: "utf8" });
-    try {
-      afterSha = execFileSync(
-        "git",
-        ["-C", resolvedRepoRoot, "rev-parse", "@{u}"],
-        { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
-      ).trim();
-    } catch {
-      afterSha = beforeSha;
-    }
+    const info = inspectRemoteUpstreamReadOnly(resolvedRepoRoot, branch, beforeSha);
+    remoteSha = info.remoteSha;
+    upstreamRelation = info.relation;
+    afterSha = beforeSha;
   } else {
     execFileSync("git", ["-C", resolvedRepoRoot, "pull", "--ff-only"], { encoding: "utf8" });
     afterSha = execFileSync(
@@ -1081,13 +1150,15 @@ export function updateCstack({
       ["-C", resolvedRepoRoot, "rev-parse", "HEAD"],
       { encoding: "utf8" },
     ).trim();
+    remoteSha = afterSha;
     pulled = afterSha !== beforeSha;
+    upstreamRelation = pulled ? "fast-forwarded" : "up-to-date";
   }
 
-  // Preserve previously installed target set when --targets is not explicitly passed
+  // Preserve previously installed target set and copy/link mode when not explicitly overridden
+  const prev = loadManifest(getManifestPath(homeDir));
   let effectiveTargets = targets;
   if (!effectiveTargets) {
-    const prev = loadManifest(getManifestPath(homeDir));
     if (prev && Array.isArray(prev.entries) && prev.entries.length > 0) {
       const seen = [...new Set(prev.entries.map((e) => e.target).filter((t) => TARGET_DEFS[t]))];
       effectiveTargets = seen.length > 0 ? seen : DEFAULT_TARGETS;
@@ -1095,12 +1166,20 @@ export function updateCstack({
       effectiveTargets = DEFAULT_TARGETS;
     }
   }
+  let effectiveCopy = copy;
+  if (effectiveCopy === null || effectiveCopy === undefined) {
+    const relevantEntries =
+      prev && Array.isArray(prev.entries)
+        ? prev.entries.filter((e) => effectiveTargets.includes(e.target))
+        : [];
+    effectiveCopy = relevantEntries.length > 0 && relevantEntries.some((e) => e.mode === "copy");
+  }
 
   const installSummary = installCstack({
     repoRoot: resolvedRepoRoot,
     homeDir,
     targets: effectiveTargets,
-    copy,
+    copy: effectiveCopy,
     force,
     dryRun,
     platform,
@@ -1123,8 +1202,14 @@ export function updateCstack({
     branch,
     beforeSha,
     afterSha,
+    remoteSha,
+    upstreamRelation,
     pulled,
-    hasUpstreamUpdate: afterSha !== beforeSha,
+    hasUpstreamUpdate:
+      upstreamRelation === "fast-forward" ||
+      upstreamRelation === "remote-unfetched" ||
+      upstreamRelation === "fast-forwarded",
+    previewFromLocalHeadOnly: dryRun && remoteSha !== null && remoteSha !== beforeSha,
     installSummary,
     status,
     globalDrift,
@@ -1180,13 +1265,24 @@ function formatUninstallSummary(summary, dryRun) {
 
 function formatUpdateSummary(result, dryRun) {
   const prefix = dryRun ? "[dry-run] " : "";
-  const gitLine = dryRun
-    ? result.hasUpstreamUpdate
-      ? `${prefix}Git (${result.branch}): updates available ${result.beforeSha.slice(0, 7)} -> ${result.afterSha.slice(0, 7)}`
-      : `${prefix}Git (${result.branch}): already up to date at ${result.beforeSha.slice(0, 7)}`
-    : result.pulled
+  let gitLine;
+  if (dryRun) {
+    if (result.upstreamRelation === "remote-unfetched" && result.remoteSha) {
+      gitLine = `${prefix}Git (${result.branch}): remote head is ${result.remoteSha.slice(0, 7)} (local HEAD is ${result.beforeSha.slice(0, 7)}; not fetched in --dry-run, so skill/global diff below reflects local HEAD only)`;
+    } else if (result.upstreamRelation === "fast-forward" && result.remoteSha) {
+      gitLine = `${prefix}Git (${result.branch}): fast-forward available ${result.beforeSha.slice(0, 7)} -> ${result.remoteSha.slice(0, 7)} (skill/global diff below reflects local HEAD only)`;
+    } else if (result.upstreamRelation === "diverged" && result.remoteSha) {
+      gitLine = `${prefix}Git (${result.branch}): diverged from remote ${result.remoteSha.slice(0, 7)} (local HEAD ${result.beforeSha.slice(0, 7)}); git pull --ff-only would fail`;
+    } else if (result.upstreamRelation === "ahead") {
+      gitLine = `${prefix}Git (${result.branch}): local HEAD ${result.beforeSha.slice(0, 7)} is ahead of remote`;
+    } else {
+      gitLine = `${prefix}Git (${result.branch}): already up to date at ${result.beforeSha.slice(0, 7)}`;
+    }
+  } else {
+    gitLine = result.pulled
       ? `Git (${result.branch}): fast-forwarded ${result.beforeSha.slice(0, 7)} -> ${result.afterSha.slice(0, 7)}`
       : `Git (${result.branch}): already up to date at ${result.afterSha.slice(0, 7)}`;
+  }
 
   const lines = [
     gitLine,
@@ -1261,7 +1357,7 @@ function main() {
         repoRoot: DEFAULT_REPO_ROOT,
         homeDir: opts.homeDir,
         targets: opts.targets,
-        copy: opts.copy,
+        copy: opts.copy ? true : null,
         force: opts.force,
         dryRun: opts.dryRun,
         respectEnv,

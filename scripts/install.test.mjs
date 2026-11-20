@@ -702,12 +702,16 @@ test("updateCstack fast-forwards, re-links new skills, prunes removed skills, an
     const v2Sha = execFileSync("git", ["-C", authorRepo, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
     execFileSync("git", ["-C", authorRepo, "push", "-q", "origin", "main"]);
 
-    // Dry-run sees upstream update & global drift without touching working tree or installed files
+    // Dry-run uses read-only ls-remote: detects remote v2 without writing objects/FETCH_HEAD or touching files
+    const fetchHeadPath = path.join(localClone, ".git", "FETCH_HEAD");
+    const hadFetchHead = fs.existsSync(fetchHeadPath);
     const dryRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
     assert.equal(dryRes.hasUpstreamUpdate, true);
     assert.equal(dryRes.pulled, false);
-    assert.equal(dryRes.afterSha, v2Sha);
-    assert.equal(dryRes.globalDrift.needsApproval, true);
+    assert.equal(dryRes.remoteSha, v2Sha);
+    assert.equal(dryRes.upstreamRelation, "remote-unfetched");
+    assert.equal(dryRes.previewFromLocalHeadOnly, true);
+    assert.equal(fs.existsSync(fetchHeadPath), hadFetchHead);
     assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "new-skill")), false);
     assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "old-skill")), true);
 
@@ -737,6 +741,28 @@ test("updateCstack fast-forwards, re-links new skills, prunes removed skills, an
       () => updateCstack({ repoRoot: localClone, homeDir }),
       /uncommitted changes to tracked files/,
     );
+    execFileSync("git", ["-C", localClone, "checkout", "--", "global/AGENTS.md"]);
+
+    // Refuses detached HEAD with clear explanatory error
+    execFileSync("git", ["-C", localClone, "checkout", "-q", "--detach", "HEAD"]);
+    assert.throws(
+      () => updateCstack({ repoRoot: localClone, homeDir }),
+      /Refusing to update detached HEAD/,
+    );
+    execFileSync("git", ["-C", localClone, "checkout", "-q", "main"]);
+
+    // Copy-mode installations stay in copy mode on --update (never silently replaced with links)
+    const copyHome = makeTempDir("cstack-update-copy-home-");
+    try {
+      installCstack({ repoRoot: localClone, homeDir: copyHome, targets: ["claude"], copy: true });
+      const copyRes = updateCstack({ repoRoot: localClone, homeDir: copyHome });
+      assert.equal(copyRes.installSummary.mode, "copy");
+      const skillStat = fs.lstatSync(path.join(copyHome, ".claude", "skills", "new-skill"));
+      assert.equal(skillStat.isSymbolicLink(), false);
+      assert.equal(skillStat.isDirectory(), true);
+    } finally {
+      fs.rmSync(copyHome, { recursive: true, force: true });
+    }
   } finally {
     fs.rmSync(bareOrigin, { recursive: true, force: true });
     fs.rmSync(authorRepo, { recursive: true, force: true });

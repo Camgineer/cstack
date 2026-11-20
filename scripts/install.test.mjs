@@ -552,3 +552,31 @@ test("changing CLAUDE_CONFIG_DIR does not misidentify unrelated skill dir as cst
     fs.rmSync(homeDir, { recursive: true, force: true });
   }
 });
+
+test("changing CODEX_HOME preserves prior manifest entries on a clean move", () => {
+  const homeDir = makeTempDir("cstack-codex-move-");
+  const codexA = path.join(homeDir, "codex-a");
+  const codexB = path.join(homeDir, "codex-b");
+  try {
+    installCstack({
+      repoRoot: REPO_ROOT,
+      homeDir,
+      targets: ["codex"],
+      env: { CODEX_HOME: codexA },
+      respectEnv: true,
+    });
+    const moved = installCstack({
+      repoRoot: REPO_ROOT,
+      homeDir,
+      targets: ["codex"],
+      env: { CODEX_HOME: codexB },
+      respectEnv: true,
+    });
+    assert.equal(moved.conflicts.length, 0);
+    const status = getStatus({ homeDir });
+    assert.ok(status.entries.some((e) => e.destPath === path.join(codexA, "skills", "cstack-mode")));
+    assert.ok(status.entries.some((e) => e.destPath === path.join(codexB, "skills", "cstack-mode")));
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});

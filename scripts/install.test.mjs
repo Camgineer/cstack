@@ -11,6 +11,7 @@ import {
   ALL_TARGETS,
   DEFAULT_TARGETS,
   discoverSkills,
+  formatUpdateSummary,
   getGlobalInstructionPath,
   getManifestPath,
   getStatus,
@@ -19,6 +20,7 @@ import {
   installGlobalInstructions,
   parseArgs,
   uninstallCstack,
+  updateCstack,
 } from "./install.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -641,4 +643,210 @@ test("changing CODEX_HOME preserves prior manifest entries on a clean move", () 
   } finally {
     fs.rmSync(homeDir, { recursive: true, force: true });
   }
+});
+
+test("updateCstack fast-forwards, re-links new skills, prunes removed skills, and alerts on global/AGENTS.md drift without overwriting", () => {
+  const bareOrigin = makeTempDir("cstack-update-origin-");
+  const authorRepo = makeTempDir("cstack-update-author-");
+  const localClone = makeTempDir("cstack-update-clone-");
+  const homeDir = makeTempDir("cstack-update-home-");
+  const gitCommit = (cwd, msg) => {
+    execFileSync("git", ["-C", cwd, "add", "-A"]);
+    execFileSync("git", [
+      "-C",
+      cwd,
+      "-c",
+      "user.name=Test",
+      "-c",
+      "user.email=test@example.com",
+      "commit",
+      "-q",
+      "-m",
+      msg,
+    ]);
+  };
+  try {
+    execFileSync("git", ["init", "--bare", "-q", bareOrigin]);
+    execFileSync("git", ["clone", "-q", bareOrigin, authorRepo]);
+    execFileSync("git", ["-C", authorRepo, "checkout", "-q", "-b", "main"]);
+
+    // Initial skills + global/AGENTS.md v1
+    for (const s of ["cstack-mode", "poteto-mode", "old-skill"]) {
+      const dir = path.join(authorRepo, "skills", s);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, "SKILL.md"), `# ${s}\n`);
+    }
+    fs.mkdirSync(path.join(authorRepo, "global"), { recursive: true });
+    const v1Global = "Approved global v1\n";
+    fs.writeFileSync(path.join(authorRepo, "global", "AGENTS.md"), v1Global);
+    gitCommit(authorRepo, "v1");
+    execFileSync("git", ["-C", authorRepo, "push", "-q", "-u", "origin", "main"]);
+
+    // Clone to local machine and install skills + v1 global instructions (claude & codex only)
+    fs.rmSync(localClone, { recursive: true, force: true });
+    execFileSync("git", ["clone", "-q", "-b", "main", bareOrigin, localClone]);
+    installCstack({ repoRoot: localClone, homeDir, targets: ["claude", "agents", "antigravity"] });
+    installGlobalInstructions({
+      repoRoot: localClone,
+      homeDir,
+      globalTargets: ["claude", "codex"],
+      globalRef: "HEAD",
+      backupDir: path.join(homeDir, "bk-v1"),
+    });
+
+    // Upstream adds new-skill, removes old-skill, and updates global/AGENTS.md to v2
+    fs.rmSync(path.join(authorRepo, "skills", "old-skill"), { recursive: true, force: true });
+    fs.mkdirSync(path.join(authorRepo, "skills", "new-skill"), { recursive: true });
+    fs.writeFileSync(path.join(authorRepo, "skills", "new-skill", "SKILL.md"), "# new-skill\n");
+    fs.writeFileSync(path.join(authorRepo, "global", "AGENTS.md"), "Unapproved global v2\n");
+    gitCommit(authorRepo, "v2");
+    const v2Sha = execFileSync("git", ["-C", authorRepo, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+    execFileSync("git", ["-C", authorRepo, "push", "-q", "origin", "main"]);
+
+    // Dry-run uses read-only ls-remote + --no-optional-locks: detects remote v2 without modifying .git/index or FETCH_HEAD
+    const fetchHeadPath = path.join(localClone, ".git", "FETCH_HEAD");
+    fs.writeFileSync(fetchHeadPath, "sentinel-fetch-head\n");
+    const indexPath = path.join(localClone, ".git", "index");
+    // Bump a tracked file mtime so git status WITHOUT --no-optional-locks would rewrite .git/index
+    const trackedFile = path.join(localClone, "global", "AGENTS.md");
+    const future = new Date(Date.now() + 5000);
+    fs.utimesSync(trackedFile, future, future);
+    const indexBeforeBytes = fs.readFileSync(indexPath);
+    const indexBeforeMtime = fs.statSync(indexPath).mtimeMs;
+
+    const dryRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
+    assert.equal(dryRes.remoteDiffers, true);
+    assert.equal(dryRes.hasUpstreamUpdate, false);
+    assert.equal(dryRes.wouldFailPull, false);
+    assert.equal(dryRes.pulled, false);
+    assert.equal(dryRes.remoteSha, v2Sha);
+    assert.equal(dryRes.upstreamRelation, "remote-unfetched");
+    assert.equal(dryRes.previewFromLocalHeadOnly, true);
+    assert.equal(fs.readFileSync(fetchHeadPath, "utf8"), "sentinel-fetch-head\n");
+    assert.deepEqual(fs.readFileSync(indexPath), indexBeforeBytes);
+    assert.equal(fs.statSync(indexPath).mtimeMs, indexBeforeMtime);
+    assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "new-skill")), false);
+    assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "old-skill")), true);
+
+    // Real update fast-forwards, links new-skill, prunes old-skill, and NEVER overwrites global files
+    const res = updateCstack({ repoRoot: localClone, homeDir });
+    assert.equal(res.pulled, true);
+    assert.equal(res.afterSha, v2Sha);
+    assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "new-skill")), true);
+    assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "old-skill")), false);
+    assert.ok(res.status.entries.every((e) => e.state === "ok"));
+    // Preserved installed target set (claude, agents, antigravity — did not add codex)
+    assert.equal(fs.existsSync(path.join(homeDir, ".codex", "skills", "new-skill")), false);
+
+    // Global files still hold v1 bytes, while globalDrift flags both claude & codex and leaves missing antigravity non-blocking
+    assert.equal(fs.readFileSync(path.join(homeDir, ".claude", "CLAUDE.md"), "utf8"), v1Global);
+    assert.equal(fs.readFileSync(path.join(homeDir, ".codex", "AGENTS.md"), "utf8"), v1Global);
+    assert.equal(res.globalDrift.needsApproval, true);
+    assert.equal(res.globalDrift.commitSha, v2Sha);
+    const byT = Object.fromEntries(res.globalDrift.targets.map((t) => [t.target, t.state]));
+    assert.equal(byT.claude, "changed");
+    assert.equal(byT.codex, "changed");
+    assert.equal(byT.antigravity, "missing");
+
+    // Refuses to update when tracked files have uncommitted edits
+    fs.writeFileSync(path.join(localClone, "global", "AGENTS.md"), "dirty edit\n");
+    assert.throws(
+      () => updateCstack({ repoRoot: localClone, homeDir }),
+      /uncommitted changes to tracked files/,
+    );
+    execFileSync("git", ["-C", localClone, "checkout", "--", "global/AGENTS.md"]);
+
+    // Refuses detached HEAD with clear explanatory error
+    execFileSync("git", ["-C", localClone, "checkout", "-q", "--detach", "HEAD"]);
+    assert.throws(
+      () => updateCstack({ repoRoot: localClone, homeDir }),
+      /Refusing to update detached HEAD/,
+    );
+    execFileSync("git", ["-C", localClone, "checkout", "-q", "main"]);
+
+    // Mixed-mode installations preserve copy vs link per target across updates (including newly added skills)
+    const mixedHome = makeTempDir("cstack-update-mixed-home-");
+    try {
+      installCstack({ repoRoot: localClone, homeDir: mixedHome, targets: ["claude"], copy: true });
+      installCstack({ repoRoot: localClone, homeDir: mixedHome, targets: ["codex"], copy: false });
+
+      // Push a v3 skill upstream and update
+      fs.mkdirSync(path.join(authorRepo, "skills", "v3-skill"), { recursive: true });
+      fs.writeFileSync(path.join(authorRepo, "skills", "v3-skill", "SKILL.md"), "# v3-skill\n");
+      gitCommit(authorRepo, "v3");
+      execFileSync("git", ["-C", authorRepo, "push", "-q", "origin", "main"]);
+
+      const mixedRes = updateCstack({ repoRoot: localClone, homeDir: mixedHome });
+      assert.equal(mixedRes.installSummary.mode, "mixed");
+
+      const claudeExisting = fs.lstatSync(path.join(mixedHome, ".claude", "skills", "new-skill"));
+      const claudeAdded = fs.lstatSync(path.join(mixedHome, ".claude", "skills", "v3-skill"));
+      assert.equal(claudeExisting.isSymbolicLink(), false);
+      assert.equal(claudeExisting.isDirectory(), true);
+      assert.equal(claudeAdded.isSymbolicLink(), false);
+      assert.equal(claudeAdded.isDirectory(), true);
+
+      const codexExisting = fs.lstatSync(path.join(mixedHome, ".codex", "skills", "new-skill"));
+      const codexAdded = fs.lstatSync(path.join(mixedHome, ".codex", "skills", "v3-skill"));
+      assert.equal(codexExisting.isSymbolicLink(), true);
+      assert.equal(codexAdded.isSymbolicLink(), true);
+    } finally {
+      fs.rmSync(mixedHome, { recursive: true, force: true });
+    }
+
+    // Dry-run keeps unfetched remote heads uncertain until fetched, and flags proven divergence as wouldFailPull
+    fs.writeFileSync(path.join(localClone, "local-note.txt"), "local commit\n");
+    gitCommit(localClone, "local-diverge");
+    fs.writeFileSync(path.join(authorRepo, "remote-note.txt"), "remote commit\n");
+    gitCommit(authorRepo, "remote-diverge");
+    execFileSync("git", ["-C", authorRepo, "push", "-q", "origin", "main"]);
+
+    const divUnfetchedRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
+    assert.equal(divUnfetchedRes.upstreamRelation, "remote-unfetched");
+    assert.equal(divUnfetchedRes.wouldFailPull, false);
+    assert.equal(divUnfetchedRes.hasUpstreamUpdate, false);
+    const divUnfetchedText = formatUpdateSummary(divUnfetchedRes, true);
+    assert.match(divUnfetchedText, /fast-forward vs diverged status is unknown without git fetch/i);
+
+    execFileSync("git", ["-C", localClone, "fetch", "-q", "origin"]);
+    const divFetchedRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
+    assert.equal(divFetchedRes.upstreamRelation, "diverged");
+    assert.equal(divFetchedRes.wouldFailPull, true);
+    const divFetchedText = formatUpdateSummary(divFetchedRes, true);
+    assert.match(divFetchedText, /diverged from remote/i);
+    assert.match(divFetchedText, /git pull --ff-only would fail/i);
+
+    // Dry-run does not report "already up to date" when upstream is unset or missing on remote
+    execFileSync("git", ["-C", localClone, "branch", "--unset-upstream"]);
+    const noUpstreamRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
+    assert.equal(noUpstreamRes.upstreamRelation, "no-upstream");
+    assert.equal(noUpstreamRes.wouldFailPull, true);
+    const noUpstreamText = formatUpdateSummary(noUpstreamRes, true);
+    assert.match(noUpstreamText, /no upstream/i);
+    assert.match(noUpstreamText, /would fail/i);
+    assert.doesNotMatch(noUpstreamText, /already up to date/i);
+
+    execFileSync("git", ["-C", localClone, "config", "branch.main.remote", "origin"]);
+    execFileSync("git", ["-C", localClone, "config", "branch.main.merge", "refs/heads/does-not-exist"]);
+    const missingRefRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
+    assert.equal(missingRefRes.upstreamRelation, "missing-remote-ref");
+    assert.equal(missingRefRes.wouldFailPull, true);
+    const missingRefText = formatUpdateSummary(missingRefRes, true);
+    assert.match(missingRefText, /missing on remote/i);
+    assert.match(missingRefText, /would fail/i);
+    assert.doesNotMatch(missingRefText, /already up to date/i);
+  } finally {
+    fs.rmSync(bareOrigin, { recursive: true, force: true });
+    fs.rmSync(authorRepo, { recursive: true, force: true });
+    fs.rmSync(localClone, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
+test("parseArgs supports --update/--refresh and rejects conflicting flags", () => {
+  assert.equal(parseArgs(["--update"]).action, "update");
+  assert.equal(parseArgs(["--refresh"]).action, "update");
+  assert.throws(() => parseArgs(["--update", "--uninstall"]), /mutually exclusive/);
+  assert.throws(() => parseArgs(["--update", "--status"]), /mutually exclusive/);
+  assert.throws(() => parseArgs(["--update", "--global", "--global-ref", "HEAD"]), /Cannot combine --update with --global/);
 });

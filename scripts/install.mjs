@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -60,6 +61,7 @@ Options:
   --global                 Also install global/AGENTS.md to each harness's global instruction file
   --global-targets <list>  Comma-separated global instruction targets: ${ALL_GLOBAL_TARGETS.join(", ")}, or "all"
                            (default: ${DEFAULT_GLOBAL_TARGETS.join(",")}; implies --global)
+  --global-ref <ref>       Git commit/ref to read global/AGENTS.md from (default: working tree file)
   --backup-dir <dir>       Directory for backups when replacing existing global instruction files
                            (default: ~/.config/cstack/global-backups/<timestamp>)
   --copy                   Copy skill directories instead of linking
@@ -78,6 +80,7 @@ export function parseArgs(argv) {
     targets: null,
     installGlobal: false,
     globalTargets: null,
+    globalRef: null,
     backupDir: null,
     copy: false,
     force: false,
@@ -111,6 +114,14 @@ export function parseArgs(argv) {
           ALL_GLOBAL_TARGETS,
           "--global-targets",
         );
+        break;
+      }
+      case "--global-ref": {
+        if (i + 1 >= argv.length) {
+          throw new Error("--global-ref requires a git commit or ref");
+        }
+        opts.installGlobal = true;
+        opts.globalRef = argv[++i];
         break;
       }
       case "--backup-dir": {
@@ -356,6 +367,35 @@ function parseSingleLineAtImport(rawText, destPath, homeDir) {
   return path.resolve(path.dirname(destPath), target);
 }
 
+function readGlobalSourceBytes(resolvedRepoRoot, globalRef) {
+  if (globalRef) {
+    const commitSha = execFileSync(
+      "git",
+      ["-C", resolvedRepoRoot, "rev-parse", "--verify", `${globalRef}^{commit}`],
+      { encoding: "utf8" },
+    ).trim();
+    const bytes = execFileSync(
+      "git",
+      ["-C", resolvedRepoRoot, "show", `${commitSha}:global/AGENTS.md`],
+      { maxBuffer: 1024 * 1024 },
+    );
+    return {
+      sourceLabel: `${commitSha}:global/AGENTS.md`,
+      commitSha,
+      bytes,
+    };
+  }
+  const sourcePath = path.join(resolvedRepoRoot, "global", "AGENTS.md");
+  if (!fs.existsSync(sourcePath)) {
+    throw new Error(`Global instructions source not found: ${sourcePath}`);
+  }
+  return {
+    sourceLabel: sourcePath,
+    commitSha: null,
+    bytes: fs.readFileSync(sourcePath),
+  };
+}
+
 export function installCstack({
   repoRoot = DEFAULT_REPO_ROOT,
   homeDir = os.homedir(),
@@ -421,8 +461,13 @@ export function installCstack({
         continue;
       }
 
+      const prevMatchesSamePath =
+        Boolean(prevEntry) &&
+        normalizePath(prevEntry.destPath) === normalizePath(destPath) &&
+        matchesManagedEntry(stat, prevEntry);
+
       const ownedByCstack =
-        matchesManagedEntry(stat, prevEntry) ||
+        prevMatchesSamePath ||
         (stat &&
           isLinkUnder(destPath, path.join(resolvedRepoRoot, "skills")));
 
@@ -528,16 +573,14 @@ export function installGlobalInstructions({
   repoRoot = DEFAULT_REPO_ROOT,
   homeDir = os.homedir(),
   globalTargets = DEFAULT_GLOBAL_TARGETS,
+  globalRef = null,
   backupDir = null,
   dryRun = false,
   env = process.env,
   respectEnv = false,
+  onDifference = null,
 } = {}) {
   const resolvedRepoRoot = fs.realpathSync(repoRoot);
-  const sourcePath = path.join(resolvedRepoRoot, "global", "AGENTS.md");
-  if (!fs.existsSync(sourcePath)) {
-    throw new Error(`Global instructions source not found: ${sourcePath}`);
-  }
 
   // Step 1 of global/README.md contract: verify required skills exist first.
   const missingSkills = [];
@@ -566,22 +609,19 @@ export function installGlobalInstructions({
     );
   }
 
-  // Step 2: read source bytes (pinned LF via .gitattributes).
-  const sourceBytes = fs.readFileSync(sourcePath);
+  // Step 2: read source bytes (from an approved git ref when provided, or working tree).
+  const { sourceLabel, commitSha, bytes: sourceBytes } = readGlobalSourceBytes(
+    resolvedRepoRoot,
+    globalRef,
+  );
   const sourceSha256 = sha256(sourceBytes);
 
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const effectiveBackupDir =
     backupDir || path.join(homeDir, ".config", "cstack", "global-backups", stamp);
 
-  const summary = {
-    sourcePath,
-    sourceSha256,
-    backupDir: effectiveBackupDir,
-    missingSkills,
-    results: [],
-  };
-
+  // Step 3 (Pass 1): inspect every destination without following links and validate safety BEFORE any write.
+  const plans = [];
   for (const targetName of globalTargets) {
     const destPath = getGlobalInstructionPath(homeDir, targetName, {
       env,
@@ -589,44 +629,47 @@ export function installGlobalInstructions({
     });
     const stat = lstatOrNull(destPath);
 
-    // Case 1: missing
     if (!stat) {
-      if (!dryRun) {
-        fs.mkdirSync(path.dirname(destPath), { recursive: true });
-        fs.writeFileSync(destPath, sourceBytes);
-        const writtenSha = sha256(fs.readFileSync(destPath));
-        if (writtenSha !== sourceSha256) {
-          throw new Error(`Digest mismatch after writing ${destPath}`);
-        }
-      }
-      summary.results.push({
+      plans.push({
         target: targetName,
         destPath,
+        stat: null,
         previousKind: "missing",
         action: "created",
-        backupPath: null,
-        sha256: sourceSha256,
+        linkTarget: null,
+        atImportTarget: null,
+        rawBytes: null,
+        resolvedBytes: null,
+        targetBackupDir: null,
       });
       continue;
     }
 
-    // Case 2: regular file with exact matching bytes
+    if (stat.isDirectory()) {
+      throw new Error(
+        `Refusing to replace directory at global instruction path: ${destPath}`,
+      );
+    }
+
     if (stat.isFile() && !stat.isSymbolicLink()) {
       const existingBytes = fs.readFileSync(destPath);
       if (sha256(existingBytes) === sourceSha256) {
-        summary.results.push({
+        plans.push({
           target: targetName,
           destPath,
+          stat,
           previousKind: "regular-match",
           action: "unchanged",
-          backupPath: null,
-          sha256: sourceSha256,
+          linkTarget: null,
+          atImportTarget: null,
+          rawBytes: null,
+          resolvedBytes: null,
+          targetBackupDir: null,
         });
         continue;
       }
     }
 
-    // Case 3: anything else (symlink, @ import, differing regular file, or non-regular entry)
     let previousKind = "other";
     let linkTarget = null;
     let atImportTarget = null;
@@ -652,53 +695,115 @@ export function installGlobalInstructions({
       } else {
         previousKind = "regular-diff";
       }
+    } else {
+      throw new Error(
+        `Refusing to replace non-regular entry at global instruction path: ${destPath}`,
+      );
     }
 
     const targetBackupDir = path.join(effectiveBackupDir, targetName);
-    if (!dryRun) {
-      fs.mkdirSync(targetBackupDir, { recursive: true });
-      if (previousKind === "symlink") {
-        fs.writeFileSync(
-          path.join(targetBackupDir, "symlink.txt"),
-          `${destPath} -> ${linkTarget}\n`,
-          "utf8",
-        );
-      } else if (rawBytes !== null) {
-        fs.writeFileSync(
-          path.join(targetBackupDir, path.basename(destPath)),
-          rawBytes,
-        );
-      }
-      if (resolvedBytes !== null) {
-        fs.writeFileSync(
-          path.join(targetBackupDir, "resolved.md"),
-          resolvedBytes,
-        );
-      }
+    if (!dryRun && fs.existsSync(targetBackupDir)) {
+      throw new Error(
+        `Refusing to overwrite existing backup directory: ${targetBackupDir}`,
+      );
+    }
 
-      // Never write through a symlink: remove the entry itself, then create a regular file.
-      removeEntry(destPath, stat);
-      fs.mkdirSync(path.dirname(destPath), { recursive: true });
-      fs.writeFileSync(destPath, sourceBytes);
+    plans.push({
+      target: targetName,
+      destPath,
+      stat,
+      previousKind,
+      action: "replaced",
+      linkTarget,
+      atImportTarget,
+      rawBytes,
+      resolvedBytes,
+      targetBackupDir,
+    });
+  }
 
-      const postStat = fs.lstatSync(destPath);
-      if (postStat.isSymbolicLink() || !postStat.isFile()) {
-        throw new Error(`Expected regular file at ${destPath} after install`);
+  // Step 4a: report every difference BEFORE performing any write.
+  if (typeof onDifference === "function") {
+    for (const plan of plans) {
+      if (plan.action === "replaced") {
+        onDifference({
+          target: plan.target,
+          destPath: plan.destPath,
+          previousKind: plan.previousKind,
+          linkTarget: plan.linkTarget,
+          atImportTarget: plan.atImportTarget,
+          backupPath: plan.targetBackupDir,
+        });
       }
-      const writtenSha = sha256(fs.readFileSync(destPath));
-      if (writtenSha !== sourceSha256) {
-        throw new Error(`Digest mismatch after writing ${destPath}`);
+    }
+  }
+
+  // Step 4b & 5: execute writes and verify SHA-256 digests.
+  const summary = {
+    sourcePath: sourceLabel,
+    commitSha,
+    sourceSha256,
+    backupDir: effectiveBackupDir,
+    missingSkills,
+    results: [],
+  };
+
+  for (const plan of plans) {
+    if (plan.action === "created") {
+      if (!dryRun) {
+        fs.mkdirSync(path.dirname(plan.destPath), { recursive: true });
+        fs.writeFileSync(plan.destPath, sourceBytes);
+        const writtenSha = sha256(fs.readFileSync(plan.destPath));
+        if (writtenSha !== sourceSha256) {
+          throw new Error(`Digest mismatch after writing ${plan.destPath}`);
+        }
+      }
+    } else if (plan.action === "replaced") {
+      if (!dryRun) {
+        fs.mkdirSync(plan.targetBackupDir, { recursive: true });
+        if (plan.previousKind === "symlink") {
+          fs.writeFileSync(
+            path.join(plan.targetBackupDir, "symlink.txt"),
+            `${plan.destPath} -> ${plan.linkTarget}\n`,
+            "utf8",
+          );
+        } else if (plan.rawBytes !== null) {
+          fs.writeFileSync(
+            path.join(plan.targetBackupDir, path.basename(plan.destPath)),
+            plan.rawBytes,
+          );
+        }
+        if (plan.resolvedBytes !== null) {
+          fs.writeFileSync(
+            path.join(plan.targetBackupDir, "resolved.md"),
+            plan.resolvedBytes,
+          );
+        }
+
+        // Never write through a symlink: unlink the entry itself, then write a regular file.
+        fs.unlinkSync(plan.destPath);
+        fs.mkdirSync(path.dirname(plan.destPath), { recursive: true });
+        fs.writeFileSync(plan.destPath, sourceBytes);
+
+        const postStat = fs.lstatSync(plan.destPath);
+        if (postStat.isSymbolicLink() || !postStat.isFile()) {
+          throw new Error(`Expected regular file at ${plan.destPath} after install`);
+        }
+        const writtenSha = sha256(fs.readFileSync(plan.destPath));
+        if (writtenSha !== sourceSha256) {
+          throw new Error(`Digest mismatch after writing ${plan.destPath}`);
+        }
       }
     }
 
     summary.results.push({
-      target: targetName,
-      destPath,
-      previousKind,
-      linkTarget,
-      atImportTarget,
-      action: "replaced",
-      backupPath: targetBackupDir,
+      target: plan.target,
+      destPath: plan.destPath,
+      previousKind: plan.previousKind,
+      linkTarget: plan.linkTarget,
+      atImportTarget: plan.atImportTarget,
+      action: plan.action,
+      backupPath: plan.targetBackupDir,
       sha256: sourceSha256,
     });
   }
@@ -925,9 +1030,21 @@ function main() {
         repoRoot: DEFAULT_REPO_ROOT,
         homeDir: opts.homeDir,
         globalTargets: opts.globalTargets || DEFAULT_GLOBAL_TARGETS,
+        globalRef: opts.globalRef,
         backupDir: opts.backupDir,
         dryRun: opts.dryRun,
         respectEnv,
+        onDifference: (diff) => {
+          const prefix = opts.dryRun ? "[dry-run] " : "";
+          const targetInfo = diff.linkTarget
+            ? ` (symlink -> ${diff.linkTarget})`
+            : diff.atImportTarget
+              ? ` (@ import -> ${diff.atImportTarget})`
+              : "";
+          console.log(
+            `${prefix}Difference before write [${diff.target}]: ${diff.destPath} is ${diff.previousKind}${targetInfo}; backing up to ${diff.backupPath}`,
+          );
+        },
       });
       console.log(formatGlobalSummary(globalSummary, opts.dryRun));
     } catch (err) {

@@ -428,3 +428,104 @@ test("parseArgs validates options and target names", () => {
   assert.throws(() => parseArgs(["--global-targets", "cursor"]), /Unknown target/);
   assert.throws(() => parseArgs(["--bogus"]), /Unknown option/);
 });
+
+test("installGlobalInstructions refuses directory at instruction path, refuses overwriting existing backup dir, reports differences before write, and supports --global-ref", () => {
+  const homeDir = makeTempDir("cstack-safety-home-");
+  const backupDir = path.join(homeDir, "backups");
+  try {
+    installCstack({
+      repoRoot: REPO_ROOT,
+      homeDir,
+      targets: ["claude", "agents", "antigravity"],
+    });
+
+    // 1. Directory at instruction-file path must be refused without deletion
+    const dirAtDest = path.join(homeDir, ".claude", "CLAUDE.md");
+    fs.mkdirSync(dirAtDest, { recursive: true });
+    fs.writeFileSync(path.join(dirAtDest, "keep.txt"), "important\n");
+    assert.throws(
+      () =>
+        installGlobalInstructions({
+          repoRoot: REPO_ROOT,
+          homeDir,
+          globalTargets: ["claude"],
+          backupDir,
+        }),
+      /Refusing to replace directory/,
+    );
+    assert.equal(fs.existsSync(path.join(dirAtDest, "keep.txt")), true);
+    fs.rmSync(dirAtDest, { recursive: true, force: true });
+
+    // 2. Existing backup dir must not be overwritten
+    fs.writeFileSync(dirAtDest, "old content\n", "utf8");
+    fs.mkdirSync(path.join(backupDir, "claude"), { recursive: true });
+    assert.throws(
+      () =>
+        installGlobalInstructions({
+          repoRoot: REPO_ROOT,
+          homeDir,
+          globalTargets: ["claude"],
+          backupDir,
+        }),
+      /Refusing to overwrite existing backup directory/,
+    );
+    assert.equal(fs.readFileSync(dirAtDest, "utf8"), "old content\n");
+
+    // 3. onDifference fires BEFORE any write, and globalRef reads exact git commit bytes
+    const events = [];
+    const freshBackup = path.join(homeDir, "backups-2");
+    const res = installGlobalInstructions({
+      repoRoot: REPO_ROOT,
+      homeDir,
+      globalTargets: ["claude"],
+      globalRef: "HEAD",
+      backupDir: freshBackup,
+      onDifference: (diff) => {
+        // Confirm destination still has old bytes when onDifference fires
+        events.push({
+          target: diff.target,
+          contentAtCallback: fs.readFileSync(diff.destPath, "utf8"),
+        });
+      },
+    });
+    assert.equal(events.length, 1);
+    assert.equal(events[0].contentAtCallback, "old content\n");
+    assert.ok(res.commitSha && res.commitSha.length === 40);
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
+test("changing CLAUDE_CONFIG_DIR does not misidentify unrelated skill dir as cstack-owned", () => {
+  const homeDir = makeTempDir("cstack-env-own-");
+  const claudeDirA = path.join(homeDir, "claude-a");
+  const claudeDirB = path.join(homeDir, "claude-b");
+  try {
+    installCstack({
+      repoRoot: REPO_ROOT,
+      homeDir,
+      targets: ["claude"],
+      copy: true,
+      env: { CLAUDE_CONFIG_DIR: claudeDirA },
+      respectEnv: true,
+    });
+
+    // Put an unrelated pre-existing directory in claudeDirB
+    const unrelated = path.join(claudeDirB, "skills", "cstack-mode");
+    fs.mkdirSync(unrelated, { recursive: true });
+    fs.writeFileSync(path.join(unrelated, "SKILL.md"), "user custom\n");
+
+    const res = installCstack({
+      repoRoot: REPO_ROOT,
+      homeDir,
+      targets: ["claude"],
+      copy: true,
+      env: { CLAUDE_CONFIG_DIR: claudeDirB },
+      respectEnv: true,
+    });
+    assert.equal(res.conflicts.length, 1);
+    assert.equal(fs.readFileSync(path.join(unrelated, "SKILL.md"), "utf8"), "user custom\n");
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});

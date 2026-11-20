@@ -1098,6 +1098,32 @@ function inspectRemoteUpstreamReadOnly(resolvedRepoRoot, branch, beforeSha) {
       { stdio: ["ignore", "ignore", "ignore"] },
     );
   } catch {
+    // Remote commit is not fetched locally. Check read-only against the local
+    // tracking ref (@{u}) to detect when local HEAD also has unpushed commits.
+    let trackedSha = "";
+    try {
+      trackedSha = execFileSync(
+        "git",
+        ["-C", resolvedRepoRoot, "rev-parse", "--verify", "--quiet", "@{u}"],
+        { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+      ).trim();
+    } catch {
+      trackedSha = "";
+    }
+    if (trackedSha) {
+      let localIsBehindOrEqualTracked = false;
+      try {
+        execFileSync(
+          "git",
+          ["-C", resolvedRepoRoot, "merge-base", "--is-ancestor", beforeSha, trackedSha],
+          { stdio: ["ignore", "ignore", "ignore"] },
+        );
+        localIsBehindOrEqualTracked = true;
+      } catch {}
+      if (!localIsBehindOrEqualTracked) {
+        return { remoteSha, relation: "diverged-unfetched" };
+      }
+    }
     return { remoteSha, relation: "remote-unfetched" };
   }
 
@@ -1239,7 +1265,8 @@ export function updateCstack({
       dryRun &&
       (upstreamRelation === "no-upstream" ||
         upstreamRelation === "missing-remote-ref" ||
-        upstreamRelation === "diverged"),
+        upstreamRelation === "diverged" ||
+        upstreamRelation === "diverged-unfetched"),
     previewFromLocalHeadOnly: dryRun && remoteSha !== null && remoteSha !== beforeSha,
     installSummary,
     status,
@@ -1299,11 +1326,13 @@ export function formatUpdateSummary(result, dryRun) {
   let gitLine;
   if (dryRun) {
     if (result.upstreamRelation === "remote-unfetched" && result.remoteSha) {
-      gitLine = `${prefix}Git (${result.branch}): remote head is ${result.remoteSha.slice(0, 7)} (local HEAD is ${result.beforeSha.slice(0, 7)}; not fetched in --dry-run, so skill/global diff below reflects local HEAD only)`;
+      gitLine = `${prefix}Git (${result.branch}): remote head is ${result.remoteSha.slice(0, 7)} (local HEAD is ${result.beforeSha.slice(0, 7)}; not fetched in --dry-run, so fast-forward compatibility and skill/global diff below reflect local HEAD only)`;
     } else if (result.upstreamRelation === "fast-forward" && result.remoteSha) {
       gitLine = `${prefix}Git (${result.branch}): fast-forward available ${result.beforeSha.slice(0, 7)} -> ${result.remoteSha.slice(0, 7)} (skill/global diff below reflects local HEAD only)`;
     } else if (result.upstreamRelation === "diverged" && result.remoteSha) {
       gitLine = `${prefix}Git (${result.branch}): diverged from remote ${result.remoteSha.slice(0, 7)} (local HEAD ${result.beforeSha.slice(0, 7)}); git pull --ff-only would fail`;
+    } else if (result.upstreamRelation === "diverged-unfetched" && result.remoteSha) {
+      gitLine = `${prefix}Git (${result.branch}): local HEAD ${result.beforeSha.slice(0, 7)} has unpushed commits and remote moved to unfetched ${result.remoteSha.slice(0, 7)}; git pull --ff-only would fail`;
     } else if (result.upstreamRelation === "no-upstream") {
       gitLine = `${prefix}Git (${result.branch}): no upstream tracking branch configured; git pull --ff-only would fail`;
     } else if (result.upstreamRelation === "missing-remote-ref") {

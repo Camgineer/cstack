@@ -782,6 +782,28 @@ test("updateCstack fast-forwards, re-links new skills, prunes removed skills, an
       fs.rmSync(mixedHome, { recursive: true, force: true });
     }
 
+    // Dry-run flags unfetched AND fetched divergence (local commit + remote commit) as wouldFailPull
+    fs.writeFileSync(path.join(localClone, "local-note.txt"), "local commit\n");
+    gitCommit(localClone, "local-diverge");
+    fs.writeFileSync(path.join(authorRepo, "remote-note.txt"), "remote commit\n");
+    gitCommit(authorRepo, "remote-diverge");
+    execFileSync("git", ["-C", authorRepo, "push", "-q", "origin", "main"]);
+
+    const divUnfetchedRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
+    assert.equal(divUnfetchedRes.upstreamRelation, "diverged-unfetched");
+    assert.equal(divUnfetchedRes.wouldFailPull, true);
+    const divUnfetchedText = formatUpdateSummary(divUnfetchedRes, true);
+    assert.match(divUnfetchedText, /unpushed commits/i);
+    assert.match(divUnfetchedText, /git pull --ff-only would fail/i);
+
+    execFileSync("git", ["-C", localClone, "fetch", "-q", "origin"]);
+    const divFetchedRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
+    assert.equal(divFetchedRes.upstreamRelation, "diverged");
+    assert.equal(divFetchedRes.wouldFailPull, true);
+    const divFetchedText = formatUpdateSummary(divFetchedRes, true);
+    assert.match(divFetchedText, /diverged from remote/i);
+    assert.match(divFetchedText, /git pull --ff-only would fail/i);
+
     // Dry-run does not report "already up to date" when upstream is unset or missing on remote
     execFileSync("git", ["-C", localClone, "branch", "--unset-upstream"]);
     const noUpstreamRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });

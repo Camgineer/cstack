@@ -20,7 +20,6 @@ Where a skill's reply-style rules differ, these rules win. That includes the rul
 
 ## Boundaries
 
-- Only I approve a plan or a ticket for implementation.
 - Who may merge, and when, is set per project. Follow the project's own rule. Where a project has none, ask me before you merge.
 - Before any merge, by me or by you, run the repository's checks and get a review from another model family at the exact head commit.
 - File issues only in repositories I own.

@@ -48,7 +48,7 @@ For cross-model reviews and `arena` vendor checks, classify by the underlying mo
 | --- | --- |
 | `claude-opus-*`, `claude-fable-*`, `claude-sonnet-*`, `claude-haiku-*` | `--agent claude` (add `--model <base-id> --effort <effort>` only when an explicit model or effort is requested; drop `-fast`). |
 | `gpt-*`, Codex models | `--agent codex` (add `--model <id> --effort <effort>` when requested). |
-| `gemini-*`, Antigravity models | `--agent antigravity` (add `--model <id> --effort <effort>` when requested). |
+| `gemini-*`, Antigravity models | `--agent antigravity` (add `--model <id>` when requested, using an effort-suffixed slug from `agy models` such as `gemini-4-neon-xhigh`, and omit `--effort`; pass `--effort` only with an un-suffixed model ID). |
 | `auto` or `inherit-parent` | Omit `--model` and `--effort`, or use a native subagent. |
 | An unavailable harness or model | Say so and stop that seat. Never silently switch to another model family when a specific model family was requested. |
 | The `pstack-models.mdc` rule, `~/.cursor/rules/pstack-models.mdc` | `~/.config/cstack/pstack-models.md`. Orca does not auto-load `.mdc` files across harnesses, so read `~/.config/cstack/pstack-models.md` at session start if it exists. If the file or a role's line is missing, map the skill's default slug through this table. |

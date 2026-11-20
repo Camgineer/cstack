@@ -1434,6 +1434,7 @@ function main() {
     homeDir: opts.homeDir,
     targets: opts.targets || DEFAULT_TARGETS,
     copy: opts.copy,
+    preserveExistingMode: opts.installGlobal && !opts.copy,
     force: opts.force,
     dryRun: opts.dryRun,
     respectEnv,

@@ -51,7 +51,18 @@ For cross-model reviews and `arena` vendor checks, classify by the underlying mo
 | `gemini-*`, Antigravity models | `--agent antigravity` (add `--model <id> --effort <effort>` when requested). |
 | `auto` or `inherit-parent` | Omit `--model` and `--effort`, or use a native subagent. |
 | An unavailable harness or model | Say so and stop that seat. Never silently switch to another model family when a specific model family was requested. |
-| `pstack-models.mdc` rule | `~/.config/cstack/pstack-models.md` if present. If missing, map the skill's default slug through this table. |
+| The `pstack-models.mdc` rule, `~/.cursor/rules/pstack-models.mdc` | `~/.config/cstack/pstack-models.md`. Orca does not auto-load `.mdc` files across harnesses, so read `~/.config/cstack/pstack-models.md` at session start if it exists. If the file or a role's line is missing, map the skill's default slug through this table. |
+| A role value `<agent>/<model> <effort>`, such as `claude/opus xhigh`, `claude/fable high`, or `codex/gpt-6.2-sol high` | `orca orchestration worker-start --agent <agent> --model <model> --effort <effort>`. Use this form for harnesses with separate model and effort flags. Orca rejects `--effort` without `--model`. |
+| A role value `<agent>/<model>`, such as `antigravity/gemini-4-neon-xhigh` | `orca orchestration worker-start --agent <agent> --model <model>`, with no `--effort`. Use this form for harnesses whose model IDs already encode the effort, such as the Antigravity slugs `agy models` lists. |
+
+## setup-pstack
+
+Orca does not share one auto-loaded rules folder across Claude Code, Codex, and Antigravity, so `setup-pstack` writes its model file to `~/.config/cstack/pstack-models.md`. That file is local to each machine and never goes into git. Follow `skills/setup-pstack/SKILL.md` with these changes:
+
+- **Detect.** Run `orca agent installed` to see which harnesses this machine has (`claude`, `codex`, `antigravity`). Then confirm real model IDs for each installed harness. For `antigravity`, run `agy models`, which lists effort-suffixed slugs such as `gemini-4-neon-xhigh`. For `codex`, read the model slugs and supported reasoning levels from `~/.codex/models_cache.json` (or `$CODEX_HOME/models_cache.json`). For `claude`, use verified aliases (`opus`, `fable`, `sonnet`) or exact model IDs that `claude --model` accepts, with `--effort` set to `low`, `medium`, `high`, `xhigh`, or `max`. Never write a model ID you have not confirmed on this host.
+- **Format and defaults.** Write each real entry as `<agent>/<model> <effort>` for a harness with a separate effort flag, or `<agent>/<model>` for an effort-suffixed Antigravity slug. Map the `setup-pstack` defaults onto the installed harnesses: `claude/opus xhigh` for the code and judgment roles, `claude/opus high` for `swarm workers`, and panels spread across the installed model families, such as `claude/fable high`, `claude/opus high`, `antigravity/gemini-4-neon-xhigh`, or `codex/<model> high`. If a seat's harness is not installed, mark it as needing a choice or drop it so the panel fits this host.
+- **Budget.** Apply the `setup-pstack` ladder (`xhigh` > `high` > `medium` > `low`) with `large` at `xhigh`, `medium` at `high`, and `small` at `medium`. Move the `<effort>` token, or the trailing `-xhigh`, `-high`, `-medium`, or `-low` suffix on an effort-suffixed Antigravity slug.
+- **Write.** Write `~/.config/cstack/pstack-models.md` with no YAML frontmatter, then the comment lines, `# defaults: 3`, the `# budget: <label> (<effort>)` line, and one line per role from step 5 of `setup-pstack`. Overwrite the whole file so re-runs stay idempotent. Never put the role lines in `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md`, and never commit `~/.config/cstack/pstack-models.md`.
 
 ## Pull requests, CI, issues, scheduling, and worktrees
 

@@ -465,6 +465,51 @@ test("CLI --help, --targets, --status, and --uninstall work end-to-end", () => {
   }
 });
 
+test("CLI --global without --copy keeps each target's existing copy or link mode", () => {
+  const homeDir = makeTempDir("cstack-cli-mixed-");
+  const backupDir = path.join(homeDir, "global-backups");
+  const runCli = (args) =>
+    execFileSync(process.execPath, [INSTALL_SCRIPT, "--home", homeDir, ...args], {
+      encoding: "utf8",
+    });
+  const skillDir = (target) => path.join(getTargetDir(homeDir, target), "cstack-mode");
+  const linkTargets = ["claude", "agents", "codex"];
+  try {
+    runCli(["--copy", "--targets", "antigravity"]);
+    runCli(["--targets", linkTargets.join(",")]);
+
+    const globalOut = runCli(["--global", "--global-ref", "HEAD", "--backup-dir", backupDir]);
+    assert.match(globalOut, /0 conflicts/);
+
+    const headSha = execFileSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], {
+      encoding: "utf8",
+    }).trim();
+    const expected = execFileSync("git", ["-C", REPO_ROOT, "show", `${headSha}:global/AGENTS.md`]);
+    for (const target of ["claude", "codex", "antigravity"]) {
+      assert.deepEqual(fs.readFileSync(getGlobalInstructionPath(homeDir, target)), expected);
+    }
+
+    const agySkill = fs.lstatSync(skillDir("antigravity"));
+    assert.equal(agySkill.isSymbolicLink(), false);
+    assert.equal(agySkill.isDirectory(), true);
+    for (const target of linkTargets) {
+      assert.equal(fs.lstatSync(skillDir(target)).isSymbolicLink(), true, `${target} should stay linked`);
+    }
+
+    // --global --copy still forces copy mode on every target.
+    runCli(["--global", "--copy", "--global-ref", "HEAD", "--backup-dir", `${backupDir}-copy`]);
+    for (const target of [...linkTargets, "antigravity"]) {
+      assert.equal(fs.lstatSync(skillDir(target)).isSymbolicLink(), false, `${target} should be copied`);
+    }
+
+    // A plain install without --global or --copy still links by default.
+    runCli(["--targets", "antigravity"]);
+    assert.equal(fs.lstatSync(skillDir("antigravity")).isSymbolicLink(), true);
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
 test("parseArgs validates options and target names", () => {
   const parsed = parseArgs([
     "--targets",

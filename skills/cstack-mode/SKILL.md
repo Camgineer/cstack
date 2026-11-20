@@ -1,12 +1,20 @@
 ---
 name: cstack-mode
-description: cstack overlay on top of poteto-mode with personal process rules and investigation guidance. Use for cstack, /cstack-mode, or requests to work in this style.
+description: cstack overlay on top of poteto-mode with T3 Code harness wiring, personal process rules, and investigation guidance. Use for cstack, /cstack-mode, or requests to work in this style.
 disable-model-invocation: true
 ---
 
 # cstack mode
 
-Overlay on top of upstream `poteto-mode`. Read `../poteto-mode/SKILL.md` and follow it, with the additions below.
+Overlay on top of upstream `poteto-mode`. Follow the harness step below first, then read `../poteto-mode/SKILL.md` and follow it with the additions in this file.
+
+## Harness adapter
+
+Resolve `<cstack>` from the real path of this file (two directories above `skills/cstack-mode/SKILL.md`, or `repoRoot` in `~/.config/cstack/install-manifest.json` if installed by copy).
+
+- **T3 Code.** When T3 Code MCP tools (`delegate_task`, `orchestrator_capabilities`, `pull_request_*`, `watch_pull_request`) are present, read `<cstack>/docs/harness/t3-code.md` once per session before following `poteto-mode`, and apply its tool, subagent, model, PR, and path mappings throughout the session. When delegating to a `poteto-agent` child in T3 Code, include `<cstack>/docs/harness/t3-code.md` alongside `<cstack>/skills/poteto-mode/worker.md` and `<cstack>/skills/poteto-mode/SKILL.md` so the child uses the same mappings.
+- **Standalone Claude Code.** When running in Claude Code without T3 Code MCP tools, read `<cstack>/docs/harness/claude-code.md` once per session instead.
+- **Cursor.** No adapter is needed; Cursor names apply directly.
 
 ## Investigation and recommendations
 

@@ -20,7 +20,7 @@ Resolve `<cstack>` from the real path of this file (two directories above `skill
 ## PR lifecycle
 
 - **Open a draft early while work is in progress.** As soon as a branch has work worth tracking, open a draft PR (`draft: true`) and keep it up to date so in-flight work is clearly visible in one place.
-- **Mark ready for review once verified.** Completing `pstack` verification and review is the signal that the PR is ready for review. As soon as the change is agentically proven and done in `pstack` terms, mark the PR ready for review (`pull_request_update` with `ready: true`), or open it ready directly if verification is already complete. Never leave verified, finished work sitting in draft.
+- **Mark ready for review once verified.** Completing `pstack` verification and review is the signal that the PR is ready for review. As soon as the change is agentically proven and done in `pstack` terms, mark the PR ready for review (`pull_request_update` with `ready: true`, or `gh pr ready` where that tool is absent), or open it ready directly if verification is already complete. Never leave verified, finished work sitting in draft.
 
 ## Investigation and recommendations
 

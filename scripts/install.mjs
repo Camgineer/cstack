@@ -371,16 +371,13 @@ export function installCstack({
     }
   }
 
-  // Prune previously managed entries that are no longer desired
   if (prevManifest && Array.isArray(prevManifest.entries)) {
     for (const prevEntry of prevManifest.entries) {
       const key = `${prevEntry.target}:${prevEntry.skill}`;
       if (desiredKeys.has(key)) {
         continue;
       }
-      // Keep entries for targets not included in this run if the user passed an explicit subset?
-      // No: manifest tracks the active cstack install; only prune entries in targeted directories
-      // when a skill disappeared from the repo, and keep entries from untargeted harnesses intact.
+      // A run with a subset of targets must not drop the manifest's record of the other harnesses.
       if (!targets.includes(prevEntry.target)) {
         nextEntries.push(prevEntry);
         continue;

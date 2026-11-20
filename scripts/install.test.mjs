@@ -703,16 +703,28 @@ test("updateCstack fast-forwards, re-links new skills, prunes removed skills, an
     const v2Sha = execFileSync("git", ["-C", authorRepo, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
     execFileSync("git", ["-C", authorRepo, "push", "-q", "origin", "main"]);
 
-    // Dry-run uses read-only ls-remote: detects remote v2 without writing objects/FETCH_HEAD or touching files
+    // Dry-run uses read-only ls-remote + --no-optional-locks: detects remote v2 without modifying .git/index or FETCH_HEAD
     const fetchHeadPath = path.join(localClone, ".git", "FETCH_HEAD");
-    const hadFetchHead = fs.existsSync(fetchHeadPath);
+    fs.writeFileSync(fetchHeadPath, "sentinel-fetch-head\n");
+    const indexPath = path.join(localClone, ".git", "index");
+    // Bump a tracked file mtime so git status WITHOUT --no-optional-locks would rewrite .git/index
+    const trackedFile = path.join(localClone, "global", "AGENTS.md");
+    const future = new Date(Date.now() + 5000);
+    fs.utimesSync(trackedFile, future, future);
+    const indexBeforeBytes = fs.readFileSync(indexPath);
+    const indexBeforeMtime = fs.statSync(indexPath).mtimeMs;
+
     const dryRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
-    assert.equal(dryRes.hasUpstreamUpdate, true);
+    assert.equal(dryRes.remoteDiffers, true);
+    assert.equal(dryRes.hasUpstreamUpdate, false);
+    assert.equal(dryRes.wouldFailPull, false);
     assert.equal(dryRes.pulled, false);
     assert.equal(dryRes.remoteSha, v2Sha);
     assert.equal(dryRes.upstreamRelation, "remote-unfetched");
     assert.equal(dryRes.previewFromLocalHeadOnly, true);
-    assert.equal(fs.existsSync(fetchHeadPath), hadFetchHead);
+    assert.equal(fs.readFileSync(fetchHeadPath, "utf8"), "sentinel-fetch-head\n");
+    assert.deepEqual(fs.readFileSync(indexPath), indexBeforeBytes);
+    assert.equal(fs.statSync(indexPath).mtimeMs, indexBeforeMtime);
     assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "new-skill")), false);
     assert.equal(fs.existsSync(path.join(homeDir, ".claude", "skills", "old-skill")), true);
 
@@ -782,7 +794,7 @@ test("updateCstack fast-forwards, re-links new skills, prunes removed skills, an
       fs.rmSync(mixedHome, { recursive: true, force: true });
     }
 
-    // Dry-run flags unfetched AND fetched divergence (local commit + remote commit) as wouldFailPull
+    // Dry-run keeps unfetched remote heads uncertain until fetched, and flags proven divergence as wouldFailPull
     fs.writeFileSync(path.join(localClone, "local-note.txt"), "local commit\n");
     gitCommit(localClone, "local-diverge");
     fs.writeFileSync(path.join(authorRepo, "remote-note.txt"), "remote commit\n");
@@ -790,11 +802,11 @@ test("updateCstack fast-forwards, re-links new skills, prunes removed skills, an
     execFileSync("git", ["-C", authorRepo, "push", "-q", "origin", "main"]);
 
     const divUnfetchedRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });
-    assert.equal(divUnfetchedRes.upstreamRelation, "diverged-unfetched");
-    assert.equal(divUnfetchedRes.wouldFailPull, true);
+    assert.equal(divUnfetchedRes.upstreamRelation, "remote-unfetched");
+    assert.equal(divUnfetchedRes.wouldFailPull, false);
+    assert.equal(divUnfetchedRes.hasUpstreamUpdate, false);
     const divUnfetchedText = formatUpdateSummary(divUnfetchedRes, true);
-    assert.match(divUnfetchedText, /unpushed commits/i);
-    assert.match(divUnfetchedText, /git pull --ff-only would fail/i);
+    assert.match(divUnfetchedText, /fast-forward vs diverged status is unknown without git fetch/i);
 
     execFileSync("git", ["-C", localClone, "fetch", "-q", "origin"]);
     const divFetchedRes = updateCstack({ repoRoot: localClone, homeDir, dryRun: true });

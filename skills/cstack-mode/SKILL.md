@@ -51,4 +51,5 @@ Keep general engineering process in `cstack` and project- or domain-specific ski
   - Owner-wide preferences and cross-project boundaries go to `global/AGENTS.md`.
   - Private account and machine rules, including cross-machine boundaries, go to `~/.config/cstack/local.md`.
   - Domain tooling, build quirks, and project constraints go to that repository's `.agents/skills/` or its `AGENTS.md` or `CLAUDE.md`.
-  Read each proposed destination file first, drop rules it already contains, and show the exact destination path before approval. Owner approval permits local edits only. `/reflect` never pushes or opens a PR.
+
+  Read each proposed destination file first. Drop rules it already contains. Show the exact destination path before approval. Owner approval permits local edits only. `/reflect` never pushes or opens a PR.

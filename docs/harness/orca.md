@@ -19,7 +19,7 @@ Use the `orca` CLI (or `${ORCA_CLI_COMMAND:-orca}` when set) for orchestration, 
 
 ## Orchestration and worker fields
 
-When `Task` maps to `orca orchestration worker-start`, follow the `orchestration` skill (`orca skills get orchestration`): start independent workers in parallel (up to about 4 at once), then end your turn and let Orca wake you. Never poll with `check` or `sleep` loops.
+When `Task` maps to `orca orchestration worker-start`, follow the `orchestration` skill (`orca skills get orchestration`): start independent workers in parallel (up to about 4 at once), then end your turn and let Orca wake you. Never poll with `check` or `sleep` loops. Before you nudge or retry a worker that sent an idle `stopReason=finished` escalation, check `orca orchestration worker-read` and the worker's live child processes. A structured worker can still be running a long background build or test command.
 
 | Cursor | Orca |
 | --- | --- |

@@ -36,7 +36,8 @@ Keep general engineering process in `cstack` and project- or domain-specific ski
 
 ## Investigation and recommendations
 
-- **Thorough analysis, bold recommendations.** Be thorough in your analysis and bold in your recommendations. Attack the premise before patching symptoms, and surface the bigger architectural option alongside any tactical fix.
+- **Thorough analysis, bold recommendations.** Check the assumption behind a proposed fix. If a design change would address the cause, compare it with the local fix and recommend one. If you find a flaw, exploit, or conflict in the owner's choice, explain the evidence and consequence before acting. Once the owner accepts the tradeoff, proceed within the project rules. Raise the same concern again only if new evidence changes the consequence.
+- **Stage-gate cross-model review before coding.** Follow `architect` and `poteto-mode` for large or contested designs. For other changes, if a wrong design choice would require substantial rework, such as migrating stored data or updating callers of a shared interface, ask a read-only reviewer from a different model family to check the selected design against the requirements before coding. Address the findings before implementation. The exact-head review before merge still applies.
 - **Question the need for external tool behavior.** When an investigation digs into the internals of a tool we don't own, stop and ask whether we need that tool's behavior at all.
 - **Fix root causes before suppressing symptoms.** Apply `principle-fix-root-causes` before suppressing a symptom through another tool's config, an undocumented setting, or a restart: first ask whether the step that produces it needs to run at all.
 - **Attack the bottleneck before optimizing.** Before you optimize a workflow, system, pipeline, or parallel fan-out, or pick the next improvement, apply [principle-attack-the-bottleneck](../principle-attack-the-bottleneck/SKILL.md).

@@ -99,7 +99,7 @@ Orca Bots are built into Orca and live in `~/.orca/bots/<name>/`. When running a
 | `~/.cursor/plugins/`, `.cursor-plugin/plugin.json` | `<pstack>/` and `<pstack>/plugin.json`. |
 | `.cursor/rules/*.mdc`, always-applied rules | `~/.claude/CLAUDE.md` (Claude Code), `~/.codex/AGENTS.md` (Codex), `~/.gemini/GEMINI.md` (Antigravity), or repo-local `AGENTS.md` / `CLAUDE.md`. Orca Bots use `SOUL.md`. |
 | `https://github.com/cursor/plugins/blob/main/pstack/<path>` | `<pstack>/<path>` when that file exists locally. Read the local copy and never fetch it. Give the user the URL when they need a public link. |
-| Transcripts in `~/.cursor/projects/<slug>/agent-transcripts/` | Use `orca search` to search agent sessions on an Orca host, or `orca bot chats` for bot chat history. |
+| Transcripts in `~/.cursor/projects/<slug>/agent-transcripts/` | Use `orca search` to search agent sessions on an Orca host, or `orca bot chats` for bot chat history. Read one session with `orca agent read <session-id> --limit 100`, which takes the session's `orca_session_id:` ID and returns up to the 100 newest entries of a chat or terminal agent transcript in any harness. For a session longer than 100 entries, such as a multi-provider `/reflect` run, export the active harness's native transcript file to a temporary path outside git and pass that path to read-only peers. |
 | Worktrees in `.cursor/worktrees/<repo>/` | Read active paths from `orca worktree list` or `git worktree list` instead of hardcoding a directory. |
 
 ## Cursor-only features

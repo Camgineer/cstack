@@ -26,11 +26,13 @@ Keep general engineering process in `cstack` and project- or domain-specific ski
 - **Load on match.** Before planning or editing in a domain covered by a repo-local skill, read that skill's full `SKILL.md` and only the specific reference files that match the task.
 - **Pass matches to workers.** Whenever delegating to a `poteto-agent` worker inside a repository, include the absolute paths of any relevant repo-local `SKILL.md` files alongside `worker.md`, `poteto-mode/SKILL.md`, and the harness adapter so workers apply the same domain rules.
 - **Precedence.** `cstack` owns engineering process (playbooks, verification, review, PR lifecycle, and communication style). Repo-local skills own domain knowledge and repo tooling. Where a third-party domain skill conflicts with `cstack` on process, `cstack` wins unless the repository's own `AGENTS.md` or `CLAUDE.md` explicitly sets a project rule (such as merge authority).
+- **Keep repo instructions project-specific.** Put only rules unique to that repository (such as merge authority, build and test commands, or codebase constraints) in its `AGENTS.md` or `CLAUDE.md`. Do not copy general engineering process that `cstack` owns into those files.
 
 ## PR lifecycle
 
 - **Open a draft early while work is in progress.** As soon as a branch has work worth tracking, open a draft PR (`gh pr create --draft`, or `draft: true`) and keep it up to date so in-flight work is clearly visible in one place.
 - **Mark ready for review once verified.** Completing `pstack` verification and cross-model review is the signal that the PR is ready for review. As soon as the change is agentically proven and done in `pstack` terms, mark the PR ready for review (`gh pr ready`, or `pull_request_update` with `ready: true` in T3 Code), or open it ready directly if verification is already complete. Never leave verified, finished work sitting in draft.
+- **Keep verification artifacts out of git.** Attach screenshots, recordings, traces, and other one-off proof artifacts to the PR description or comments, or write them to gitignored or temporary directories. Never commit them to the repository.
 
 ## Investigation and recommendations
 

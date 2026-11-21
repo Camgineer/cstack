@@ -26,6 +26,7 @@ When `Task` maps to `orca orchestration worker-start`, follow the `orchestration
 | `subagent_type: generalPurpose` | `orca orchestration worker-start --spec "<task>" --worktree current --agent <agent>` (or a native subagent when staying in the same harness and checkout). |
 | `poteto-agent` | Put `Read <pstack>/skills/poteto-mode/worker.md before anything else.` as line 1 of `--spec`, then instruct the worker to read `<pstack>/docs/harness/orca.md` and `<pstack>/skills/poteto-mode/SKILL.md` (including its inline Principles index) before doing any work. Never pass Cursor model slugs from `agents/poteto-agent.md`. |
 | `comment-sicko` | Start a worker with `--spec` instructing it to read `<pstack>/agents/comment-sicko.md` and follow it verbatim on the given scope. |
+| `test-slasher` | Start a read-only worker with `--spec` instructing it to read `<pstack>/agents/test-slasher.md` and follow it verbatim on the given scope without editing files. |
 | `readonly: true` | Use a read-only native subagent (`Explore` on Claude, `research` on Antigravity) when staying in the same harness, or state "do not edit files" in `--spec` and verify `git status` afterward. |
 | `readonly: false` | Default worker permissions in the target workspace or worktree. |
 | `environment: "cloud"` | `--worktree new-child --name <short-name>` (nested under your workspace) or `--worktree new-top-level --repo id:<repoId> --name <short-name>` (get `repoId` from `orca repo list --json`). Let `worker-start` create the worktree; never hand-roll checkouts. |

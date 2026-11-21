@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Attack the Bottleneck
 
-Only the constraint that bounds the end-to-end outcome is worth improving. Work anywhere else leaves the outcome where it was.
+Attack the constraint that most limits the end-to-end outcome. Work anywhere else leaves the outcome unchanged or, for steps in series, saves at most a shorter step's time.
 
 - **Name the outcome.** Pick the end-to-end result that matters, such as verified completion time, a quality bar, throughput, or latency. A local sub-metric is not the outcome.
 - **Find the one constraint with evidence.** Name what bounds the outcome now, from a trace, a measurement, or an observed failure loop. A guess from reading the code is not a constraint. For a number, apply the [principle-explain-the-number](../principle-explain-the-number/SKILL.md) skill.

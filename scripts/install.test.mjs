@@ -919,9 +919,18 @@ function snapshotTree(root) {
     .readdirSync(root, { recursive: true })
     .sort()
     .map((rel) => {
-      const stat = fs.lstatSync(path.join(root, rel));
-      return stat.isFile() ? `${rel}:${sha256(fs.readFileSync(path.join(root, rel)))}` : rel;
+      const full = path.join(root, rel);
+      const stat = fs.lstatSync(full);
+      if (stat.isSymbolicLink()) {
+        return `${rel}->${fs.readlinkSync(full)}`;
+      }
+      return stat.isFile() ? `${rel}:${sha256(fs.readFileSync(full))}` : rel;
     });
+}
+
+function linkDir(target, linkPath) {
+  fs.mkdirSync(path.dirname(linkPath), { recursive: true });
+  fs.symlinkSync(target, linkPath, process.platform === "win32" ? "junction" : "dir");
 }
 
 function runCli(args) {
@@ -988,8 +997,11 @@ test("name collisions and shared destinations with different builds fail before 
     "skills/alpha/SKILL.md": "# alpha\n",
     "vendor/acme/providers/claude/skills/impeccable/SKILL.md": "# claude build\n",
     "vendor/acme/providers/agents/skills/impeccable/SKILL.md": "# agents build\n",
+    "vendor/acme/providers/claude/agents/helper.md": "claude helper\n",
+    "vendor/acme/providers/cursor/agents/helper.md": "cursor helper\n",
   });
   const homeDir = makeTempDir("cstack-collide-home-");
+  const sharedSources = /share .* but install different sources/;
   try {
     installCstack({ repoRoot, homeDir, targets: ["claude"] });
     const before = snapshotTree(homeDir);
@@ -999,18 +1011,22 @@ test("name collisions and shared destinations with different builds fail before 
     assert.deepEqual(snapshotTree(homeDir), before, "a case-only name clash must not touch the install");
     fs.rmSync(path.join(repoRoot, "skills", "Impeccable"), { recursive: true });
 
-    fs.mkdirSync(path.join(homeDir, ".agents"));
-    fs.symlinkSync(
-      path.join(homeDir, ".claude", "skills"),
-      path.join(homeDir, ".agents", "skills"),
-      process.platform === "win32" ? "junction" : "dir",
-    );
+    linkDir(path.join(homeDir, ".claude", "agents"), path.join(homeDir, ".cursor", "agents"));
+    const agentsLinked = snapshotTree(homeDir);
+    assert.throws(() => installCstack({ repoRoot, homeDir, targets: ["claude", "cursor"] }), sharedSources);
+    assert.throws(() => installCstack({ repoRoot, homeDir, targets: ["cursor"] }), sharedSources);
+    assert.deepEqual(snapshotTree(homeDir), agentsLinked, "a shared agent directory must not touch the install");
+
+    linkDir(path.join(homeDir, ".claude", "skills"), path.join(homeDir, ".agents", "skills"));
     const linkedBefore = snapshotTree(homeDir);
-    assert.throws(
-      () => installCstack({ repoRoot, homeDir, targets: ["claude", "agents"] }),
-      /share .* but install different sources/,
-    );
+    assert.throws(() => installCstack({ repoRoot, homeDir, targets: ["claude", "agents"] }), sharedSources);
     assert.deepEqual(snapshotTree(homeDir), linkedBefore, "a shared destination must not touch the install");
+
+    uninstallCstack({ homeDir });
+    installCstack({ repoRoot, homeDir, targets: ["agents"] });
+    const agentsOnly = snapshotTree(homeDir);
+    assert.throws(() => installCstack({ repoRoot, homeDir, targets: ["claude"] }), sharedSources);
+    assert.deepEqual(snapshotTree(homeDir), agentsOnly, "a later target must not overwrite an earlier one");
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
     fs.rmSync(homeDir, { recursive: true, force: true });
@@ -1043,23 +1059,75 @@ test("agent files the user owns or edited are never overwritten or deleted witho
 
     installCstack({ repoRoot, homeDir, targets: ["cursor"], force: true });
     assert.equal(fs.readFileSync(agentFile("helper.md"), "utf8"), "vendor helper\n");
-    assert.deepEqual(agentNames(), ["helper.md", "twin.md"]);
+    assert.deepEqual(agentNames(), ["helper.md"], "--force never claims an identical unmanaged file");
 
     fs.writeFileSync(agentFile("helper.md"), "edited by user\n");
+    writeTree(repoRoot, { "vendor/acme/providers/cursor/agents/helper.md": "edited by user\n" });
+    execFileSync("git", ["-C", repoRoot, "-c", "user.name=T", "-c", "user.email=t@example.com", "commit", "-qam", "v2"]);
     const edited = installCstack({ repoRoot, homeDir, targets: ["cursor"] });
-    assert.deepEqual(edited.conflicts.map((c) => c.agent), ["helper.md"]);
+    assert.deepEqual(edited.conflicts.map((c) => c.agent), ["helper.md"], "an edit that matches the new build is still an edit");
     assert.equal(fs.readFileSync(agentFile("helper.md"), "utf8"), "edited by user\n");
 
     const removed = uninstallCstack({ homeDir });
-    assert.deepEqual(removed.agents, { removed: 1, missing: 0, kept: 1 });
+    assert.deepEqual(removed.agents, { removed: 0, missing: 0, kept: 1 });
     assert.equal(fs.readFileSync(agentFile("helper.md"), "utf8"), "edited by user\n");
-    assert.equal(fs.existsSync(agentFile("twin.md")), false);
+    assert.equal(fs.readFileSync(agentFile("twin.md"), "utf8"), "vendor twin\n");
     assert.deepEqual(agentNames(), ["helper.md"], "the edited file stays in the manifest");
 
     const update = updateCstack({ repoRoot, homeDir, dryRun: true });
     assert.deepEqual(update.installSummary.targets, ["cursor"]);
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
+test("a directory at an agent file path survives install, prune, and uninstall even with --force", () => {
+  const repoRoot = writeTree(makeTempDir("cstack-agentdir-repo-"), {
+    "skills/alpha/SKILL.md": "# alpha\n",
+    "vendor/acme/providers/cursor/agents/helper.md": "vendor helper\n",
+  });
+  const homeDir = makeTempDir("cstack-agentdir-home-");
+  const keep = path.join(homeDir, ".cursor", "agents", "helper.md", "keep.txt");
+  try {
+    installCstack({ repoRoot, homeDir, targets: ["cursor"] });
+    fs.rmSync(path.dirname(keep), { force: true });
+    writeTree(homeDir, { [path.relative(homeDir, keep)]: "mine\n" });
+
+    const update = installCstack({ repoRoot, homeDir, targets: ["cursor"], force: true });
+    assert.match(update.conflicts[0]?.reason ?? "", /directory/);
+    fs.rmSync(path.join(repoRoot, "vendor"), { recursive: true });
+    installCstack({ repoRoot, homeDir, targets: ["cursor"], force: true });
+    const removed = uninstallCstack({ homeDir, force: true });
+    assert.deepEqual(removed.agents, { removed: 0, missing: 0, kept: 1 });
+    assert.equal(fs.readFileSync(keep, "utf8"), "mine\n");
+  } finally {
+    fs.rmSync(repoRoot, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
+test("targets that share one skills directory install, report, and uninstall without touching each other", () => {
+  const homeDir = makeTempDir("cstack-shared-");
+  const count = discoverSkillsForTarget(REPO_ROOT, "agents").length;
+  try {
+    installCstack({ repoRoot: REPO_ROOT, homeDir, targets: ["agents"], copy: true });
+    linkDir(getTargetDir(homeDir, "agents"), getTargetDir(homeDir, "codex"));
+
+    const codex = installCstack({ repoRoot: REPO_ROOT, homeDir, targets: ["codex"], copy: true });
+    assert.equal(codex.conflicts.length, 0);
+    assert.equal(codex.unchanged, count);
+    assert.match(
+      runCli(["--home", homeDir, "--status"]),
+      new RegExp(`Targets: agents=${count}, codex=${count}\nHealth: ${count * 2} ok, 0 missing, 0 drifted`),
+    );
+
+    assert.match(runCli(["--home", homeDir, "--uninstall", "--targets", "codex"]), new RegExp(`0 removed, ${count} kept for other targets`));
+    assert.match(
+      runCli(["--home", homeDir, "--status"]),
+      new RegExp(`Targets: agents=${count}\nHealth: ${count} ok, 0 missing, 0 drifted`),
+    );
+  } finally {
     fs.rmSync(homeDir, { recursive: true, force: true });
   }
 });

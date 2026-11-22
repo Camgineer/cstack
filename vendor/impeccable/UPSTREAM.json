@@ -1,0 +1,15 @@
+{
+  "commit": "b49177d32788f2dc585c42831d845dacf1ebed2c",
+  "engineVersion": "0.1.27",
+  "license": "Apache-2.0",
+  "providers": {
+    "agents": ".agents/skills/impeccable",
+    "antigravity": ".agent/skills/impeccable",
+    "claude": ".claude/skills/impeccable",
+    "cursor": ".cursor/skills/impeccable",
+    "gemini": ".gemini/skills/impeccable",
+    "opencode": ".opencode/skills/impeccable"
+  },
+  "repo": "https://github.com/pbakaus/impeccable",
+  "version": "4.10.0"
+}

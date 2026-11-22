@@ -10,7 +10,9 @@ import { fileURLToPath } from "node:url";
 import {
   ALL_TARGETS,
   DEFAULT_TARGETS,
+  discoverAgentsForTarget,
   discoverSkills,
+  discoverSkillsForTarget,
   formatUpdateSummary,
   getGlobalInstructionPath,
   getManifestPath,
@@ -45,7 +47,7 @@ test("install, idempotent re-run, status, and uninstall preserve unrelated skill
     fs.writeFileSync(path.join(codexSystem, "keep.txt"), "built-in\n");
     fs.writeFileSync(path.join(agyCustom, "SKILL.md"), "# custom\n");
 
-    const skills = discoverSkills(REPO_ROOT);
+    const skills = discoverSkillsForTarget(REPO_ROOT, "claude");
     assert.ok(skills.some((s) => s.name === "cstack-mode"));
     assert.ok(skills.some((s) => s.name === "poteto-mode"));
 
@@ -894,4 +896,198 @@ test("parseArgs supports --update/--refresh and rejects conflicting flags", () =
   assert.throws(() => parseArgs(["--update", "--uninstall"]), /mutually exclusive/);
   assert.throws(() => parseArgs(["--update", "--status"]), /mutually exclusive/);
   assert.throws(() => parseArgs(["--update", "--global", "--global-ref", "HEAD"]), /Cannot combine --update with --global/);
+});
+
+const IMPECCABLE_AGENTS = [
+  "impeccable-asset-producer.md",
+  "impeccable-documenter.md",
+  "impeccable-finish-reviewer.md",
+  "impeccable-manual-edit-applier.md",
+  "impeccable-motion-reviewer.md",
+];
+
+function writeTree(root, files) {
+  for (const [relPath, body] of Object.entries(files)) {
+    fs.mkdirSync(path.dirname(path.join(root, relPath)), { recursive: true });
+    fs.writeFileSync(path.join(root, relPath), body);
+  }
+  return root;
+}
+
+function snapshotTree(root) {
+  return fs
+    .readdirSync(root, { recursive: true })
+    .sort()
+    .map((rel) => {
+      const stat = fs.lstatSync(path.join(root, rel));
+      return stat.isFile() ? `${rel}:${sha256(fs.readFileSync(path.join(root, rel)))}` : rel;
+    });
+}
+
+function runCli(args) {
+  return execFileSync(process.execPath, [INSTALL_SCRIPT, ...args], { encoding: "utf8" });
+}
+
+test("every target installs its own Impeccable build, and Claude and Cursor get the agent files", () => {
+  const homeDir = makeTempDir("cstack-vendor-");
+  const env = { CLAUDE_CONFIG_DIR: path.join(homeDir, "custom claude") };
+  const providerDir = (target) =>
+    path.join(REPO_ROOT, "vendor", "impeccable", "providers", target === "codex" ? "agents" : target);
+  try {
+    const sharedNames = discoverSkills(REPO_ROOT).map((s) => s.name);
+    assert.equal(sharedNames.includes("impeccable"), false, "discoverSkills must stay shared-only");
+
+    for (const target of ALL_TARGETS) {
+      const impeccable = discoverSkillsForTarget(REPO_ROOT, target).find((s) => s.name === "impeccable");
+      assert.equal(impeccable?.sourceDir, path.join(providerDir(target), "skills", "impeccable"), target);
+    }
+
+    const result = installCstack({ repoRoot: REPO_ROOT, homeDir, targets: ALL_TARGETS, env, respectEnv: true });
+    assert.equal(result.conflicts.length, 0);
+
+    for (const target of ALL_TARGETS) {
+      const installed = path.join(getTargetDir(homeDir, target, { env, respectEnv: true }), "impeccable");
+      assert.equal(
+        fs.realpathSync(installed),
+        fs.realpathSync(path.join(providerDir(target), "skills", "impeccable")),
+        `${target} should link its own provider build`,
+      );
+    }
+
+    const agentDirs = {
+      claude: path.join(env.CLAUDE_CONFIG_DIR, "agents"),
+      cursor: path.join(homeDir, ".cursor", "agents"),
+    };
+    for (const [target, agentDir] of Object.entries(agentDirs)) {
+      assert.deepEqual(discoverAgentsForTarget(REPO_ROOT, target).map((a) => a.name), IMPECCABLE_AGENTS);
+      assert.deepEqual(fs.readdirSync(agentDir).sort(), IMPECCABLE_AGENTS, `${target} agent files`);
+      for (const name of IMPECCABLE_AGENTS) {
+        const stat = fs.lstatSync(path.join(agentDir, name));
+        assert.ok(stat.isFile() && !stat.isSymbolicLink(), `${target}/${name} should be a regular file`);
+        assert.deepEqual(
+          fs.readFileSync(path.join(agentDir, name)),
+          fs.readFileSync(path.join(providerDir(target), "agents", name)),
+        );
+      }
+    }
+    assert.deepEqual(discoverAgentsForTarget(REPO_ROOT, "codex"), []);
+
+    assert.match(runCli(["--home", homeDir, "--status"]), /0 missing, 0 drifted\nAgents: 10 ok, 0 missing, 0 drifted/);
+    assert.match(runCli(["--home", homeDir, "--uninstall"]), /0 skipped, 0 remaining\nAgents: 10 removed/);
+    for (const agentDir of Object.values(agentDirs)) {
+      assert.deepEqual(fs.readdirSync(agentDir), []);
+    }
+    assert.equal(fs.existsSync(path.join(getTargetDir(homeDir, "agents"), "impeccable")), false);
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
+test("name collisions and shared destinations with different builds fail before anything is written", () => {
+  const repoRoot = writeTree(makeTempDir("cstack-collide-repo-"), {
+    "skills/alpha/SKILL.md": "# alpha\n",
+    "vendor/acme/providers/claude/skills/impeccable/SKILL.md": "# claude build\n",
+    "vendor/acme/providers/agents/skills/impeccable/SKILL.md": "# agents build\n",
+  });
+  const homeDir = makeTempDir("cstack-collide-home-");
+  try {
+    installCstack({ repoRoot, homeDir, targets: ["claude"] });
+    const before = snapshotTree(homeDir);
+
+    writeTree(repoRoot, { "skills/Impeccable/SKILL.md": "# shared\n" });
+    assert.throws(() => installCstack({ repoRoot, homeDir, targets: ["claude"] }), /Name collision/);
+    assert.deepEqual(snapshotTree(homeDir), before, "a case-only name clash must not touch the install");
+    fs.rmSync(path.join(repoRoot, "skills", "Impeccable"), { recursive: true });
+
+    fs.mkdirSync(path.join(homeDir, ".agents"));
+    fs.symlinkSync(
+      path.join(homeDir, ".claude", "skills"),
+      path.join(homeDir, ".agents", "skills"),
+      process.platform === "win32" ? "junction" : "dir",
+    );
+    const linkedBefore = snapshotTree(homeDir);
+    assert.throws(
+      () => installCstack({ repoRoot, homeDir, targets: ["claude", "agents"] }),
+      /share .* but install different sources/,
+    );
+    assert.deepEqual(snapshotTree(homeDir), linkedBefore, "a shared destination must not touch the install");
+  } finally {
+    fs.rmSync(repoRoot, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
+test("agent files the user owns or edited are never overwritten or deleted without --force", () => {
+  const repoRoot = writeTree(makeTempDir("cstack-agents-repo-"), {
+    "skills/alpha/SKILL.md": "# alpha\n",
+    "global/AGENTS.md": "global\n",
+    "vendor/acme/providers/cursor/agents/helper.md": "vendor helper\n",
+    "vendor/acme/providers/cursor/agents/twin.md": "vendor twin\n",
+  });
+  const homeDir = makeTempDir("cstack-agents-home-");
+  const agentFile = (name) => path.join(homeDir, ".cursor", "agents", name);
+  const agentNames = () => (getStatus({ homeDir }).agentEntries).map((e) => e.name);
+  try {
+    execFileSync("git", ["-C", repoRoot, "init", "-q", "-b", "main"]);
+    execFileSync("git", ["-C", repoRoot, "add", "-A"]);
+    execFileSync("git", ["-C", repoRoot, "-c", "user.name=T", "-c", "user.email=t@example.com", "commit", "-qm", "v1"]);
+    writeTree(homeDir, {
+      ".cursor/agents/helper.md": "my own helper\n",
+      ".cursor/agents/twin.md": "vendor twin\n",
+    });
+
+    const blocked = installCstack({ repoRoot, homeDir, targets: ["cursor"] });
+    assert.deepEqual(blocked.conflicts.map((c) => c.agent), ["helper.md"]);
+    assert.equal(fs.readFileSync(agentFile("helper.md"), "utf8"), "my own helper\n");
+    assert.deepEqual(agentNames(), [], "an identical unmanaged file stays unowned");
+
+    installCstack({ repoRoot, homeDir, targets: ["cursor"], force: true });
+    assert.equal(fs.readFileSync(agentFile("helper.md"), "utf8"), "vendor helper\n");
+    assert.deepEqual(agentNames(), ["helper.md", "twin.md"]);
+
+    fs.writeFileSync(agentFile("helper.md"), "edited by user\n");
+    const edited = installCstack({ repoRoot, homeDir, targets: ["cursor"] });
+    assert.deepEqual(edited.conflicts.map((c) => c.agent), ["helper.md"]);
+    assert.equal(fs.readFileSync(agentFile("helper.md"), "utf8"), "edited by user\n");
+
+    const removed = uninstallCstack({ homeDir });
+    assert.deepEqual(removed.agents, { removed: 1, missing: 0, kept: 1 });
+    assert.equal(fs.readFileSync(agentFile("helper.md"), "utf8"), "edited by user\n");
+    assert.equal(fs.existsSync(agentFile("twin.md")), false);
+    assert.deepEqual(agentNames(), ["helper.md"], "the edited file stays in the manifest");
+
+    const update = updateCstack({ repoRoot, homeDir, dryRun: true });
+    assert.deepEqual(update.installSummary.targets, ["cursor"]);
+  } finally {
+    fs.rmSync(repoRoot, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
+test("the installed launcher passes a spaced argument through intact from a spaced path", () => {
+  const homeDir = makeTempDir("cstack launcher ");
+  const isWindows = process.platform === "win32";
+  try {
+    installCstack({ repoRoot: REPO_ROOT, homeDir, targets: ["claude"] });
+    const scripts = path.join(getTargetDir(homeDir, "claude"), "impeccable", "scripts");
+    const fakeBin = path.join(homeDir, "fake engine", isWindows ? "engine.cmd" : "engine");
+    writeTree(homeDir, {
+      [path.relative(homeDir, fakeBin)]: isWindows
+        ? '@echo off\r\nset n=0\r\n:loop\r\nif "%~1"=="" goto done\r\necho %~1\r\nset /a n+=1\r\nshift\r\ngoto loop\r\n:done\r\necho %n%\r\n'
+        : '#!/bin/sh\nfor a in "$@"; do printf \'%s\\n\' "$a"; done\nprintf \'%s\\n\' "$#"\n',
+    });
+    fs.chmodSync(fakeBin, 0o755);
+
+    const options = { encoding: "utf8", env: { ...process.env, IMPECCABLE_BIN: fakeBin } };
+    const output = isWindows
+      ? execFileSync(
+          process.env.ComSpec || "cmd.exe",
+          ["/d", "/s", "/c", `""${path.join(scripts, "impeccable.cmd")}" scan "a b.html""`],
+          { ...options, windowsVerbatimArguments: true },
+        )
+      : execFileSync(path.join(scripts, "impeccable"), ["scan", "a b.html"], options);
+    assert.deepEqual(output.trim().split(/\r?\n/), ["scan", "a b.html", "2"]);
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
 });

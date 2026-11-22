@@ -1001,6 +1001,7 @@ test("name collisions and shared destinations with different builds fail before 
     "vendor/acme/providers/cursor/agents/helper.md": "cursor helper\n",
   });
   const homeDir = makeTempDir("cstack-collide-home-");
+  const aliasHome = makeTempDir("cstack-collide-alias-");
   const sharedSources = /share .* but install different sources/;
   try {
     installCstack({ repoRoot, homeDir, targets: ["claude"] });
@@ -1027,9 +1028,22 @@ test("name collisions and shared destinations with different builds fail before 
     const agentsOnly = snapshotTree(homeDir);
     assert.throws(() => installCstack({ repoRoot, homeDir, targets: ["claude"] }), sharedSources);
     assert.deepEqual(snapshotTree(homeDir), agentsOnly, "a later target must not overwrite an earlier one");
+
+    installCstack({ repoRoot, homeDir: aliasHome, targets: ["claude"] });
+    installCstack({ repoRoot, homeDir: aliasHome, targets: ["codex"] });
+    const sharedSkills = path.join(aliasHome, ".agents", "skills");
+    fs.mkdirSync(sharedSkills, { recursive: true });
+    for (const target of ["claude", "codex"]) {
+      fs.rmSync(getTargetDir(aliasHome, target), { recursive: true });
+      linkDir(sharedSkills, getTargetDir(aliasHome, target));
+    }
+    const aliased = snapshotTree(aliasHome);
+    assert.throws(() => installCstack({ repoRoot, homeDir: aliasHome, targets: ["agents"] }), sharedSources);
+    assert.deepEqual(snapshotTree(aliasHome), aliased, "every earlier owner of a shared destination must block a different build");
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
     fs.rmSync(homeDir, { recursive: true, force: true });
+    fs.rmSync(aliasHome, { recursive: true, force: true });
   }
 });
 
@@ -1113,6 +1127,14 @@ test("targets that share one skills directory install, report, and uninstall wit
   try {
     installCstack({ repoRoot: REPO_ROOT, homeDir, targets: ["agents"], copy: true });
     linkDir(getTargetDir(homeDir, "agents"), getTargetDir(homeDir, "codex"));
+
+    const codexFirst = installCstack({ repoRoot: REPO_ROOT, homeDir, targets: ["codex", "agents"], copy: true });
+    assert.deepEqual(codexFirst.conflicts, [], "codex listed before agents must not treat the agents copy as foreign");
+    assert.deepEqual(
+      getStatus({ homeDir }).entries.filter((e) => e.state !== "ok" || e.mode !== "copy"),
+      [],
+      "every codex and agents entry must be a healthy copy",
+    );
 
     const codex = installCstack({ repoRoot: REPO_ROOT, homeDir, targets: ["codex"], copy: true });
     assert.equal(codex.conflicts.length, 0);

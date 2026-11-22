@@ -536,23 +536,32 @@ export function installCstack({
     isRetained(e, activeAgentDirs),
   );
   const retainedOwners = new Map(retainedEntries.map((e) => [destKey(e.destPath), e]));
+  const prevOwnersByDest = new Map();
+  for (const e of prevManifest?.entries ?? []) {
+    const key = destKey(e.destPath);
+    prevOwnersByDest.set(key, [...(prevOwnersByDest.get(key) ?? []), e]);
+  }
 
   const claims = new Map();
+  const addClaim = (key, targetName, source) => {
+    claims.set(key, [...(claims.get(key) ?? []), { targetName, source }]);
+  };
   for (const e of retainedEntries) {
-    claims.set(destKey(e.destPath), { targetName: e.target, source: e.sourceDir });
+    addClaim(destKey(e.destPath), e.target, e.sourceDir);
   }
   for (const e of retainedAgentEntries) {
-    claims.set(destKey(e.destPath), { targetName: e.target, source: e.sourcePath });
+    addClaim(destKey(e.destPath), e.target, e.sourcePath);
   }
   const claim = (destPath, targetName, source) => {
     const key = destKey(destPath);
-    const claimed = claims.get(key);
-    if (claimed && claimed.source !== source) {
-      throw new Error(
-        `Targets "${claimed.targetName}" and "${targetName}" share ${key} but install different sources (${claimed.source}, ${source})`,
-      );
+    for (const existing of claims.get(key) ?? []) {
+      if (existing.source !== source) {
+        throw new Error(
+          `Targets "${existing.targetName}" and "${targetName}" share ${key} but install different sources (${existing.source}, ${source})`,
+        );
+      }
     }
-    claims.set(key, { targetName, source });
+    addClaim(key, targetName, source);
   };
   for (const { targetName, targetDir, skills, agentDir, agents } of plans) {
     for (const skill of skills) {
@@ -619,13 +628,18 @@ export function installCstack({
       desiredKeys.add(key);
       const stat = lstatOrNull(destPath);
       const prevEntry = prevManagedByKey.get(key);
-      const entryMode =
-        preserveExistingMode &&
-        prevEntry &&
-        (prevEntry.mode === "copy" || prevEntry.mode === "link")
-          ? prevEntry.mode
-          : targetDefaultMode;
       const physicalDest = destKey(destPath);
+      const prevOwner = (prevOwnersByDest.get(physicalDest) ?? []).find(
+        (e) =>
+          e.sourceDir === skill.sourceDir &&
+          matchesManagedEntry(stat, e) &&
+          (e.mode !== "link" || isLinkTo(destPath, skill.sourceDir)),
+      );
+      const preservedMode = prevEntry ? prevEntry.mode : prevOwner?.mode;
+      const entryMode =
+        preserveExistingMode && (preservedMode === "copy" || preservedMode === "link")
+          ? preservedMode
+          : targetDefaultMode;
       const owner = retainedOwners.get(physicalDest);
       const ownerMatches =
         owner?.sourceDir === skill.sourceDir &&
@@ -657,6 +671,7 @@ export function installCstack({
 
       const ownedByCstack =
         prevMatchesSamePath ||
+        Boolean(prevOwner) ||
         (stat &&
           ["skills", "vendor"].some((dir) =>
             isLinkUnder(destPath, path.join(resolvedRepoRoot, dir)),

@@ -19,7 +19,9 @@ Use the `orca` CLI (or `${ORCA_CLI_COMMAND:-orca}` when set) for orchestration, 
 
 ## Orchestration and worker fields
 
-When `Task` maps to `orca orchestration worker-start`, follow the `orchestration` skill (`orca skills get orchestration`): start independent workers in parallel (up to about 4 at once), then end your turn and let Orca wake you. Never poll with `check` or `sleep` loops. Before you nudge or retry a worker that sent an idle `stopReason=finished` escalation, check `orca orchestration worker-read` and the worker's live child processes. A structured worker can still be running a long background build or test command. Structured Orca workers must run long builds and test suites in the foreground and raise command timeouts as needed. Never end a worker turn while a required job is still running, because Orca marks a turn that ends without `worker_done` as a stopped worker.
+When `Task` maps to `orca orchestration worker-start`, follow the `orchestration` skill (`orca skills get orchestration`): start independent workers in parallel (up to about 4 at once), then end your turn and let Orca wake you. Never poll with `check` or `sleep` loops. Before you nudge or retry a worker that sent an idle `stopReason=finished` escalation, check `orca orchestration worker-read` and the worker's live child processes. A structured worker can still be running a long background build or test command.
+
+As a structured Orca worker, run long builds and test suites in the foreground. Increase the command timeout when the job needs more time. Keep your turn active until every required job finishes. If you end your turn without `worker_done`, Orca treats the worker as stopped.
 
 | Cursor | Orca |
 | --- | --- |
@@ -78,6 +80,10 @@ Orca uses standard CLIs for git and GitHub alongside native `orca` commands for 
 | Cursor `/loop` (recurring check or webhook wake) | Use `orca automations create|list|edit|run|remove` for durable recurring or event-triggered jobs. For one-shot timers inside an active session, use the harness's native timer tool if available. |
 | Worktrees and terminals | Use `orca worktree create|list|show|rm` and `orca terminal create|read|wait|send|close` rather than ad-hoc PTYs. |
 
+## Images and galleries
+
+To show an image in an Orca reply, copy it to a path without spaces and embed it in the reply. For a bot decision item, you can link one HTML gallery and append later images to it. Bot item cards do not display images inside linked Markdown files.
+
 ## Orca Bots
 
 Orca Bots are built into Orca and live in `~/.orca/bots/<name>/`. When running as an Orca Bot:
@@ -90,7 +96,6 @@ Orca Bots are built into Orca and live in `~/.orca/bots/<name>/`. When running a
 - **Multi-host compute.** Before fanning out, check paired Orca servers with `orca host list` or `orca environment list`, and machine capabilities in `~/.config/cstack/local.md`. Send platform-specific builds, OS-specific verification, and parallel work to the right host on purpose with `worker-start --on <server>`, using an isolated worktree on each host. Keep concrete machine names out of git; they belong in `~/.config/cstack/local.md` and the bot's local `SOUL.md`.
 - **Bot-to-bot coordination.** Discover other bots with `orca bot list`. Delegate with `orca orchestration send --to bot:<name> --type handoff --subject "<task>" --body "<bounds>"`, ask for input with `--type question`, or share updates with `--type status`. Do not message other bots unless the task or owner asks for it.
 - **Bot items and answer order.** Track active work, completed milestones, and unanswered owner decisions as Orca Bot Items. Before adding an item, run `orca bot item list --all --link <ref>`, because `list` shows only open items by default. Update a matching open item. Reopen a matching closed item with `--status planned` or `--status in-progress` when editing it, or ask on the item if the owner canceled it. Otherwise, run `orca bot item add --title "<title>" --link <ref>`. Pass `--item <n>` to `worker-start` to link a worker to its item. Present choices with `orca bot item set <id> --status needs-you --ask "<question>" --option "<choice A>" --option "<choice B>"`. Ask an open question with `orca bot item set <id> --status needs-you --comment "<question>"`. Keep each item's `--description` or `--description-file` to 1 to 3 short sentences that state what the item is and its goal. Never put multi-section breakdowns or long blocks of text in the description. Post discussions, design breakdowns, recommendations, and multi-item proposals as separate comments with `orca bot item comment <id> --text "<text>"` or `--text-file <path|->`. Give each comment one topic or unit of logic. Include all Markdown context the owner needs to answer in the item description and comments. Never write "see chat" in an item. `orca bot item` has no priority field, and item numbers show only creation order. Prefix every `Needs you` title with its answer rank and reason, such as `[1st, blocks build]`. When urgency changes, rename the item with `orca bot item set <id> --title "<new title>"`.
-- **Images and galleries for the owner.** When showing images to the owner in Orca, copy each image to a path without spaces and embed it in the reply, or link one openable HTML gallery from the decision item. Append each later render to that same HTML gallery. Do not rely on images inside a linked Markdown file, because they do not render in bot item cards.
 - **Connectors.** Check sign-in and wake status with `orca bot connectors`. Only offer a connector (`orca bot connectors --offer <service>`) when the work actually needs it.
 
 ## Paths

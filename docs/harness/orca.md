@@ -21,6 +21,8 @@ Use the `orca` CLI (or `${ORCA_CLI_COMMAND:-orca}` when set) for orchestration, 
 
 When `Task` maps to `orca orchestration worker-start`, follow the `orchestration` skill (`orca skills get orchestration`): start independent workers in parallel (up to about 4 at once), then end your turn and let Orca wake you. Never poll with `check` or `sleep` loops. Before you nudge or retry a worker that sent an idle `stopReason=finished` escalation, check `orca orchestration worker-read` and the worker's live child processes. A structured worker can still be running a long background build or test command.
 
+As a structured Orca worker, run long builds and test suites in the foreground. Increase the command timeout when the job needs more time. Keep your turn active until every required job finishes. If you end your turn without `worker_done`, Orca treats the worker as stopped.
+
 | Cursor | Orca |
 | --- | --- |
 | `subagent_type: generalPurpose` | `orca orchestration worker-start --spec "<task>" --worktree current --agent <agent>` (or a native subagent when staying in the same harness and checkout). |
@@ -77,6 +79,10 @@ Orca uses standard CLIs for git and GitHub alongside native `orca` commands for 
 | Issue tracker lookups and updates | Use `gh issue *` for GitHub, `orca linear *` (`orca-linear` skill) for Linear, and `orca jira *` (`orca-jira` skill) for Jira. |
 | Cursor `/loop` (recurring check or webhook wake) | Use `orca automations create|list|edit|run|remove` for durable recurring or event-triggered jobs. For one-shot timers inside an active session, use the harness's native timer tool if available. |
 | Worktrees and terminals | Use `orca worktree create|list|show|rm` and `orca terminal create|read|wait|send|close` rather than ad-hoc PTYs. |
+
+## Images and galleries
+
+To show an image in an Orca reply, copy it to a path without spaces and embed it in the reply. For a bot decision item, you can link one HTML gallery and append later images to it. Bot item cards do not display images inside linked Markdown files.
 
 ## Orca Bots
 

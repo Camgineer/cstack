@@ -44,6 +44,8 @@ export const GLOBAL_TARGET_DEFS = {
   },
 };
 
+const AGENT_TARGETS = ["claude", "cursor"];
+
 export const DEFAULT_GLOBAL_TARGETS = ["claude", "codex", "antigravity"];
 export const ALL_GLOBAL_TARGETS = Object.keys(GLOBAL_TARGET_DEFS);
 
@@ -66,7 +68,8 @@ Options:
   --backup-dir <dir>       Directory for backups when replacing existing global instruction files
                            (default: ~/.config/cstack/global-backups/<timestamp>)
   --copy                   Copy skill directories instead of linking
-  --force                  Replace conflicting non-cstack entries at skill target paths
+  --force                  Replace conflicting non-cstack entries at skill and agent paths,
+                           and let --uninstall delete agent files edited since install
   --dry-run                Print planned changes without modifying the filesystem
   --update, --refresh      Pull latest fast-forward commits (git pull --ff-only), re-sync skills,
                            verify status, and report if global/AGENTS.md changed (never overwrites)
@@ -273,6 +276,68 @@ export function discoverSkills(repoRoot) {
   return skills;
 }
 
+function vendorProviderDirs(repoRoot, target, kind) {
+  const vendorRoot = path.join(repoRoot, "vendor");
+  if (!fs.existsSync(vendorRoot)) {
+    return [];
+  }
+  const provider = target === "codex" ? "agents" : target;
+  return fs
+    .readdirSync(vendorRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => ({
+      vendor: entry.name,
+      dir: path.join(vendorRoot, entry.name, "providers", provider, kind),
+    }))
+    .filter(({ dir }) => fs.existsSync(dir));
+}
+
+function assertUniqueNames(items, target, sourceKey) {
+  const seen = new Map();
+  for (const item of items) {
+    const key = item.name.toLowerCase();
+    if (seen.has(key)) {
+      throw new Error(
+        `Name collision for target "${target}": ${seen.get(key)[sourceKey]} and ${item[sourceKey]}`,
+      );
+    }
+    seen.set(key, item);
+  }
+  return items.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function discoverSkillsForTarget(repoRoot, target) {
+  const skills = discoverSkills(repoRoot).map((skill) => ({ ...skill, vendor: null }));
+  for (const { vendor, dir } of vendorProviderDirs(repoRoot, target, "skills")) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const sourceDir = path.join(dir, entry.name);
+      if (entry.isDirectory() && fs.existsSync(path.join(sourceDir, "SKILL.md"))) {
+        skills.push({ name: entry.name, sourceDir, vendor });
+      }
+    }
+  }
+  return assertUniqueNames(skills, target, "sourceDir");
+}
+
+export function discoverAgentsForTarget(repoRoot, target) {
+  if (!AGENT_TARGETS.includes(target)) {
+    return [];
+  }
+  const agents = [];
+  for (const { vendor, dir } of vendorProviderDirs(repoRoot, target, "agents")) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.endsWith(".md")) {
+        agents.push({ name: entry.name, sourcePath: path.join(dir, entry.name), vendor });
+      }
+    }
+  }
+  return assertUniqueNames(agents, target, "sourcePath");
+}
+
+function getAgentDir(homeDir, targetName, options) {
+  return path.join(path.dirname(getTargetDir(homeDir, targetName, options)), "agents");
+}
+
 function sha256(buf) {
   return crypto.createHash("sha256").update(buf).digest("hex");
 }
@@ -319,6 +384,28 @@ function isLinkTo(linkPath, expectedTarget) {
   } catch {
     return false;
   }
+}
+
+function physicalPath(p) {
+  try {
+    return normalizePath(fs.realpathSync(p));
+  } catch {
+    const parent = path.dirname(p);
+    return parent === p ? normalizePath(p) : path.join(physicalPath(parent), path.basename(p));
+  }
+}
+
+function destKey(destPath) {
+  return path.join(physicalPath(path.dirname(destPath)), path.basename(destPath).toLowerCase());
+}
+
+function isRetained(entry, activeDirs) {
+  const activeDir = activeDirs.get(entry.target);
+  return !activeDir || normalizePath(path.dirname(entry.destPath)) !== activeDir;
+}
+
+function fileSha256OrNull(filePath, stat) {
+  return stat && stat.isFile() ? sha256(fs.readFileSync(filePath)) : null;
 }
 
 function isLinkUnder(linkPath, rootDir) {
@@ -425,10 +512,66 @@ export function installCstack({
   respectEnv = false,
 } = {}) {
   const resolvedRepoRoot = fs.realpathSync(repoRoot);
-  const skills = discoverSkills(resolvedRepoRoot);
+  const plans = targets.map((targetName) => {
+    const targetDir = getTargetDir(homeDir, targetName, { env, respectEnv });
+    return {
+      targetName,
+      targetDir,
+      skills: discoverSkillsForTarget(resolvedRepoRoot, targetName),
+      agentDir: getAgentDir(homeDir, targetName, { env, respectEnv }),
+      agents: discoverAgentsForTarget(resolvedRepoRoot, targetName),
+    };
+  });
   const manifestPath = getManifestPath(homeDir);
   const prevManifest = loadManifest(manifestPath);
   const defaultMode = copy ? "copy" : "link";
+  const activeTargetDirs = new Map(plans.map((p) => [p.targetName, normalizePath(p.targetDir)]));
+  const activeAgentDirs = new Map(
+    plans
+      .filter((p) => AGENT_TARGETS.includes(p.targetName))
+      .map((p) => [p.targetName, normalizePath(p.agentDir)]),
+  );
+  const retainedEntries = (prevManifest?.entries ?? []).filter((e) => isRetained(e, activeTargetDirs));
+  const retainedAgentEntries = (prevManifest?.agentEntries ?? []).filter((e) =>
+    isRetained(e, activeAgentDirs),
+  );
+  const retainedOwners = new Map(retainedEntries.map((e) => [destKey(e.destPath), e]));
+  const prevOwnersByDest = new Map();
+  for (const e of prevManifest?.entries ?? []) {
+    const key = destKey(e.destPath);
+    prevOwnersByDest.set(key, [...(prevOwnersByDest.get(key) ?? []), e]);
+  }
+
+  const claims = new Map();
+  const addClaim = (key, targetName, source) => {
+    claims.set(key, [...(claims.get(key) ?? []), { targetName, source }]);
+  };
+  for (const e of retainedEntries) {
+    addClaim(destKey(e.destPath), e.target, e.sourceDir);
+  }
+  for (const e of retainedAgentEntries) {
+    addClaim(destKey(e.destPath), e.target, e.sourcePath);
+  }
+  const claim = (destPath, targetName, source) => {
+    const key = destKey(destPath);
+    for (const existing of claims.get(key) ?? []) {
+      if (existing.source !== source) {
+        throw new Error(
+          `Targets "${existing.targetName}" and "${targetName}" share ${key} but install different sources (${existing.source}, ${source})`,
+        );
+      }
+    }
+    addClaim(key, targetName, source);
+  };
+  for (const { targetName, targetDir, skills, agentDir, agents } of plans) {
+    for (const skill of skills) {
+      claim(path.join(targetDir, skill.name), targetName, skill.sourceDir);
+    }
+    for (const agent of agents) {
+      claim(path.join(agentDir, agent.name), targetName, agent.sourcePath);
+    }
+  }
+  const handledModes = new Map();
 
   const prevManagedByKey = new Map();
   if (prevManifest && Array.isArray(prevManifest.entries)) {
@@ -441,7 +584,6 @@ export function installCstack({
   }
 
   const desiredKeys = new Set();
-  const activeTargetDirs = new Map();
   const usedModes = new Set();
   const nextEntries = [];
   const summary = {
@@ -449,19 +591,18 @@ export function installCstack({
     manifestPath,
     mode: defaultMode,
     targets: [...targets],
-    skillCount: skills.length,
+    skillCount: new Set(plans.flatMap((plan) => plan.skills.map((skill) => skill.name))).size,
     installed: 0,
     updated: 0,
     unchanged: 0,
     pruned: 0,
+    agents: { count: 0, installed: 0, updated: 0, unchanged: 0, pruned: 0 },
     conflicts: [],
     actions: [],
   };
 
-  for (const targetName of targets) {
-    const targetDir = getTargetDir(homeDir, targetName, { env, respectEnv });
+  for (const { targetName, targetDir, skills } of plans) {
     const normalizedTargetDir = normalizePath(targetDir);
-    activeTargetDirs.set(targetName, normalizedTargetDir);
     if (!dryRun) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
@@ -487,22 +628,38 @@ export function installCstack({
       desiredKeys.add(key);
       const stat = lstatOrNull(destPath);
       const prevEntry = prevManagedByKey.get(key);
+      const physicalDest = destKey(destPath);
+      const prevOwner = (prevOwnersByDest.get(physicalDest) ?? []).find(
+        (e) =>
+          e.sourceDir === skill.sourceDir &&
+          matchesManagedEntry(stat, e) &&
+          (e.mode !== "link" || isLinkTo(destPath, skill.sourceDir)),
+      );
+      const preservedMode = prevEntry ? prevEntry.mode : prevOwner?.mode;
       const entryMode =
-        preserveExistingMode &&
-        prevEntry &&
-        (prevEntry.mode === "copy" || prevEntry.mode === "link")
-          ? prevEntry.mode
+        preserveExistingMode && (preservedMode === "copy" || preservedMode === "link")
+          ? preservedMode
           : targetDefaultMode;
+      const owner = retainedOwners.get(physicalDest);
+      const ownerMatches =
+        owner?.sourceDir === skill.sourceDir &&
+        matchesManagedEntry(stat, owner) &&
+        (owner.mode !== "link" || isLinkTo(destPath, skill.sourceDir));
+      const sharedMode =
+        handledModes.get(physicalDest) ??
+        (ownerMatches ? owner.mode : null) ??
+        (entryMode === "link" && stat && isLinkTo(destPath, skill.sourceDir) ? "link" : null);
 
-      if (entryMode === "link" && stat && isLinkTo(destPath, skill.sourceDir)) {
+      if (sharedMode) {
+        handledModes.set(physicalDest, sharedMode);
         summary.unchanged += 1;
-        usedModes.add(entryMode);
+        usedModes.add(sharedMode);
         nextEntries.push({
           target: targetName,
           skill: skill.name,
           destPath,
           sourceDir: skill.sourceDir,
-          mode: entryMode,
+          mode: sharedMode,
         });
         continue;
       }
@@ -514,8 +671,11 @@ export function installCstack({
 
       const ownedByCstack =
         prevMatchesSamePath ||
+        Boolean(prevOwner) ||
         (stat &&
-          isLinkUnder(destPath, path.join(resolvedRepoRoot, "skills")));
+          ["skills", "vendor"].some((dir) =>
+            isLinkUnder(destPath, path.join(resolvedRepoRoot, dir)),
+          ));
 
       if (stat && !ownedByCstack && !force) {
         summary.conflicts.push({
@@ -549,6 +709,7 @@ export function installCstack({
         }
       }
 
+      handledModes.set(physicalDest, entryMode);
       if (actionType === "install") {
         summary.installed += 1;
       } else {
@@ -571,16 +732,15 @@ export function installCstack({
     summary.mode = "mixed";
   }
 
+  nextEntries.push(...retainedEntries);
+  const keptDests = new Set(nextEntries.map((e) => destKey(e.destPath)));
   if (prevManifest && Array.isArray(prevManifest.entries)) {
     for (const prevEntry of prevManifest.entries) {
       const key = `${prevEntry.target}:${prevEntry.skill}:${normalizePath(prevEntry.destPath)}`;
-      if (desiredKeys.has(key)) {
+      if (desiredKeys.has(key) || isRetained(prevEntry, activeTargetDirs)) {
         continue;
       }
-      // Preserve entries belonging to unselected targets or a different config dir (e.g. changed CLAUDE_CONFIG_DIR/CODEX_HOME).
-      const activeDir = activeTargetDirs.get(prevEntry.target);
-      if (!activeDir || normalizePath(path.dirname(prevEntry.destPath)) !== activeDir) {
-        nextEntries.push(prevEntry);
+      if (keptDests.has(destKey(prevEntry.destPath))) {
         continue;
       }
 
@@ -610,6 +770,13 @@ export function installCstack({
   nextEntries.sort((a, b) =>
     `${a.target}:${a.skill}`.localeCompare(`${b.target}:${b.skill}`),
   );
+  const agentEntries = syncAgents({
+    plans,
+    prevAgentEntries: prevManifest?.agentEntries ?? [],
+    force,
+    dryRun,
+    summary,
+  });
 
   if (!dryRun) {
     saveManifest(manifestPath, {
@@ -617,10 +784,111 @@ export function installCstack({
       repoRoot: resolvedRepoRoot,
       updatedAt: new Date().toISOString(),
       entries: nextEntries,
+      agentEntries,
     });
   }
 
   return summary;
+}
+
+function removeUneditedAgent(entry, { force, dryRun }) {
+  const stat = lstatOrNull(entry.destPath);
+  if (!stat) {
+    return "missing";
+  }
+  if (stat.isDirectory() || (!force && fileSha256OrNull(entry.destPath, stat) !== entry.sha256)) {
+    return "kept";
+  }
+  if (!dryRun) {
+    fs.unlinkSync(entry.destPath);
+  }
+  return "removed";
+}
+
+function syncAgents({ plans, prevAgentEntries, force, dryRun, summary }) {
+  const prevByDest = new Map(prevAgentEntries.map((e) => [normalizePath(e.destPath), e]));
+  const activeAgentDirs = new Map();
+  const desiredDests = new Set();
+  const nextAgentEntries = [];
+
+  for (const { targetName, agentDir, agents } of plans) {
+    if (!AGENT_TARGETS.includes(targetName)) {
+      continue;
+    }
+    activeAgentDirs.set(targetName, normalizePath(agentDir));
+    for (const agent of agents) {
+      const destPath = path.join(agentDir, agent.name);
+      desiredDests.add(normalizePath(destPath));
+      const entry = {
+        target: targetName,
+        name: agent.name,
+        sourcePath: agent.sourcePath,
+        destPath,
+        sha256: sha256(fs.readFileSync(agent.sourcePath)),
+      };
+      const prev = prevByDest.get(normalizePath(destPath));
+      const stat = lstatOrNull(destPath);
+      const currentSha = fileSha256OrNull(destPath, stat);
+      summary.agents.count += 1;
+
+      if (!prev && currentSha === entry.sha256) {
+        summary.agents.unchanged += 1;
+        continue;
+      }
+      const isDir = Boolean(stat?.isDirectory());
+      if (isDir || (stat && !force && currentSha !== prev?.sha256)) {
+        summary.conflicts.push({
+          target: targetName,
+          agent: agent.name,
+          destPath,
+          reason: isDir
+            ? "directory at agent file path; refusing to replace"
+            : prev
+              ? "agent file changed since install (re-run with --force to replace)"
+              : "existing non-cstack agent file (re-run with --force to replace)",
+        });
+        if (prev) {
+          nextAgentEntries.push(prev);
+        }
+        continue;
+      }
+      if (currentSha === entry.sha256) {
+        summary.agents.unchanged += 1;
+        nextAgentEntries.push(entry);
+        continue;
+      }
+      if (!dryRun) {
+        fs.mkdirSync(agentDir, { recursive: true });
+        if (stat) {
+          fs.unlinkSync(destPath);
+        }
+        fs.copyFileSync(agent.sourcePath, destPath);
+      }
+      summary.agents[stat ? "updated" : "installed"] += 1;
+      nextAgentEntries.push(entry);
+    }
+  }
+
+  for (const prev of prevAgentEntries) {
+    if (desiredDests.has(normalizePath(prev.destPath))) {
+      continue;
+    }
+    const activeDir = activeAgentDirs.get(prev.target);
+    if (!activeDir || normalizePath(path.dirname(prev.destPath)) !== activeDir) {
+      nextAgentEntries.push(prev);
+      continue;
+    }
+    const outcome = removeUneditedAgent(prev, { force, dryRun });
+    if (outcome === "kept") {
+      nextAgentEntries.push(prev);
+    } else if (outcome === "removed") {
+      summary.agents.pruned += 1;
+    }
+  }
+
+  return nextAgentEntries.sort((a, b) =>
+    `${a.target}:${a.name}`.localeCompare(`${b.target}:${b.name}`),
+  );
 }
 
 export function installGlobalInstructions({
@@ -904,6 +1172,7 @@ export function installGlobalInstructions({
 export function uninstallCstack({
   homeDir = os.homedir(),
   targets = null,
+  force = false,
   dryRun = false,
 } = {}) {
   const manifestPath = getManifestPath(homeDir);
@@ -912,9 +1181,11 @@ export function uninstallCstack({
   const summary = {
     manifestPath,
     removed: 0,
+    shared: 0,
     skipped: [],
     missing: 0,
     remaining: 0,
+    agents: { removed: 0, missing: 0, kept: 0 },
   };
 
   if (!manifest || !Array.isArray(manifest.entries)) {
@@ -922,11 +1193,17 @@ export function uninstallCstack({
   }
 
   const targetFilter = targets ? new Set(targets) : null;
-  const remainingEntries = [];
+  const remainingEntries = manifest.entries.filter(
+    (entry) => targetFilter && !targetFilter.has(entry.target),
+  );
+  const retainedDests = new Set(remainingEntries.map((entry) => destKey(entry.destPath)));
 
   for (const entry of manifest.entries) {
-    if (targetFilter && !targetFilter.has(entry.target)) {
-      remainingEntries.push(entry);
+    if (remainingEntries.includes(entry)) {
+      continue;
+    }
+    if (retainedDests.has(destKey(entry.destPath))) {
+      summary.shared += 1;
       continue;
     }
 
@@ -952,16 +1229,38 @@ export function uninstallCstack({
     summary.removed += 1;
   }
 
-  summary.remaining = remainingEntries.length;
+  const remainingAgentEntries = [];
+  for (const entry of manifest.agentEntries ?? []) {
+    if (targetFilter && !targetFilter.has(entry.target)) {
+      remainingAgentEntries.push(entry);
+      continue;
+    }
+    const outcome = removeUneditedAgent(entry, { force, dryRun });
+    summary.agents[outcome] += 1;
+    if (outcome === "kept") {
+      summary.skipped.push({
+        target: entry.target,
+        agent: entry.name,
+        destPath: entry.destPath,
+        reason: lstatOrNull(entry.destPath)?.isDirectory()
+          ? "directory at agent file path; refusing to delete"
+          : "agent file changed since install; kept (re-run with --force to delete)",
+      });
+      remainingAgentEntries.push(entry);
+    }
+  }
+
+  summary.remaining = remainingEntries.length + remainingAgentEntries.length;
 
   if (!dryRun) {
-    if (remainingEntries.length === 0) {
+    if (summary.remaining === 0) {
       fs.rmSync(manifestPath, { force: true });
     } else {
       saveManifest(manifestPath, {
         ...manifest,
         updatedAt: new Date().toISOString(),
         entries: remainingEntries,
+        agentEntries: remainingAgentEntries,
       });
     }
   }
@@ -974,7 +1273,7 @@ export function getStatus({ homeDir = os.homedir() } = {}) {
   const manifest = loadManifest(manifestPath);
 
   if (!manifest) {
-    return { installed: false, manifestPath, entries: [] };
+    return { installed: false, manifestPath, entries: [], agentEntries: [] };
   }
 
   const checked = (manifest.entries || []).map((entry) => {
@@ -989,6 +1288,11 @@ export function getStatus({ homeDir = os.homedir() } = {}) {
     }
     return { ...entry, state };
   });
+  const agentEntries = (manifest.agentEntries ?? []).map((entry) => {
+    const stat = lstatOrNull(entry.destPath);
+    const ok = fileSha256OrNull(entry.destPath, stat) === entry.sha256;
+    return { ...entry, state: !stat ? "missing" : ok ? "ok" : "drifted" };
+  });
 
   return {
     installed: true,
@@ -996,6 +1300,7 @@ export function getStatus({ homeDir = os.homedir() } = {}) {
     repoRoot: manifest.repoRoot,
     updatedAt: manifest.updatedAt,
     entries: checked,
+    agentEntries,
   };
 }
 
@@ -1193,12 +1498,9 @@ export function updateCstack({
   const prev = loadManifest(getManifestPath(homeDir));
   let effectiveTargets = targets;
   if (!effectiveTargets) {
-    if (prev && Array.isArray(prev.entries) && prev.entries.length > 0) {
-      const seen = [...new Set(prev.entries.map((e) => e.target).filter((t) => TARGET_DEFS[t]))];
-      effectiveTargets = seen.length > 0 ? seen : DEFAULT_TARGETS;
-    } else {
-      effectiveTargets = DEFAULT_TARGETS;
-    }
+    const prevEntries = [...(prev?.entries ?? []), ...(prev?.agentEntries ?? [])];
+    const seen = [...new Set(prevEntries.map((e) => e.target).filter((t) => TARGET_DEFS[t]))];
+    effectiveTargets = seen.length > 0 ? seen : DEFAULT_TARGETS;
   }
   const preserveExistingMode = copy === null || copy === undefined;
 
@@ -1256,6 +1558,12 @@ function formatInstallSummary(summary, dryRun) {
     `Targets: ${summary.targets.join(", ")} (${summary.skillCount} skills)`,
     `Result: ${summary.installed} installed, ${summary.updated} updated, ${summary.unchanged} unchanged, ${summary.pruned} pruned, ${summary.conflicts.length} conflicts`,
   ];
+  const agents = summary.agents;
+  if (agents.count > 0 || agents.pruned > 0) {
+    lines.push(
+      `Agents: ${agents.count} files (${agents.installed} installed, ${agents.updated} updated, ${agents.unchanged} unchanged, ${agents.pruned} pruned)`,
+    );
+  }
 
   if (summary.conflicts.length > 0) {
     lines.push("Conflicts:");
@@ -1288,8 +1596,14 @@ function formatGlobalSummary(summary, dryRun) {
 function formatUninstallSummary(summary, dryRun) {
   const prefix = dryRun ? "[dry-run] " : "";
   const lines = [
-    `${prefix}cstack uninstall: ${summary.removed} removed, ${summary.missing} already missing, ${summary.skipped.length} skipped, ${summary.remaining} remaining`,
+    `${prefix}cstack uninstall: ${summary.removed} removed, ${summary.shared} kept for other targets, ${summary.missing} already missing, ${summary.skipped.length} skipped, ${summary.remaining} remaining`,
   ];
+  const agents = summary.agents;
+  if (agents.removed + agents.missing + agents.kept > 0) {
+    lines.push(
+      `Agents: ${agents.removed} removed, ${agents.missing} already missing, ${agents.kept} kept`,
+    );
+  }
   for (const item of summary.skipped) {
     lines.push(`  - ${item.destPath}: ${item.reason}`);
   }
@@ -1371,6 +1685,10 @@ function formatStatus(status) {
     `Targets: ${targetSummary || "none"}`,
     `Health: ${counts.ok} ok, ${counts.missing} missing, ${counts.drifted} drifted`,
   ];
+  if (status.agentEntries.length > 0) {
+    const count = (state) => status.agentEntries.filter((e) => e.state === state).length;
+    lines.push(`Agents: ${count("ok")} ok, ${count("missing")} missing, ${count("drifted")} drifted`);
+  }
   return lines.join("\n");
 }
 
@@ -1422,6 +1740,7 @@ function main() {
     const summary = uninstallCstack({
       homeDir: opts.homeDir,
       targets: opts.targets,
+      force: opts.force,
       dryRun: opts.dryRun,
     });
     console.log(formatUninstallSummary(summary, opts.dryRun));

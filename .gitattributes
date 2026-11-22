@@ -1,1 +1,6 @@
 global/AGENTS.md text eol=lf
+vendor/impeccable/**/scripts/impeccable text eol=lf
+vendor/impeccable/**/scripts/impeccable.cmd text eol=crlf
+vendor/impeccable/providers/*/skills/impeccable/reference/extract.md -whitespace
+vendor/impeccable/providers/*/skills/impeccable/reference/harden.md -whitespace
+vendor/impeccable/providers/*/skills/impeccable/reference/optimize.md -whitespace

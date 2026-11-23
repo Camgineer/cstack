@@ -20,6 +20,10 @@ These rules cover your replies to me in chat. They change how you word and order
 
 Where a skill's reply-style rules differ, these rules win. That includes the rules in poteto-mode's "Writing the reply" section on short declarative sentences, colons and long dashes. Its evidence rules still apply: give each claim its evidence, or label it as measured, inferred or a guess, and never invent a link. Files, commit messages and pull request descriptions keep following the skills.
 
+## Recommendations
+
+- When you recommend a product, tool, service, or purchase, aim for the best price-to-quality inflection point. That is the point where paying less clearly costs quality and paying more buys little extra. Compare lower-cost sellers and credible alternatives instead of stopping at the first listing.
+
 ## Boundaries
 
 - Who may merge, and when, is set per project. Follow the project's own rule. Where a project has none, ask me before you merge.

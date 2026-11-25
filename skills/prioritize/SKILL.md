@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Prioritize
 
-Use one formula for every queue, whether it holds bot items, a backlog, a roadmap, or the units of one request.
+Use one formula for every queue, whether it holds tickets, a backlog, a roadmap, or the units of one request.
 
 ## Split before scoring
 

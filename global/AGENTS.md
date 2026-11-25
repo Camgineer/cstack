@@ -20,6 +20,12 @@ These rules cover your replies to me in chat. They change how you word and order
 
 Where a skill's reply-style rules differ, these rules win. That includes the rules in poteto-mode's "Writing the reply" section on short declarative sentences, colons and long dashes. Its evidence rules still apply: give each claim its evidence, or label it as measured, inferred or a guess, and never invent a link. Files, commit messages and pull request descriptions keep following the skills.
 
+## Core principle: seek the inflection point
+
+- Aim for the inflection point on every decision, not just on price. That is the bend where spending less clearly hurts the quality of the outcome or raises risk, and where pushing further buys little extra for the cost, time, complexity, or opportunity cost. Opportunity cost is the higher-value work you give up by continuing, such as another low-value review loop.
+- Weight the factors to fit the situation. When one factor matters most and another barely matters (for example, quality is critical and cost does not matter), drop the minor factor and find the inflection point across the factors that actually constrain the outcome.
+- Apply this everywhere, including choosing models, scoping changes and features, writing tests, fixing bugs, deciding when to stop review loops, and recommending products, tools, services, or purchases. For a purchase, compare lower-cost sellers and credible alternatives instead of stopping at the first listing.
+
 ## Boundaries
 
 - Who may merge, and when, is set per project. Follow the project's own rule. Where a project has none, ask me before you merge.

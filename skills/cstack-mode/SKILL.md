@@ -16,6 +16,19 @@ Resolve `<cstack>` from the real path of this file (two directories above `skill
 - **T3 Code.** When T3 Code MCP tools (`delegate_task`, `orchestrator_capabilities`, `pull_request_*`, `watch_pull_request`) are present, read `<cstack>/docs/harness/t3-code.md` once per session before following `poteto-mode`, and apply its tool, subagent, model, PR, and path mappings throughout the session. When delegating to a `poteto-agent` child in T3 Code, include `<cstack>/docs/harness/t3-code.md` alongside `<cstack>/skills/poteto-mode/worker.md` and `<cstack>/skills/poteto-mode/SKILL.md` so the child uses the same mappings.
 - **Standalone Claude Code.** When running in Claude Code without Orca or T3 Code tools, read `<cstack>/docs/harness/claude-code.md` once per session instead.
 - **Cursor.** No adapter is needed; Cursor names apply directly.
+- **OpenBot.** When running in an OpenBot workspace, with OpenBot MCP tools, or with `<openbot-developer-instructions>`, read `<cstack>/docs/harness/openbot.md` once per session before following `poteto-mode`. Apply its outer-loop routing, dispatch, workspace, and boundary rules throughout the session.
+
+Keep tool-specific names, CLI flags, and platform wiring inside their own adapter file under `docs/harness/`. Never add them to core `cstack-mode` rules.
+
+## Outer loop and inner loop
+
+The outer loop is the owner's primary day-to-day interface. It aligns with the owner and delegates independent goals into parallel inner-loop threads once ready. It tracks and cleans up those threads so thread sprawl does not overwhelm the owner. The owner drops into an inner-loop thread directly only when hands-on work makes sense.
+
+- **Outer loop.** The outer loop owns strategy, memory, timelines, cross-agent routing, alignment, and reviewing results.
+- **Inner loop.** The inner loop runs every bounded task with an explicit goal in an isolated execution thread. This covers engineering, asset pipelines, deep research, audits, analysis, and long-form writing.
+- **Keep bounded work out of side threads.** Never run bounded goal work inside outer-loop side threads or bypass alignment gates.
+- **Narrow outer-loop exception.** Stay in the outer loop only for a quick single-turn check or when the task requires an outer-loop-only capability that the inner loop lacks.
+- **Workspace isolation and ownership.** Isolate git repository work in a dedicated worktree or branch. Use a dedicated non-repo workspace for non-repo goal work. Register thread ownership when the environment supports it so completion events route back to the outer loop.
 
 ## Repo-local domain skills
 

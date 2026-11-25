@@ -86,7 +86,7 @@ To show an image in an Orca reply, copy it to a path without spaces and embed it
 
 ## Orca Bots
 
-Orca Bots are built into Orca and live in `~/.orca/bots/<name>/`. When running as an Orca Bot:
+Orca Bots are built into Orca and live in `~/.orca/bots/<name>/`. In the outer-loop and inner-loop split, Orca Bots act as the outer-loop control plane and Orca worktree workers act as the inner loop. When running as an Orca Bot:
 
 - **Always-on `cstack-mode`.** Every Orca bot, thread, and workspace runs `cstack-mode` for the whole session, not only when asked.
 - **Bot files.** Orca owns and regenerates `AGENTS.md`, `CLAUDE.md`, and `bot.json`; never expect manual edits to those three files to persist. Durable bot identity and operating rules live in `SOUL.md`, and durable facts live in `MEMORY.md` (one dated line per fact, details in `memory/<topic>.md`; remove or replace a line with `orca bot memory forget --fact "<words>"`). Once a bot is onboarded, keep a two-line control-plane-only reminder from **Keep the bot chat available** in its `SOUL.md` so the boundary holds across sessions.

@@ -1,0 +1,15 @@
+{
+  "repository": "https://github.com/whyashthakker/estack",
+  "commit": "578dcdf51ef6e0d4fcf868165cef55a4e303f8be",
+  "path": "skills/ste100/scripts/ste_check.py",
+  "author": "explainx.ai",
+  "license": "MIT",
+  "adaptations": [
+    "Reimplemented the eStack ste100 prose checks in dependency-free TypeScript for Node 24.",
+    "Kept sentence length, paragraph length, punctuation, and advisory passive-voice checks; stock words and phrases come from ai-tells.md at runtime.",
+    "Added source coordinates, ignored code and quotations, and exit status based on strong hits."
+  ],
+  "source_sha256": {
+    "ste_check.py": "032bc13ad79ed15ce8a1b3df5bfde9bb2b21ee3f2c2bf09c54c0bef2eca4e54e"
+  }
+}

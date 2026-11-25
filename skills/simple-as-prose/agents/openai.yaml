@@ -1,0 +1,5 @@
+interface:
+  display_name: "Simple as Prose"
+  short_description: "Use when writing or revising replies, documents, UI copy, comments, or other prose. Make the next action clear."
+policy:
+  allow_implicit_invocation: true

@@ -50,6 +50,7 @@ test("install, idempotent re-run, status, and uninstall preserve unrelated skill
     const skills = discoverSkillsForTarget(REPO_ROOT, "claude");
     assert.ok(skills.some((s) => s.name === "cstack-mode"));
     assert.ok(skills.some((s) => s.name === "poteto-mode"));
+    assert.ok(skills.some((s) => s.name === "simple-as-prose"));
 
     // Dry run should not create links or manifest
     const dry = installCstack({
@@ -77,6 +78,10 @@ test("install, idempotent re-run, status, and uninstall preserve unrelated skill
         getTargetDir(homeDir, target),
         "cstack-mode",
         "SKILL.md",
+      );
+      assert.equal(
+        fs.existsSync(path.join(getTargetDir(homeDir, target), "cstack-mode", "reflect.md")),
+        true,
       );
       const resolvedSkill = fs.realpathSync(linkedCstackMode);
       const docsHarnessDir = path.resolve(
@@ -183,6 +188,7 @@ test("copy mode installs, records repoRoot in manifest, and uninstalls cleanly",
     const copiedSkillDir = path.join(getTargetDir(homeDir, "agents"), "cstack-mode");
     assert.equal(fs.lstatSync(copiedSkillDir).isSymbolicLink(), false);
     assert.equal(fs.existsSync(path.join(copiedSkillDir, "SKILL.md")), true);
+    assert.equal(fs.existsSync(path.join(copiedSkillDir, "reflect.md")), true);
 
     const manifest = JSON.parse(fs.readFileSync(getManifestPath(homeDir), "utf8"));
     assert.equal(manifest.repoRoot, fs.realpathSync(REPO_ROOT));

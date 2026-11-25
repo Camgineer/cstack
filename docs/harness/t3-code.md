@@ -4,6 +4,14 @@ pstack skills use Cursor names. In T3 Code, read this file once per session, the
 
 T3 Code runs across multiple providers (Claude, Codex, Antigravity, and others) and adds its own MCP tools (`delegate_task`, `orchestrator_capabilities`, `pull_request_*`, `ci_logs`, `ci_rerun`, `*_issue*`, `schedule_task`, `watch_pull_request`, `preview_*`, `device_*`, `request_secret`, and thread tools). Map each Cursor name to the T3 Code tool or provider-native tool below.
 
+## Inner loop role
+
+T3 Code is an inner-loop execution tool for bounded, goal-driven threads, including engineering, asset pipelines, deep research, audits, analysis, and long-form writing.
+
+- **Git repositories.** Run repository work in an isolated worktree so changes stay separated from other threads and the main checkout.
+- **Non-repo workspaces.** Run non-repo goal work in a dedicated workspace without `--worktree`.
+- **Outer-loop handback.** Verify outputs inside the thread and report concise, verified results back to the outer loop.
+
 ## Tools
 
 | Cursor | T3 Code |

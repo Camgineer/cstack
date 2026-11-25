@@ -8,6 +8,7 @@ T3 Code runs across multiple providers (Claude, Codex, Antigravity, and others) 
 
 T3 Code is an inner-loop execution tool for bounded, goal-driven threads, including engineering, asset pipelines, deep research, audits, analysis, and long-form writing.
 
+- **Outer-loop dispatch.** For each `t3 thread start`, resolve the task role in `~/.t3/pstack-models.md` and pass `--provider <provider> --model <model> --option <reasoningKey>=<effort>`. Use `reasoningEffort` for `codex`, `effort` for `claudeAgent`, and `thought_level` for `antigravity`. Add `--option fastMode=true` only for a `claudeAgent` role with `fast` set.
 - **Git repositories.** Run repository work in an isolated worktree so changes stay separated from other threads and the main checkout.
 - **Non-repo workspaces.** Run non-repo goal work in a dedicated workspace without `--worktree`.
 - **Outer-loop handback.** Verify outputs inside the thread and report concise, verified results back to the outer loop.

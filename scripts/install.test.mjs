@@ -50,6 +50,7 @@ test("install, idempotent re-run, status, and uninstall preserve unrelated skill
     const skills = discoverSkillsForTarget(REPO_ROOT, "claude");
     assert.ok(skills.some((s) => s.name === "cstack-mode"));
     assert.ok(skills.some((s) => s.name === "poteto-mode"));
+    assert.ok(skills.some((s) => s.name === "simple-as-prose"));
 
     // Dry run should not create links or manifest
     const dry = installCstack({

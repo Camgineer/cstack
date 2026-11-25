@@ -1,0 +1,8 @@
+{
+	"private": true,
+	"type": "module",
+	"main": "prose-check.test.ts",
+	"engines": {
+		"node": ">=24"
+	}
+}

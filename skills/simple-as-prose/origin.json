@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Camgineer/cstack-legacy-2026-09-30",
+  "commit": "e50a852272cea0fbbf9186aec60f8e296ff9c1b3",
+  "path": "skills/simple-as-prose",
+  "source_sha256": {
+    "SKILL.md": "534d14d9cd291b764e1e8b069965e7c6fc5d3fbc907ff43096410292d2e4ebbe",
+    "ai-tells.md": "8eb24df2a0f7a4fc99fdf8bc9cc47ac714eaae4013047ae03faf50aaf58a495e"
+  },
+  "adaptations": [
+    "Added Codex discovery metadata when importing the legacy skill and AI-tells reference.",
+    "Legacy MIT license retained in LICENSE; upstream PStack MIT retained in pstack-LICENSE.",
+    "Added the deterministic prose linter and its edit-pass command; eStack ste100 credit and MIT license are in ste100-origin.json and ste100-LICENSE."
+  ]
+}

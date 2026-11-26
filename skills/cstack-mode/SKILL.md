@@ -61,7 +61,11 @@ Keep general engineering process in `cstack` and project- or domain-specific ski
 
 ## Reflection
 
-Read [reflect.md](reflect.md) only when running `/reflect`.
+Read [reflect.md](reflect.md) when running manual `/reflect` or when handling the automatic post-thread and milestone reflection loop.
+
+- **Fast completion check.** At the end of every finished inner-loop thread, run a single-pass friction check with no extra model calls. Check for durable friction: owner corrections, retry or failure loops, missing rules or skills, adapter or runtime quirks, or recurring bug classes. When you find any, emit a compact **Reflection candidates** list. Give each item a problem, proposed fix, destination (`cstack`, `global`, `local`, or `repo`), and kind (`structural check` or `prose`). When the run was clean with no durable lessons, emit `Reflection: none`.
+- **Full multi-model `/reflect`.** Trigger full multi-model `/reflect` under [reflect.md](reflect.md) at major outer-loop milestones or after material friction. Material friction includes multiple fix rounds, an incident or postmortem, or repeated owner corrections.
+- **Outer-loop triage.** The outer loop triages **Reflection candidates** from finished threads. Keep repo-specific fixes in that repository's backlog or follow-up flow, and route `cstack` or global lessons to the engineering stack owner. Never edit files or open pull requests from reflection without owner approval.
 
 ## Testing and verification
 

@@ -11,8 +11,8 @@ Read this file when running manual `/reflect`, emitting end-of-thread reflection
   - **Destination.** `cstack`, `global`, `local`, or `repo`.
   - **Kind.** `structural check` (lint, script, test, or runtime check) or `prose` (skill, doc, or instruction rule).
 
-  When the thread finished cleanly with no durable lessons, emit `Reflection: none`.
-- **Full multi-model `/reflect` triggers (Tier 2).** Trigger full multi-model `/reflect` when the owner invokes `/reflect` manually, at major outer-loop milestones, or after material friction. Material friction includes multiple fix rounds, an incident or postmortem, or repeated owner corrections.
+  If no durable candidate remains, emit `Reflection: none`.
+- **Full multi-model `/reflect` triggers (Tier 2).** Trigger full multi-model `/reflect` for a manual whole-session `/reflect`, at major outer-loop milestones, or after material friction. Material friction includes multiple fix rounds, an incident or postmortem, or repeated owner corrections. Run a single pass when a manual `/reflect` names one specific lesson.
 
 ## Multi-model `/reflect`
 

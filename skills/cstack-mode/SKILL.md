@@ -45,6 +45,7 @@ Keep general engineering process in `cstack` and project- or domain-specific ski
 ## PR lifecycle
 
 - **Open ready once verified.** Open pull requests ready after verification and cross-model review pass, or mark drafts ready.
+- **Draft-only prototypes.** Keep `prototype/*` branches in draft state and never merge them into the default branch.
 - **Keep artifacts out of git.** Attach verification screenshots, recordings, and traces to the pull request or write them to gitignored or temporary paths.
 - **Review exact commits before slow jobs and merge.** Commit after cleanup and get an explicit `PASS` from another model family before discretionary slow or remote jobs or merge. Fast local checks or one requested platform job may run during review. Repeat after fixes or rebases, keep design review separate, and give workers this rule.
 - **Bound review rounds.** Give design and code reviewers the acceptance criteria and **Do not build** list. A finding is **Blocking** only if it breaks an acceptance criterion, breaks a run or user progress, opens an authority or security hole, loses data, or breaks a contract irreversibly. Mark all else **Defer** and never patch it. Round one lists every defect class and instance. Pause on `NEEDS_CHANGES` with over six findings or several in an optional subsystem to cut optional scope. On round-two recurrence, pause, name the state owner and event, and give one user action and expected change.

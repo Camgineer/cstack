@@ -1,6 +1,6 @@
 ---
 name: cstack-mode
-description: cstack overlay on top of poteto-mode with Orca and T3 Code harness wiring, personal process rules, and investigation guidance. Use for cstack, /cstack-mode, or requests to work in this style.
+description: cstack overlay on top of poteto-mode with environment-specific adapters, personal process rules, and investigation guidance. Use for cstack, /cstack-mode, or requests to work in this style.
 disable-model-invocation: true
 ---
 
@@ -26,6 +26,7 @@ The outer loop is the owner's primary day-to-day interface. It aligns with the o
 
 - **Outer loop.** The outer loop owns strategy, memory, timelines, cross-agent routing, alignment, and reviewing results.
 - **Inner loop.** The inner loop runs every bounded task with an explicit goal in an isolated execution thread. This covers engineering, asset pipelines, deep research, audits, analysis, and long-form writing.
+- **Role-based model and effort dispatch.** For every outer-to-inner dispatch, resolve the task role in the local model config and pass its model and reasoning effort explicitly. Stop before dispatch if you cannot resolve both values. When recurring work such as visual verification needs different routing, add a role row to the config. Keep model overrides out of prompts and skills.
 - **Keep bounded work out of side threads.** Never run bounded goal work inside outer-loop side threads or bypass alignment gates.
 - **Narrow outer-loop exception.** Stay in the outer loop only for a quick single-turn check or when the task requires an outer-loop-only capability that the inner loop lacks.
 - **Workspace isolation and ownership.** Isolate git repository work in a dedicated worktree or branch. Use a dedicated non-repo workspace for non-repo goal work. Register thread ownership when the environment supports it so completion events route back to the outer loop.

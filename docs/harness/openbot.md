@@ -18,6 +18,7 @@ OpenBot owns strategy, memory, timelines, cross-agent routing, alignment, and re
 - **Dispatch by role.** Always use the role-enforcing wrapper, such as `dispatch_t3.ts --role <role> --owner <agent>`. On each dispatch, the wrapper reads `~/.t3/pstack-models.md` and passes `--provider`, `--model`, and the provider's effort `--option` to `t3 thread start`. Never start a thread without the resolved role flags. Add a role row to `pstack-models.md` when work needs different routing. Keep model slugs out of agent prompts and skills.
 - **Keep bounded work out of `start_task`.** Never use OpenBot `start_task` side threads for bounded goal work. Never use `start_task` to bypass the Dispatch Brief alignment gate.
 - **Review results in OpenBot.** Inspect verified outputs returned from the inner loop, update memory and timelines, and decide the next step.
+- **Route reflection candidates.** When a finished inner-loop thread surfaces **Reflection candidates** destined for `cstack` or global rules, send them to `CStack` via `openbot.send_message`. Keep repo-specific candidates in the owning agent's repository workflow.
 
 ## Narrow OpenBot-only exception
 
